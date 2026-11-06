@@ -45,7 +45,7 @@ def test_cliente_do_olist_nao_tem_nenhuma_escrita():
 
 
 def test_sincronizacao_nao_chama_http_diretamente():
-    calls = _http_calls(Path("app/sync/olist_sync.py"))
+    calls = _http_calls(Path("app/sync/olist_sync.py")) | _http_calls(Path("app/integrations/http.py"))
     assert not calls & WRITE_METHODS
 
 
@@ -57,7 +57,7 @@ def test_unico_post_e_o_de_login_no_servidor_de_autorizacao():
 
 
 def test_metodos_publicos_sao_so_de_leitura():
-    public = [n for n in dir(OlistClient) if not n.startswith("_")]
+    public = [n for n in dir(OlistClient) if not n.startswith("_") and callable(getattr(OlistClient, n))]
     assert all(n.startswith(("get_", "iter_")) for n in public), public
 
 

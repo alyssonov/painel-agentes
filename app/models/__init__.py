@@ -5,6 +5,7 @@ from app.models.ai import AiUsage
 from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.catalog import Product, StockSnapshot
+from app.models.fee import MarketplaceFee
 from app.models.integration import IntegrationAccount
 from app.models.invoice import Invoice
 from app.models.order import Order, OrderItem
@@ -20,6 +21,7 @@ __all__ = [
     "Alert",
     "AuditLog",
     "IntegrationAccount",
+    "MarketplaceFee",
     "Invoice",
     "Order",
     "OrderItem",

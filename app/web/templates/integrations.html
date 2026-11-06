@@ -86,16 +86,72 @@
   </form>
 </section>
 
-<div class="integration-grid">
-  <section class="card integration">
-    <p class="eyebrow">Marketplace</p>
-    <h2 class="card-title">Mercado Livre</h2>
-    <p class="muted">A conexão chega na fase 3 (perguntas, mensagens, taxas e reputação).</p>
-  </section>
-  <section class="card integration">
-    <p class="eyebrow">Marketplace</p>
-    <h2 class="card-title">Shopee</h2>
-    <p class="muted">A conexão chega na fase 3 (perguntas, mensagens, taxas e avaliação).</p>
-  </section>
-</div>
+<section class="card integration" aria-labelledby="ml-title">
+  <div class="integration-head">
+    <div>
+      <p class="eyebrow">Marketplace · lê perguntas, reputação e taxas</p>
+      <h2 id="ml-title" class="card-title">Mercado Livre</h2>
+    </div>
+    {% if ml.connected and ml.account.status == 'ok' %}
+      <span class="badge">Conectado</span>
+    {% elif ml.connected %}
+      <span class="badge badge-erro">Com erro</span>
+    {% else %}
+      <span class="badge badge-pausado">Não conectado</span>
+    {% endif %}
+  </div>
+
+  {% if not ml.configured %}
+    <div class="notice">
+      <p><strong>Falta configurar as chaves do aplicativo do Mercado Livre.</strong></p>
+      <ol class="steps">
+        <li>No DevCenter do Mercado Livre, abra o aplicativo e copie o Client ID e a chave secreta.</li>
+        <li>No arquivo <code>.env</code>, preencha <code>ML_CLIENT_ID</code> e <code>ML_CLIENT_SECRET</code>.</li>
+        <li>Confira se a URI de redirect do aplicativo é exatamente: <code>{{ ml.redirect_uri }}</code></li>
+        <li>Feche a janela do painel e ligue de novo.</li>
+      </ol>
+    </div>
+  {% else %}
+    <dl class="facts">
+      {% if ml.connected %}
+      <div><dt>Conta</dt><dd>{{ ml.account.account_name }}</dd></div>
+      <div><dt>Reputação</dt><dd>{{ (ml.account.extra or {}).get('reputation_label', '—') }}</dd></div>
+      {% endif %}
+      <div><dt>Última atualização</dt><dd>
+        {% if ml.last_run %}
+          {{ ml.last_run_label }} —
+          {% if ml.last_run.status == 'ok' %}deu certo
+            {% if ml.last_run.counts %}({{ ml.last_run.counts.get('perguntas', 0) }} perguntas, {{ ml.last_run.counts.get('taxas', 0) }} vendas com taxa){% endif %}
+          {% elif ml.last_run.status == 'rodando' %}em andamento…
+          {% else %}não deu certo{% endif %}
+        {% else %}nenhuma ainda{% endif %}
+      </dd></div>
+      <div><dt>Frequência</dt><dd>A cada {{ ml.sync_minutes }} minutos, enquanto o painel estiver ligado</dd></div>
+    </dl>
+    {% if ml.connected and ml.account.last_error %}
+      <p class="form-error">{{ ml.account.last_error }}</p>
+    {% endif %}
+    <div class="actions">
+      <a class="btn btn-primary" href="/integracoes/mercadolivre/conectar">{{ 'Conectar de novo' if ml.connected else 'Conectar o Mercado Livre' }}</a>
+      {% if ml.connected %}
+      <form method="post" action="/integracoes/mercadolivre/sincronizar">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-secondary" type="submit">Atualizar agora</button>
+      </form>
+      <form method="post" action="/integracoes/mercadolivre/desconectar" class="push-right">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost" type="submit">Desconectar</button>
+      </form>
+      {% endif %}
+    </div>
+    <p class="muted small">Entre com a conta do Mercado Livre <strong>da loja</strong>. Nesta etapa o painel só lê:
+      responder perguntas chega com o agente, sempre com a sua aprovação.</p>
+  {% endif %}
+</section>
+
+<section class="card integration">
+  <p class="eyebrow">Marketplace</p>
+  <h2 class="card-title">Shopee</h2>
+  <p class="muted">A conexão chega na próxima etapa da fase 3.</p>
+</section>
 {% endblock %}

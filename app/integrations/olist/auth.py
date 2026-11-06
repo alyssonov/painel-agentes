@@ -13,30 +13,22 @@ Pontos importantes da documentação:
   é preciso conectar de novo.
 """
 
-import threading
-from datetime import timedelta
 from urllib.parse import urlencode
 
 import httpx
-from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
-from app.core.db import utcnow
-from app.integrations.errors import AuthExpired, IntegrationError, NotConnected, TemporaryError
-from app.integrations.tokens import TokenSet, read_access_token, read_refresh_token, store_tokens
-from app.models.enums import IntegrationStatus, Provider
+from app.integrations.errors import AuthExpired, IntegrationError, TemporaryError
+from app.integrations.oauth import AccountTokenProvider, get_real_account
+from app.integrations.tokens import TokenSet
+from app.models.enums import Provider
 from app.models.integration import IntegrationAccount
 
 AUTH_URL = "https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/auth"
 TOKEN_URL = "https://accounts.tiny.com.br/realms/tiny/protocol/openid-connect/token"
 
-# Renova o token quando faltar menos que isto para expirar.
-REFRESH_MARGIN = timedelta(minutes=10)
 TIMEOUT = httpx.Timeout(30.0)
-
-# Evita que duas renovações aconteçam ao mesmo tempo no mesmo processo.
-_refresh_lock = threading.Lock()
 
 
 def authorize_url(state: str) -> str:
@@ -94,44 +86,14 @@ def refresh_tokens(refresh_token: str, http: httpx.Client | None = None) -> Toke
 
 def get_olist_account(db: Session) -> IntegrationAccount | None:
     """Conta real do Olist (ignora a conta fictícia da simulação)."""
-    return db.scalar(select(IntegrationAccount).where(
-        IntegrationAccount.provider == Provider.OLIST, IntegrationAccount.is_demo.is_(False)))
+    return get_real_account(db, Provider.OLIST)
 
 
-class OlistTokenProvider:
-    """Entrega um token de acesso válido, renovando quando preciso."""
+class OlistTokenProvider(AccountTokenProvider):
+    """Entrega um token de acesso válido do Olist, renovando quando preciso."""
 
     def __init__(self, session_factory: sessionmaker[Session], http: httpx.Client | None = None) -> None:
-        self._session_factory = session_factory
-        self._http = http
-
-    def get_token(self, *, force_refresh: bool = False) -> str:
-        with self._session_factory() as db:
-            account = get_olist_account(db)
-            if account is None or not account.access_token_enc:
-                raise NotConnected("O Olist ainda não foi conectado.")
-            fresh = account.expires_at and account.expires_at - REFRESH_MARGIN > utcnow()
-            if fresh and not force_refresh:
-                return read_access_token(account)
-
-        with _refresh_lock:
-            with self._session_factory() as db:
-                # Relê do banco: outro processo (painel ou worker) pode ter renovado agora.
-                account = get_olist_account(db)
-                if account is None or not account.refresh_token_enc:
-                    raise NotConnected("O Olist ainda não foi conectado.")
-                if not force_refresh and account.expires_at and account.expires_at - REFRESH_MARGIN > utcnow():
-                    return read_access_token(account)
-                try:
-                    tokens = refresh_tokens(read_refresh_token(account), self._http)
-                except AuthExpired as exc:
-                    account.status = IntegrationStatus.ERROR
-                    account.last_error = str(exc)
-                    db.commit()
-                    raise
-                store_tokens(account, tokens)
-                db.commit()
-                return tokens.access_token
+        super().__init__(session_factory, Provider.OLIST, lambda rt: refresh_tokens(rt, http))
 
 
 def _safe_json(response: httpx.Response) -> dict:

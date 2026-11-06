@@ -126,6 +126,11 @@ automáticas, nada manual).
   APIs simuladas com `respx` (ex.: `tests/olist_fake.py`).
 - Olist: token de acesso vale 4 h e refresh token **1 dia** — a sincronização
   periódica renova; passou disso, a pessoa precisa clicar em "Conectar de novo".
+- Clientes de API herdam de `ReadOnlyApiClient` (`app/integrations/http.py`),
+  que só faz GET. Métodos públicos só `get_*`/`iter_*`. Escrita em marketplace
+  fica em módulo separado, importado só pelo `ActionGateway`.
+- Mercado Livre e Shopee exigem redirect HTTPS público: usamos a página de
+  repasse do repositório `alyssonov/painel-retorno` (GitHub Pages).
 - Toda rota POST usa a dependência `verify_csrf`; toda página usa
   `current_user`.
 - Sem scripts/estilos inline nem de terceiros (CSP `'self'`): JS e CSS ficam

@@ -6,6 +6,7 @@ junto com o painel.
 Tarefas agendadas:
 - Fase 1: no modo simulação, mantém os dados fictícios do dia em dia.
 - Fase 2: lê o Olist (somente leitura) a cada OLIST_SYNC_MINUTES minutos.
+- Fase 3: lê o Mercado Livre (perguntas, reputação, taxas) a cada ML_SYNC_MINUTES.
 """
 
 import logging
@@ -15,6 +16,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from app.config import get_settings
 from app.core.db import get_sessionmaker
 from app.fake_data.seed import refresh_demo_if_stale
+from app.sync.ml_sync import run_ml_sync
 from app.sync.olist_sync import run_olist_sync
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -39,6 +41,13 @@ def job_sync_olist() -> None:
         logger.info("Olist: sincronização %s %s", run.status, run.counts)
 
 
+def job_sync_ml() -> None:
+    """Lê perguntas, reputação e taxas do Mercado Livre (nada é respondido aqui)."""
+    run = run_ml_sync(get_sessionmaker())
+    if run is not None:
+        logger.info("Mercado Livre: sincronização %s %s", run.status, run.counts)
+
+
 def main() -> None:
     settings = get_settings()
     settings.check_ready()
@@ -49,9 +58,12 @@ def main() -> None:
         job_refresh_demo()
     scheduler.add_job(job_sync_olist, "interval", minutes=settings.olist_sync_minutes, id="sync_olist",
                       max_instances=1, coalesce=True)
+    scheduler.add_job(job_sync_ml, "interval", minutes=settings.ml_sync_minutes, id="sync_ml",
+                      max_instances=1, coalesce=True)
     logger.info("Worker iniciado (DRY_RUN=%s). Ctrl+C para parar.", settings.dry_run)
     try:
         job_sync_olist()
+        job_sync_ml()
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         logger.info("Worker parado.")

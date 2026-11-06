@@ -57,6 +57,7 @@ class QuestionStatus(StrEnum):
     PROPOSED = "proposta"  # resposta sugerida aguardando aprovação
     ANSWERED = "respondida"
     HUMAN = "humano"  # encaminhada para uma pessoa responder
+    CLOSED = "encerrada"  # apagada, banida ou fechada sem resposta no marketplace
 
 
 class AgentMode(StrEnum):

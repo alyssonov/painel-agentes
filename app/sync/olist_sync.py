@@ -11,13 +11,12 @@ import logging
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
-from app.core import audit
 from app.core.db import utcnow
-from app.integrations.errors import AuthExpired, IntegrationError, NotConnected
+from app.integrations.errors import IntegrationError, NotConnected
 from app.integrations.olist.auth import OlistTokenProvider, get_olist_account
 from app.integrations.olist.client import OlistClient
 from app.integrations.olist.dates import parse_olist_datetime, to_cents
@@ -31,53 +30,31 @@ from app.integrations.olist.mapping import (
     short_customer_name,
     to_int,
 )
-from app.models import Alert, Invoice, Order, OrderItem, Product, StockSnapshot, SyncRun
-from app.models.enums import AlertSeverity, AlertStatus, IntegrationStatus, Provider, SyncStatus
+from app.models import Invoice, MarketplaceFee, Order, OrderItem, Product, StockSnapshot, SyncRun
+from app.models.enums import Provider, SyncStatus
+from app.sync.common import (
+    SyncAlreadyRunning,
+    finish_run,
+    get_cursor,
+    mark_ok,
+    record_failure,
+    set_cursor,
+    start_run,
+)
 
 logger = logging.getLogger("sync.olist")
 
-# Uma sincronização "rodando" há mais que isto é considerada travada.
-STALE_RUN = timedelta(minutes=30)
 # Folga ao buscar "o que mudou desde": evita perder algo por diferença de relógio.
 CURSOR_OVERLAP = timedelta(minutes=10)
 # Notas são relidas desta janela a cada vez (a situação muda depois de criada).
 INVOICE_WINDOW_DAYS = 7
-ALERT_SOURCE = "olist"
 
 ClientFactory = Callable[[], OlistClient]
-
-
-class SyncAlreadyRunning(Exception):
-    """Outra sincronização do Olist já está em andamento."""
+_cursor, _set_cursor = get_cursor, set_cursor
 
 
 def _default_client_factory(session_factory: sessionmaker[Session]) -> ClientFactory:
     return lambda: OlistClient(OlistTokenProvider(session_factory))
-
-
-def _cursor(account, key: str) -> datetime | None:
-    value = (account.extra or {}).get(key)
-    return datetime.fromisoformat(value) if value else None
-
-
-def _set_cursor(account, key: str, value: datetime) -> None:
-    account.extra = {**(account.extra or {}), key: value.isoformat()}
-
-
-def _start_run(db: Session) -> SyncRun:
-    running = db.scalar(select(SyncRun).where(
-        SyncRun.provider == Provider.OLIST, SyncRun.status == SyncStatus.RUNNING,
-        SyncRun.started_at > utcnow() - STALE_RUN))
-    if running:
-        raise SyncAlreadyRunning()
-    # Execuções antigas que ficaram "rodando" (ex.: computador desligou no meio).
-    db.execute(update(SyncRun).where(
-        SyncRun.provider == Provider.OLIST, SyncRun.status == SyncStatus.RUNNING
-    ).values(status=SyncStatus.ERROR, error="Interrompida", finished_at=utcnow()))
-    run = SyncRun(provider=Provider.OLIST, status=SyncStatus.RUNNING, counts={})
-    db.add(run)
-    db.commit()
-    return run
 
 
 def run_olist_sync(session_factory: sessionmaker[Session],
@@ -88,7 +65,7 @@ def run_olist_sync(session_factory: sessionmaker[Session],
         if account is None or not account.access_token_enc:
             return None
         try:
-            run = _start_run(db)
+            run = start_run(db, Provider.OLIST)
         except SyncAlreadyRunning:
             logger.info("Sincronização do Olist já em andamento; pulando.")
             return None
@@ -104,53 +81,18 @@ def run_olist_sync(session_factory: sessionmaker[Session],
             counts["estoque"] = sync_stock(db, client, account, started)
             counts["pedidos"] = sync_orders(db, client, account, started)
             counts["notas"] = sync_invoices(db, client, first_sync=first_sync)
-            account.status = IntegrationStatus.OK
-            account.last_ok_at = utcnow()
-            account.last_error = None
-            _resolve_alerts(db)
+            mark_ok(db, account)
             db.commit()
         status, error = SyncStatus.OK, None
     except (IntegrationError, NotConnected) as exc:
         status, error = SyncStatus.ERROR, str(exc)
-        _record_failure(session_factory, exc)
+        record_failure(session_factory, Provider.OLIST, exc)
     except Exception as exc:  # noqa: BLE001 - qualquer erro vira alerta, nunca derruba o worker
         logger.exception("Erro inesperado na sincronização do Olist")
         status, error = SyncStatus.ERROR, "Erro inesperado ao ler o Olist (detalhes no log do sistema)."
-        _record_failure(session_factory, IntegrationError(error))
+        record_failure(session_factory, Provider.OLIST, IntegrationError(error))
 
-    with session_factory() as db:
-        run = db.get(SyncRun, run.id)
-        run.status, run.error, run.counts, run.finished_at = status, error, counts, utcnow()
-        audit.record(db, actor="system", event=f"olist.sincronizacao.{status}",
-                     target_type="sync_run", target_id=run.id, details={**counts, "erro": error})
-        db.commit()
-        return run
-
-
-def _record_failure(session_factory: sessionmaker[Session], exc: Exception) -> None:
-    """Marca a conta com erro e abre um alerta (um só, sem repetir a cada tentativa)."""
-    with session_factory() as db:
-        account = get_olist_account(db)
-        if account is not None:
-            account.status = IntegrationStatus.ERROR
-            account.last_error = str(exc)
-        already_open = db.scalar(select(Alert).where(
-            Alert.source == ALERT_SOURCE, Alert.status == AlertStatus.OPEN))
-        title = ("Olist desconectado: é preciso autorizar de novo" if isinstance(exc, AuthExpired)
-                 else "Não foi possível atualizar os dados do Olist")
-        if already_open:
-            already_open.title, already_open.detail = title, str(exc)
-        else:
-            db.add(Alert(source=ALERT_SOURCE, severity=AlertSeverity.CRITICAL, title=title,
-                         detail=str(exc), target_type="integracao", target_id="olist"))
-        db.commit()
-
-
-def _resolve_alerts(db: Session) -> None:
-    for alert in db.scalars(select(Alert).where(
-            Alert.source == ALERT_SOURCE, Alert.status == AlertStatus.OPEN)):
-        alert.status = AlertStatus.RESOLVED
-        alert.resolved_at = utcnow()
+    return finish_run(session_factory, run.id, Provider.OLIST, status, counts, error)
 
 
 # --- Etapas --------------------------------------------------------------------
@@ -254,7 +196,14 @@ def upsert_order(db: Session, summary: dict, detail: dict, products: dict[str, i
     order.items_total_cents = to_cents(detail.get("valorTotalProdutos"))
     # Frete pago pela loja (campo informativo do Olist).
     order.shipping_cost_cents = to_cents(detail.get("valorFretePagoEmpresa"))
-    order.marketplace_fee_cents = order.marketplace_fee_cents or 0
+    # Taxa do marketplace já lida (Mercado Livre), se houver.
+    with db.no_autoflush:  # o pedido ainda está incompleto: não gravar antes da hora
+        fee = db.scalar(select(MarketplaceFee).where(MarketplaceFee.channel == order.channel,
+                                                      MarketplaceFee.order_ref == order.external_id))
+    if fee is not None:
+        order.marketplace_fee_cents, order.fees_known = fee.fee_cents, True
+    else:
+        order.marketplace_fee_cents = order.marketplace_fee_cents or 0
     order.ordered_at = (parse_olist_datetime(detail.get("dataCriacao") or summary.get("dataCriacao"))
                         or parse_olist_datetime(detail.get("data")) or utcnow())
     order.is_demo = False

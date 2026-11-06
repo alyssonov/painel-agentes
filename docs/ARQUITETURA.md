@@ -339,3 +339,34 @@ e os guias de autenticação e limites em `api-docs.erp.olist.com`.
 - **Dados pessoais:** do cliente guardamos só primeiro nome + inicial.
 - Tabelas novas: `invoices`, `sync_runs`. Pedidos passam a ser únicos por
   `olist_id`.
+
+## 12. Fase 3 — etapa 1: Mercado Livre (leitura)
+
+Documentação oficial consultada em 06/11/2026 via busca (o portal
+developers.mercadolivre.com.br recusa leitura automática): autenticação e
+autorização, gerenciamento de perguntas e respostas, gerenciamento de vendas
+e packs.
+
+- **Conexão:** OAuth 2 com **PKCE (S256)** e `state`. O Mercado Livre exige
+  redirect HTTPS público: usamos uma página estática no GitHub Pages
+  (`alyssonov/painel-retorno`) que só repassa `?code&state` para
+  `http://localhost:8000/integracoes/mercadolivre/retorno`. O código sozinho
+  não serve para nada sem o client secret e o code_verifier (que ficam no
+  painel). Na Fase 8, com domínio próprio, essa página deixa de ser usada.
+- **Tokens:** acesso de 6 h; refresh token de uso único (sempre guardamos o
+  último). Renovação com trava por integração (`app/integrations/oauth.py`),
+  compartilhada com o Olist.
+- **Base de leitura comum** (`app/integrations/http.py`): só GET, novas
+  tentativas, 429 e 401 tratados. Escritas ficarão em módulos separados,
+  chamados apenas pelo ActionGateway.
+- **Sincronização** (`app/sync/ml_sync.py`, a cada `ML_SYNC_MINUTES`):
+  reputação (`/users/me`) → perguntas (`/questions/search`, não respondidas +
+  recentes; títulos via `/items`) → taxas (`/orders/search`, `sale_fee` ×
+  quantidade, somadas por pacote) gravadas em `marketplace_fees` e aplicadas
+  aos pedidos do Olist pelo número do pedido/pacote — também quando o pedido
+  chega no Olist depois.
+- **Partes comuns de sincronização** em `app/sync/common.py` (execução única,
+  alerta único por integração, cursores).
+- Tabela nova: `marketplace_fees`.
+- **A conferir no primeiro uso real:** se a soma `sale_fee × quantidade`
+  bate com a tarifa mostrada na tela de vendas do Mercado Livre.

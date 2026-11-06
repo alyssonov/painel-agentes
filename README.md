@@ -5,8 +5,9 @@ perguntas, vigiar estoque, conferir notas, calcular a margem real, enviar
 relatórios e mais. O **Olist ERP é a fonte da verdade**: o sistema só lê do
 Olist e nunca mexe em estoque ou nota fiscal.
 
-> **Situação atual: Fase 2.** Login, Visão geral, modo simulação e conexão
-> com o Olist ERP (somente leitura). Mercado Livre e Shopee chegam na Fase 3.
+> **Situação atual: Fase 3 (em andamento).** Login, Visão geral, modo
+> simulação, Olist ERP (somente leitura) e Mercado Livre (leitura de perguntas,
+> reputação e taxas). Shopee e o agente que responde perguntas vêm a seguir.
 > Veja `docs/ARQUITETURA.md`.
 
 ## Requisitos
@@ -123,6 +124,23 @@ Bom saber:
 - Ao conectar, a loja fictícia da simulação é apagada.
 - Em **Contas conectadas** também fica a **alíquota de impostos** usada na
   margem real (informada pela contabilidade).
+
+## Conectar o Mercado Livre
+
+1. Em developers.mercadolivre.com.br/devcenter (com a conta **da loja**), o
+   aplicativo deve ter:
+   - URI de redirect: `https://alyssonov.github.io/painel-retorno/mercadolivre/`
+     (o Mercado Livre exige HTTPS público; essa página, no repositório
+     `alyssonov/painel-retorno`, só repassa o login para o painel local);
+   - fluxos **Authorization Code** e **Refresh Token**, com **PKCE**;
+   - permissões: Usuários (leitura), Comunicações pré e pós-venda (leitura e
+     escrita), Publicação (leitura), Métricas (leitura), Venda e envios
+     (leitura); o resto sem acesso. Sem tópicos de notificação.
+2. No `.env`, preencha `ML_CLIENT_ID` e `ML_CLIENT_SECRET`.
+3. Em **Contas conectadas**, clique em **Conectar o Mercado Livre** e autorize.
+
+O painel passa a ler, a cada 5 minutos: perguntas, reputação e a taxa de cada
+venda (que entra na margem real). Nesta etapa **nada é respondido**.
 
 ## Modo simulação (`DRY_RUN`)
 

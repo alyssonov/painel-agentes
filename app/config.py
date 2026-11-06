@@ -38,6 +38,14 @@ class Settings(BaseSettings):
     # Na primeira conexão, quantos dias de pedidos e notas para trás importar.
     olist_initial_days: int = 15
 
+    # Mercado Livre (API oficial). Chaves do aplicativo criado no DevCenter.
+    ml_client_id: str = Field(default="", repr=False)
+    ml_client_secret: str = Field(default="", repr=False)
+    # O Mercado Livre exige HTTPS público: a página de repasse (GitHub Pages)
+    # devolve o login para o painel local. Tem que ser IGUAL à cadastrada no app.
+    ml_redirect_uri: str = "https://alyssonov.github.io/painel-retorno/mercadolivre/"
+    ml_sync_minutes: int = 5
+
     anthropic_api_key: str = Field(default="", repr=False)
     ai_daily_budget_brl: float = 10.0
 
@@ -58,6 +66,11 @@ class Settings(BaseSettings):
     def olist_configured(self) -> bool:
         """True quando as chaves do aplicativo do Olist estão no .env."""
         return bool(self.olist_client_id and self.olist_client_secret)
+
+    @property
+    def ml_configured(self) -> bool:
+        """True quando as chaves do aplicativo do Mercado Livre estão no .env."""
+        return bool(self.ml_client_id and self.ml_client_secret)
 
     @property
     def is_production(self) -> bool:
