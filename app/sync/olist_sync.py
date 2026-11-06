@@ -34,6 +34,7 @@ from app.models import Invoice, MarketplaceFee, Order, OrderItem, Product, Stock
 from app.models.enums import Provider, SyncStatus
 from app.sync.common import (
     SyncAlreadyRunning,
+    describe_unexpected,
     finish_run,
     get_cursor,
     mark_ok,
@@ -89,7 +90,7 @@ def run_olist_sync(session_factory: sessionmaker[Session],
         record_failure(session_factory, Provider.OLIST, exc)
     except Exception as exc:  # noqa: BLE001 - qualquer erro vira alerta, nunca derruba o worker
         logger.exception("Erro inesperado na sincronização do Olist")
-        status, error = SyncStatus.ERROR, "Erro inesperado ao ler o Olist (detalhes no log do sistema)."
+        status, error = SyncStatus.ERROR, f"Erro inesperado ao ler o Olist: {describe_unexpected(exc)}"
         record_failure(session_factory, Provider.OLIST, IntegrationError(error))
 
     return finish_run(session_factory, run.id, Provider.OLIST, status, counts, error)

@@ -70,7 +70,11 @@ class MLClient(ReadOnlyApiClient):
         for start in range(0, len(item_ids), ITEMS_BATCH):
             batch = item_ids[start:start + ITEMS_BATCH]
             data = self._get("/items", {"ids": ",".join(batch), "attributes": "id,title,permalink,price"}) or []
-            items += [entry.get("body") or {} for entry in data if entry.get("code") == 200]
+            if isinstance(data, dict):  # um anúncio só pode vir sem a "embalagem" da consulta múltipla
+                data = [{"code": 200, "body": data}]
+            for entry in data if isinstance(data, list) else []:
+                if isinstance(entry, dict) and entry.get("code") == 200 and isinstance(entry.get("body"), dict):
+                    items.append(entry["body"])
         return items
 
     def get_item(self, item_id: str) -> dict | None:

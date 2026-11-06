@@ -288,3 +288,21 @@ def test_pergunta_em_analise_volta_quando_liberada(db, ml_env):
     sync()
     db.refresh(q)
     assert q.status == QuestionStatus.NEW
+
+
+@respx.mock
+def test_titulos_em_formato_inesperado_nao_derrubam_a_leitura(db, ml_env):
+    connect_ml(db)
+    routes = ml_fake.install(respx.mock)
+    routes["items"].mock(return_value=httpx.Response(200, json={"message": "formato diferente"}))
+    run = sync()
+    assert run.status == SyncStatus.OK, run.error
+
+
+def test_erro_inesperado_mostra_tipo_e_local():
+    from app.sync.common import describe_unexpected
+    try:
+        {}["x"]
+    except KeyError as exc:
+        text = describe_unexpected(exc)
+    assert text.startswith("KeyError") and "'x'" in text

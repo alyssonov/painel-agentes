@@ -25,6 +25,7 @@ from app.models import Action, MarketplaceFee, Order, Question, SyncRun
 from app.models.enums import ActionStatus, ActionType, Channel, Provider, QuestionStatus, SyncStatus
 from app.sync.common import (
     SyncAlreadyRunning,
+    describe_unexpected,
     finish_run,
     get_cursor,
     mark_ok,
@@ -71,9 +72,9 @@ def run_ml_sync(session_factory: sessionmaker[Session],
     except (IntegrationError, NotConnected) as exc:
         status, error = SyncStatus.ERROR, str(exc)
         record_failure(session_factory, Provider.ML, exc)
-    except Exception:  # noqa: BLE001 - qualquer erro vira alerta, nunca derruba o worker
+    except Exception as exc:  # noqa: BLE001 - qualquer erro vira alerta, nunca derruba o worker
         logger.exception("Erro inesperado na sincronização do Mercado Livre")
-        status, error = SyncStatus.ERROR, "Erro inesperado ao ler o Mercado Livre (detalhes no log do sistema)."
+        status, error = SyncStatus.ERROR, f"Erro inesperado ao ler o Mercado Livre: {describe_unexpected(exc)}"
         record_failure(session_factory, Provider.ML, IntegrationError(error))
     return finish_run(session_factory, run.id, Provider.ML, status, counts, error)
 
@@ -147,7 +148,11 @@ def sync_questions(db: Session, client: MLClient, account, seller_id: str, start
     db.flush()
 
     if titles_needed:
-        titles = {i.get("id"): i.get("title") for i in client.get_items(sorted(titles_needed))}
+        try:
+            titles = {i.get("id"): i.get("title") for i in client.get_items(sorted(titles_needed))}
+        except IntegrationError as exc:  # sem os títulos, as perguntas entram assim mesmo
+            logger.warning("Não foi possível ler os títulos dos anúncios: %s", exc)
+            titles = {}
         for question in db.scalars(select(Question).where(
                 Question.channel == Channel.ML, Question.listing_external_id.in_(titles_needed))):
             question.listing_title = titles.get(question.listing_external_id) or question.listing_title

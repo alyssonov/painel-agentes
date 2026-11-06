@@ -85,3 +85,17 @@ def get_cursor(account, key: str) -> datetime | None:
 
 def set_cursor(account, key: str, value: datetime) -> None:
     account.extra = {**(account.extra or {}), key: value.isoformat()}
+
+
+def describe_unexpected(exc: Exception) -> str:
+    """Resumo curto de um erro inesperado para mostrar no painel (tipo + onde aconteceu).
+
+    Não inclui valores de variáveis nem tokens: só o tipo do erro, a mensagem
+    curta e o arquivo/linha do código onde aconteceu — o suficiente para o suporte.
+    """
+    import traceback
+
+    frames = [f for f in traceback.extract_tb(exc.__traceback__) if "/app/" in f.filename.replace("\\", "/")]
+    where = f" em {frames[-1].filename.replace(chr(92), '/').split('/app/')[-1]}:{frames[-1].lineno}" if frames else ""
+    message = str(exc).split("\n")[0][:160]
+    return f"{type(exc).__name__}{where} — {message}"
