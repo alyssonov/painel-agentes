@@ -233,3 +233,32 @@ def test_desconectar(logged_client, ml_env, db):
     account = db.scalar(select(IntegrationAccount).where(IntegrationAccount.provider == Provider.ML,
                                                          IntegrationAccount.is_demo.is_(False)))
     assert account.access_token_enc is None and account.status == IntegrationStatus.DISCONNECTED
+
+
+@respx.mock
+def test_pergunta_respondida_direto_no_ml_sai_da_fila(db, ml_env):
+    """Pergunta antiga que estava aberta no painel e foi respondida direto no Mercado Livre."""
+    from datetime import datetime
+
+    from app.core import actions
+    from app.models import Action
+    from app.models.enums import ActionStatus
+    connect_ml(db)
+    old = Question(channel=Channel.ML, external_id="7777", listing_external_id="MLB1", text="Antiga",
+                   asked_at=datetime(2026, 10, 1, 12), status=QuestionStatus.PROPOSED)
+    db.add(old)
+    db.commit()
+    action = actions.propose(db, agent_slug="perguntas", type="responder_pergunta", channel=Channel.ML,
+                             target_type="pergunta", target_id=old.id, payload={"text": "x"})
+    db.commit()
+    ml_fake.install(respx.mock)
+    route = respx.get(f"{ml_fake.BASE_URL}/questions/7777").mock(return_value=httpx.Response(200, json={
+        "id": 7777, "item_id": "MLB1", "status": "ANSWERED", "text": "Antiga",
+        "date_created": "2026-10-01T09:00:00.000-03:00",
+        "answer": {"text": "Respondi pelo app", "date_created": "2026-11-06T08:00:00.000-03:00"}}))
+    assert sync().status == SyncStatus.OK
+    assert route.call_count == 1
+    db.expire_all()
+    assert db.get(Question, old.id).status == QuestionStatus.ANSWERED
+    assert db.get(Question, old.id).answer_text == "Respondi pelo app"
+    assert db.get(Action, action.id).status == ActionStatus.REJECTED

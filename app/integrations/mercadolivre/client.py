@@ -11,6 +11,7 @@ Documentação oficial consultada em 06/11/2026 (via busca; o portal recusa leit
 Endpoints usados (todos GET):
   /users/me                         conta do vendedor e reputação
   /questions/search?seller_id=...   perguntas (api_version=4)
+  /questions/{id}                   situação atual de uma pergunta
   /items?ids=...                    títulos dos anúncios (até 20 por chamada)
   /items/{id}                       ficha do anúncio (preço, estoque, atributos)
   /items/{id}/description           descrição do anúncio
@@ -58,6 +59,10 @@ class MLClient(ReadOnlyApiClient):
             total = data.get("total")
             if not questions or len(questions) < QUESTIONS_PAGE or (total is not None and offset >= int(total)):
                 return
+
+    def get_question(self, question_id: str) -> dict | None:
+        """GET /questions/{id} — situação atual de uma pergunta (api_version=4)."""
+        return self._get(f"/questions/{question_id}", {"api_version": 4})
 
     def get_items(self, item_ids: list[str]) -> list[dict]:
         """GET /items?ids=... — dados básicos dos anúncios (em lotes de 20)."""

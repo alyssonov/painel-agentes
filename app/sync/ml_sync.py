@@ -21,8 +21,8 @@ from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
 from app.integrations.mercadolivre.client import MLClient
 from app.integrations.mercadolivre.mapping import order_fee_cents, order_refs, question_status, reputation_label
 from app.integrations.olist.dates import parse_olist_datetime as parse_datetime
-from app.models import MarketplaceFee, Order, Question, SyncRun
-from app.models.enums import Channel, Provider, QuestionStatus, SyncStatus
+from app.models import Action, MarketplaceFee, Order, Question, SyncRun
+from app.models.enums import ActionStatus, ActionType, Channel, Provider, QuestionStatus, SyncStatus
 from app.sync.common import (
     SyncAlreadyRunning,
     finish_run,
@@ -98,12 +98,24 @@ def sync_questions(db: Session, client: MLClient, account, seller_id: str, start
     # 1) Todas as que ainda esperam resposta.
     for q in client.iter_questions(seller_id, status="UNANSWERED"):
         seen[str(q.get("id"))] = q
+    unanswered_ids = set(seen)
     # 2) As mais recentes de qualquer situação, até chegar no período já lido.
     for q in client.iter_questions(seller_id):
         asked = parse_datetime(q.get("date_created"))
         if asked and asked < oldest:
             break
         seen[str(q.get("id"))] = q
+    # 3) Perguntas que o painel acha que estão abertas, mas que não estão mais
+    #    "sem resposta" no Mercado Livre (ex.: respondidas direto lá): confere uma a uma.
+    open_local = db.scalars(select(Question).where(
+        Question.channel == Channel.ML, Question.is_demo.is_(False),
+        Question.status.in_([QuestionStatus.NEW, QuestionStatus.PROPOSED, QuestionStatus.HUMAN])))
+    for question in open_local:
+        if question.external_id in unanswered_ids or question.external_id in seen:
+            continue
+        current = client.get_question(question.external_id)
+        if current:
+            seen[question.external_id] = current
 
     titles_needed: set[str] = set()
     count = 0
@@ -138,9 +150,24 @@ def sync_questions(db: Session, client: MLClient, account, seller_id: str, start
         for question in db.scalars(select(Question).where(
                 Question.channel == Channel.ML, Question.listing_external_id.in_(titles_needed))):
             question.listing_title = titles.get(question.listing_external_id) or question.listing_title
+    _close_stale_suggestions(db)
     set_cursor(account, "cursor_perguntas", started)
     db.commit()
     return count
+
+
+def _close_stale_suggestions(db: Session) -> None:
+    """Sugestões na fila de perguntas que já foram respondidas (ou fechadas) no marketplace saem da fila."""
+    from app.core import actions  # import local: o gateway só é usado aqui para descartar (nada é enviado)
+
+    pending = db.scalars(select(Action).where(
+        Action.type == ActionType.ANSWER_QUESTION,
+        Action.status.in_([ActionStatus.PENDING, ActionStatus.FAILED])))
+    for action in pending:
+        question = db.get(Question, int(action.target_id))
+        if question is not None and question.status in (QuestionStatus.ANSWERED, QuestionStatus.CLOSED):
+            actions.reject(db, action, actor="system",
+                           reason="Respondida (ou encerrada) direto no Mercado Livre")
 
 
 def sync_fees(db: Session, client: MLClient, account, seller_id: str, started) -> int:
