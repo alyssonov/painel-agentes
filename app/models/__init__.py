@@ -1,7 +1,8 @@
 """Tabelas do banco. Importar este pacote registra todas no metadata (usado pelo Alembic)."""
 
+from app.models.action import Action
 from app.models.agent import Agent, AgentRun
-from app.models.ai import AiUsage
+from app.models.ai import AiCache, AiUsage
 from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.catalog import Product, StockSnapshot
@@ -15,6 +16,8 @@ from app.models.sync import SyncRun
 from app.models.user import User
 
 __all__ = [
+    "Action",
+    "AiCache",
     "Agent",
     "AgentRun",
     "AiUsage",

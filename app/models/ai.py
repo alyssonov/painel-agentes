@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, utcnow
@@ -23,3 +23,16 @@ class AiUsage(Base):
     cost_brl_millicents: Mapped[int] = mapped_column(Integer, default=0)
     cache_hit: Mapped[bool] = mapped_column(default=False)
     is_demo: Mapped[bool] = mapped_column(default=False)
+
+
+class AiCache(Base):
+    """Respostas da IA guardadas para reaproveitar perguntas repetidas (economia)."""
+
+    __tablename__ = "ai_cache"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(64), unique=True)  # hash do modelo + entrada
+    task: Mapped[str] = mapped_column(String(60))
+    response: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)

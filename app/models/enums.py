@@ -56,6 +56,7 @@ class QuestionStatus(StrEnum):
     NEW = "nova"
     PROPOSED = "proposta"  # resposta sugerida aguardando aprovação
     ANSWERED = "respondida"
+    SIMULATED = "respondida_simulacao"  # aprovada no modo simulação: nada foi enviado
     HUMAN = "humano"  # encaminhada para uma pessoa responder
     CLOSED = "encerrada"  # apagada, banida ou fechada sem resposta no marketplace
 
@@ -85,3 +86,15 @@ class SyncStatus(StrEnum):
     RUNNING = "rodando"
     OK = "ok"
     ERROR = "erro"
+
+
+class ActionType(StrEnum):
+    ANSWER_QUESTION = "responder_pergunta"
+
+
+class ActionStatus(StrEnum):
+    PENDING = "aguardando"  # esperando aprovação no painel
+    REJECTED = "descartada"
+    EXECUTED = "executada"
+    SIMULATED = "simulada"  # aprovada no modo simulação: nada foi enviado de verdade
+    FAILED = "falhou"

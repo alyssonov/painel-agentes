@@ -48,6 +48,10 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = Field(default="", repr=False)
     ai_daily_budget_brl: float = 10.0
+    # Cotação usada só para ESTIMAR o gasto em reais (a cobrança é em dólar).
+    usd_brl_rate: float = 5.50
+    # De quantos em quantos minutos o Respondedor de perguntas olha a fila.
+    agent_questions_minutes: int = 3
 
     @field_validator("secret_key")
     @classmethod

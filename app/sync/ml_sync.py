@@ -116,8 +116,9 @@ def sync_questions(db: Session, client: MLClient, account, seller_id: str, start
             question = Question(channel=Channel.ML, external_id=qid, text=q.get("text") or "",
                                 asked_at=parse_datetime(q.get("date_created")) or started, status=new_status)
             db.add(question)
-        elif new_status == QuestionStatus.NEW and question.status in (QuestionStatus.PROPOSED, QuestionStatus.HUMAN):
-            pass  # já está na fila do painel: mantém a situação de lá
+        elif new_status == QuestionStatus.NEW and question.status in (
+                QuestionStatus.PROPOSED, QuestionStatus.HUMAN, QuestionStatus.SIMULATED, QuestionStatus.CLOSED):
+            pass  # já tratada no painel (fila, simulação ou tirada da fila): mantém a situação de lá
         else:
             question.status = new_status
         question.text = q.get("text") or question.text

@@ -6,12 +6,15 @@ junto com o painel.
 Tarefas agendadas:
 - Fase 1: no modo simulação, mantém os dados fictícios do dia em dia.
 - Fase 2: lê o Olist (somente leitura) a cada OLIST_SYNC_MINUTES minutos.
-- Fase 3: lê o Mercado Livre (perguntas, reputação, taxas) a cada ML_SYNC_MINUTES.
+- Fase 3: lê o Mercado Livre (perguntas, reputação, taxas) a cada ML_SYNC_MINUTES
+  e roda o Respondedor de perguntas a cada AGENT_QUESTIONS_MINUTES.
 """
 
 import logging
 
 from apscheduler.schedulers.blocking import BlockingScheduler
+
+from app.agents.questions import run_questions_agent
 
 from app.config import get_settings
 from app.core.db import get_sessionmaker
@@ -48,6 +51,13 @@ def job_sync_ml() -> None:
         logger.info("Mercado Livre: sincronização %s %s", run.status, run.counts)
 
 
+def job_agent_questions() -> None:
+    """Agente 1: gera sugestões de resposta (nada é enviado sem aprovação)."""
+    run = run_questions_agent(get_sessionmaker())
+    if run is not None:
+        logger.info("Respondedor de perguntas: %s — %s", run.status, run.summary)
+
+
 def main() -> None:
     settings = get_settings()
     settings.check_ready()
@@ -60,6 +70,8 @@ def main() -> None:
                       max_instances=1, coalesce=True)
     scheduler.add_job(job_sync_ml, "interval", minutes=settings.ml_sync_minutes, id="sync_ml",
                       max_instances=1, coalesce=True)
+    scheduler.add_job(job_agent_questions, "interval", minutes=settings.agent_questions_minutes,
+                      id="agent_questions", max_instances=1, coalesce=True)
     logger.info("Worker iniciado (DRY_RUN=%s). Ctrl+C para parar.", settings.dry_run)
     try:
         job_sync_olist()

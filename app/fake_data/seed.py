@@ -21,6 +21,7 @@ from app.config import get_settings
 from app.core import audit
 from app.core.timeutil import local_day_bounds_utc, local_today, utcnow
 from app.models import (
+    Action,
     Agent,
     AgentRun,
     AiUsage,
@@ -33,6 +34,7 @@ from app.models import (
     StockSnapshot,
 )
 from app.models.enums import (
+    ActionType,
     AlertSeverity,
     Channel,
     IntegrationStatus,
@@ -110,6 +112,9 @@ def clear_demo(db: Session, *, pause_agents: bool = False) -> None:
     pause_agents: usado ao conectar uma conta real — os agentes voltam a
     "Pausado" (na simulação eles aparecem ativos só para demonstração).
     """
+    demo_question_ids = [str(i) for i in db.scalars(select(Question.id).where(Question.is_demo.is_(True)))]
+    if demo_question_ids:
+        db.execute(delete(Action).where(Action.target_type == "pergunta", Action.target_id.in_(demo_question_ids)))
     demo_order_ids = select(Order.id).where(Order.is_demo.is_(True))
     db.execute(delete(OrderItem).where(OrderItem.order_id.in_(demo_order_ids)))
     db.execute(delete(Order).where(Order.is_demo.is_(True)))
@@ -241,18 +246,32 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
     statuses_today = ([QuestionStatus.ANSWERED] * 11 + [QuestionStatus.PROPOSED] * 2
                       + [QuestionStatus.HUMAN, QuestionStatus.NEW])
     for i, status in enumerate(statuses_today):
-        text, answer = rng.choice(_QUESTIONS)
+        # Perguntas comuns (com resposta); a de desconto só para "precisa de você".
+        text, answer = rng.choice([qa for qa in _QUESTIONS if qa[1]])
         if status == QuestionStatus.HUMAN:
             text, answer = _QUESTIONS[7]
         product = rng.choice(products)
         asked = day_start + timedelta(seconds=elapsed * (i + rng.random()) / len(statuses_today))
-        db.add(Question(channel=rng.choice(list(Channel)), external_id=f"demo-q-{i}",
+        db.add(Question(channel=rng.choice([Channel.ML, Channel.SHOPEE]), external_id=f"demo-q-{i}",
                         listing_external_id=f"demo-{product.sku}", listing_title=product.name,
                         text=text, asked_at=asked, status=status,
                         answer_text=answer if status == QuestionStatus.ANSWERED else None,
                         answered_at=asked + timedelta(minutes=rng.randint(2, 25))
                         if status == QuestionStatus.ANSWERED else None,
                         is_demo=True))
+
+    db.flush()
+    # Sugestões do agente para as perguntas na fila (para demonstrar a aprovação).
+    for question in db.scalars(select(Question).where(
+            Question.is_demo.is_(True), Question.status.in_([QuestionStatus.PROPOSED, QuestionStatus.HUMAN]))):
+        human = question.status == QuestionStatus.HUMAN
+        suggestion = "" if human else next((a for t, a in _QUESTIONS if t == question.text and a), "")
+        db.add(Action(agent_slug="perguntas", type=ActionType.ANSWER_QUESTION, channel=question.channel,
+                      target_type="pergunta", target_id=str(question.id),
+                      payload={"text": suggestion}, original_payload={"text": suggestion},
+                      confidence="baixa" if human else "alta", topic="negociacao" if human else "produto",
+                      reason="Pedido de desconto ou negociação: precisa de uma pessoa." if human else
+                      "A resposta está na ficha do produto.", needs_human=human, dry_run=True))
 
     # --- Alertas do dia -----------------------------------------------------
     db.add_all([

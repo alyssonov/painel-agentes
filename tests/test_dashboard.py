@@ -33,9 +33,9 @@ def test_filtro_invalido_mostra_todos(db):
 
 
 def test_secao_futura_mostra_aviso(logged_client):
-    r = logged_client.get("/perguntas")
+    r = logged_client.get("/anuncios")
     assert r.status_code == 200
-    assert "Chega na fase 3" in r.text
+    assert "Chega na fase 7" in r.text
 
 
 def test_numeros_da_visao_geral(db):

@@ -370,3 +370,29 @@ e packs.
 - Tabela nova: `marketplace_fees`.
 - **A conferir no primeiro uso real:** se a soma `sale_fee × quantidade`
   bate com a tarifa mostrada na tela de vendas do Mercado Livre.
+
+## 13. Fase 3 — etapa 2: Agente 1 (Respondedor de perguntas)
+
+- **IA** (`app/ai/`): `models.py` define modelo e esforço por tarefa
+  (respostas: `claude-haiku-5-5`, esforço `low`; anúncios/análises:
+  `claude-sonnet-5-5`) e os preços para estimar custo. `client.py` faz toda
+  chamada: teto diário → cache (`ai_cache`, 7 dias) → SDK oficial com saída
+  JSON por esquema (`output_config.format`) e `cache_control` no prompt fixo →
+  registro em `ai_usage`. Recusa do modelo → pergunta vai para uma pessoa.
+- **ActionGateway** (`app/core/actions.py`): `propose` → `approve`
+  (opcionalmente editado) / `reject`; executa só aprovadas; `DRY_RUN` →
+  status `simulada` sem chamar nada; falha no envio → `falhou` (pode tentar de
+  novo); tudo no `audit_log`. Os módulos de escrita (ex.:
+  `mercadolivre/writes.py`, `POST /answers`) só são importados aqui — um
+  teste lê o código e garante.
+- **Agente** (`app/agents/questions.py`): regras fixas antes da IA
+  (desconto/negociação → pessoa, sem gastar IA); contexto mínimo (ficha do
+  anúncio, trecho da descrição, estoque do Olist pelo SKU do anúncio, regras
+  da loja); resposta com `confianca` e `assunto`; confiança baixa, assunto
+  delicado ou dado de contato → "Precisa de você". Modo automático aprova só
+  confiança alta. Máx. 15 perguntas por rodada, a cada
+  `AGENT_QUESTIONS_MINUTES`.
+- **Painel**: `/perguntas` (fila com Aprovar / Editar / Responder eu mesmo /
+  Tirar da fila, e "Respondidas hoje") e `/agentes` (ativar/pausar, manual/
+  automático, regras das respostas, métrica do dia, gasto de IA).
+- Tabelas novas: `actions`, `ai_cache`.

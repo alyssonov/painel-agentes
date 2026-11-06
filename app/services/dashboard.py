@@ -222,7 +222,8 @@ def overview(db: Session) -> Overview:
     q_today = db.scalar(select(func.count()).select_from(Question).where(
         Question.asked_at >= start, Question.asked_at < end))
     q_answered = db.scalar(select(func.count()).select_from(Question).where(
-        Question.asked_at >= start, Question.asked_at < end, Question.status == QuestionStatus.ANSWERED))
+        Question.asked_at >= start, Question.asked_at < end,
+        Question.status.in_([QuestionStatus.ANSWERED, QuestionStatus.SIMULATED])))
     q_waiting = db.scalar(select(func.count()).select_from(Question).where(
         Question.status.in_([QuestionStatus.NEW, QuestionStatus.PROPOSED, QuestionStatus.HUMAN])))
 

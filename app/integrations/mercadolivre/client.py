@@ -12,6 +12,8 @@ Endpoints usados (todos GET):
   /users/me                         conta do vendedor e reputação
   /questions/search?seller_id=...   perguntas (api_version=4)
   /items?ids=...                    títulos dos anúncios (até 20 por chamada)
+  /items/{id}                       ficha do anúncio (preço, estoque, atributos)
+  /items/{id}/description           descrição do anúncio
   /orders/search?seller=...         vendas, com a taxa (sale_fee) de cada item
 """
 
@@ -65,6 +67,15 @@ class MLClient(ReadOnlyApiClient):
             data = self._get("/items", {"ids": ",".join(batch), "attributes": "id,title,permalink,price"}) or []
             items += [entry.get("body") or {} for entry in data if entry.get("code") == 200]
         return items
+
+    def get_item(self, item_id: str) -> dict | None:
+        """GET /items/{id} — dados do anúncio usados para responder perguntas."""
+        return self._get(f"/items/{item_id}")
+
+    def get_item_description(self, item_id: str) -> str:
+        """GET /items/{id}/description — texto da descrição (vazio se não houver)."""
+        data = self._get(f"/items/{item_id}/description") or {}
+        return data.get("plain_text") or ""
 
     def iter_orders(self, seller_id: int | str, *, created_from: datetime) -> Iterator[dict]:
         """GET /orders/search — vendas criadas desde a data (UTC)."""

@@ -6,8 +6,8 @@ relatórios e mais. O **Olist ERP é a fonte da verdade**: o sistema só lê do
 Olist e nunca mexe em estoque ou nota fiscal.
 
 > **Situação atual: Fase 3 (em andamento).** Login, Visão geral, modo
-> simulação, Olist ERP (somente leitura) e Mercado Livre (leitura de perguntas,
-> reputação e taxas). Shopee e o agente que responde perguntas vêm a seguir.
+> simulação, Olist ERP (somente leitura), Mercado Livre e o **Respondedor de
+> perguntas** com aprovação manual. A Shopee vem a seguir.
 > Veja `docs/ARQUITETURA.md`.
 
 ## Requisitos
@@ -141,6 +141,26 @@ Bom saber:
 
 O painel passa a ler, a cada 5 minutos: perguntas, reputação e a taxa de cada
 venda (que entra na margem real). Nesta etapa **nada é respondido**.
+
+## Respondedor de perguntas (Agente 1)
+
+1. Crie uma chave em console.anthropic.com (organização da empresa, cartão em
+   Billing e **limite mensal de gasto**) e coloque no `.env`:
+   `ANTHROPIC_API_KEY=...`.
+2. Em **Agentes**, clique em **Ativar** no Respondedor de perguntas e ajuste
+   as **Regras das respostas** (nome da loja, tom, prazo de envio, garantia).
+3. A cada 3 minutos ele lê as perguntas novas e sugere uma resposta usando a
+   ficha do anúncio, o estoque do Olist e as regras da loja.
+4. Em **Perguntas**, você **Aprova**, **Edita** ou **Responde você mesmo**.
+   Pedidos de desconto/negociação, confiança baixa ou assuntos fora da ficha
+   ficam marcados como **Precisa de você**.
+5. Modo **Automático** (opcional, em Agentes): só respostas com confiança
+   **alta** saem sozinhas; o resto continua esperando você.
+
+Custo: usa o modelo mais barato (Claude Haiku), com cache de perguntas
+repetidas e teto diário (`AI_DAILY_BUDGET_BRL`). O gasto estimado do dia
+aparece na Visão geral e em Agentes. Com `DRY_RUN=true`, as respostas
+aprovadas **não são enviadas** (ficam marcadas como simulação).
 
 ## Modo simulação (`DRY_RUN`)
 

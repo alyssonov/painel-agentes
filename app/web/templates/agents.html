@@ -1,0 +1,67 @@
+{% extends "app_layout.html" %}
+{% block title %}Agentes{% endblock %}
+{% block page_title %}Agentes{% endblock %}
+{% block page_subtitle %}<p class="muted">Gasto com IA hoje: R$ {{ '%.2f'|format(ai_spent_brl)|replace('.', ',') }} de R$ {{ '%.2f'|format(ai_budget_brl)|replace('.', ',') }}</p>{% endblock %}
+{% block content %}
+<div class="agent-grid">
+{% for c in cards %}
+  {% set a = c.agent %}
+  <section class="card agent-card{% if not c.implemented %} is-soon{% endif %}" aria-labelledby="ag-{{ a.slug }}">
+    <div class="integration-head">
+      <h2 id="ag-{{ a.slug }}" class="card-title">{{ a.name }}</h2>
+      {% if not c.implemented %}<span class="badge badge-pausado">Chega na fase {{ c.phase }}</span>
+      {% elif a.enabled %}<span class="badge">Ativo</span>{% else %}<span class="badge badge-pausado">Pausado</span>{% endif %}
+    </div>
+    <p class="muted">{{ a.description }}</p>
+
+    {% if c.implemented %}
+      <dl class="facts">
+        <div><dt>Hoje</dt><dd>{{ c.metric }}</dd></div>
+        <div><dt>Última rodada</dt><dd>{{ c.last_run or '—' }}{% if c.run_status == 'erro' %} (com erro){% endif %}</dd></div>
+      </dl>
+
+      {% if a.slug == 'perguntas' %}
+        {% if not ai_configured %}<p class="notice small">Falta a chave da Claude API (<code>ANTHROPIC_API_KEY</code> no <code>.env</code>). Sem ela o agente não sugere respostas.</p>{% endif %}
+        {% if not ml_connected %}<p class="notice small">Conecte o Mercado Livre em <a class="link" href="/integracoes">Contas conectadas</a>.</p>{% endif %}
+      {% endif %}
+
+      <div class="actions">
+        <form method="post" action="/agentes/{{ a.slug }}/ativo">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <input type="hidden" name="enabled" value="{{ '0' if a.enabled else '1' }}">
+          <button class="btn {{ 'btn-secondary' if a.enabled else 'btn-primary' }}" type="submit">{{ 'Pausar' if a.enabled else 'Ativar' }}</button>
+        </form>
+        <form method="post" action="/agentes/{{ a.slug }}/modo" class="segmented-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="segmented" role="group" aria-label="Modo">
+            <button class="seg{% if a.mode == 'manual' %} is-active{% endif %}" name="mode" value="manual" type="submit"
+                    aria-pressed="{{ 'true' if a.mode == 'manual' else 'false' }}">Manual</button>
+            <button class="seg{% if a.mode == 'automatico' %} is-active{% endif %}" name="mode" value="automatico" type="submit"
+                    aria-pressed="{{ 'true' if a.mode == 'automatico' else 'false' }}">Automático</button>
+          </div>
+        </form>
+      </div>
+      <p class="muted small">
+        {% if a.mode == 'automatico' %}Automático: respostas com <strong>confiança alta</strong> saem sozinhas; o resto espera você.
+        {% else %}Manual: toda resposta espera a sua aprovação em <a class="link" href="/perguntas">Perguntas</a>.{% endif %}
+        Roda a cada {{ interval }} minutos.
+      </p>
+
+      {% if a.slug == 'perguntas' %}
+      <details class="rules">
+        <summary>Regras das respostas</summary>
+        <form method="post" action="/agentes/perguntas/regras" class="rules-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          {% for key, (label, value, size) in rules.items() %}
+          <label class="field"><span>{{ label }}</span>
+            <input type="text" name="{{ key }}" value="{{ value }}" maxlength="{{ size }}"></label>
+          {% endfor %}
+          <button class="btn btn-primary" type="submit">Salvar regras</button>
+        </form>
+      </details>
+      {% endif %}
+    {% endif %}
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

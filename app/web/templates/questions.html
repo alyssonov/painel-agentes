@@ -1,0 +1,94 @@
+{% extends "app_layout.html" %}
+{% block title %}Perguntas{% endblock %}
+{% block page_title %}Perguntas{% endblock %}
+{% block page_subtitle %}<p class="muted">O agente sugere as respostas. Nada é enviado ao cliente sem a sua aprovação.</p>{% endblock %}
+{% block content %}
+
+<section class="card" aria-labelledby="fila-title">
+  <div class="card-head">
+    <h2 id="fila-title" class="card-title">Aguardando você <span class="count">{{ queue|length + unhandled|length }}</span></h2>
+  </div>
+
+  {% if not queue and not unhandled %}
+    <p class="muted">Nenhuma pergunta esperando resposta.</p>
+  {% endif %}
+
+  <div class="qlist">
+  {% for item in queue %}
+    {% set a = item.action %}{% set q = item.q %}
+    <article class="qcard{% if a.needs_human %} qcard-human{% endif %}" data-card>
+      <div class="qcard-top">
+        <span class="chip chip-{{ q.channel }}">{{ item.channel_label }}</span>
+        <span class="muted small">{{ item.asked }}</span>
+        {% if a.status == 'falhou' %}<span class="badge badge-erro">Não foi enviada</span>
+        {% elif a.needs_human %}<span class="badge badge-erro">Precisa de você</span>
+        {% else %}<span class="badge conf-{{ a.confidence }}">Confiança {{ a.confidence }}</span>{% endif %}
+      </div>
+      {% if q.listing_title %}<p class="qcard-product">{{ q.listing_title }}</p>{% endif %}
+      <p class="qcard-question">“{{ q.text }}”</p>
+      {% if a.reason %}<p class="{{ 'qcard-reason' if a.needs_human else 'muted small' }}">{{ a.reason }}</p>{% endif %}
+      {% if a.status == 'falhou' and a.result %}<p class="form-error">{{ a.result }}</p>{% endif %}
+      <form method="post" action="/perguntas/acao/{{ a.id }}/enviar" class="qcard-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="sr-only" for="resp-{{ a.id }}">Resposta</label>
+        <textarea id="resp-{{ a.id }}" name="text" rows="3" maxlength="{{ max_chars }}"
+          {% if a.payload.get('text') %}readonly{% endif %}
+          placeholder="Escreva a resposta para o cliente">{{ a.payload.get('text', '') }}</textarea>
+        <div class="qcard-actions">
+          <button class="btn btn-primary" type="submit" data-enviar>{{ 'Aprovar' if a.payload.get('text') else 'Enviar resposta' }}</button>
+          {% if a.payload.get('text') %}
+          <button class="btn btn-secondary" type="button" data-acao="editar">Editar</button>
+          {% endif %}
+          <button class="btn btn-secondary" type="button" data-acao="eu-mesmo">Responder eu mesmo</button>
+          <span class="muted small" data-contador>{{ a.payload.get('text', '')|length }} / {{ max_chars }}</span>
+        </div>
+      </form>
+      <form method="post" action="/perguntas/acao/{{ a.id }}/ignorar" class="qcard-ignore">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost small" type="submit">Tirar da fila (vou responder no marketplace)</button>
+      </form>
+    </article>
+  {% endfor %}
+
+  {% for item in unhandled %}
+    {% set q = item.q %}
+    <article class="qcard" data-card>
+      <div class="qcard-top">
+        <span class="chip chip-{{ q.channel }}">{{ item.channel_label }}</span>
+        <span class="muted small">{{ item.asked }}</span>
+        <span class="badge badge-pausado">Sem sugestão ainda</span>
+      </div>
+      {% if q.listing_title %}<p class="qcard-product">{{ q.listing_title }}</p>{% endif %}
+      <p class="qcard-question">“{{ q.text }}”</p>
+      <form method="post" action="/perguntas/{{ q.id }}/responder" class="qcard-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="sr-only" for="q-{{ q.id }}">Resposta</label>
+        <textarea id="q-{{ q.id }}" name="text" rows="3" maxlength="{{ max_chars }}"
+          placeholder="Escreva a resposta, ou aguarde a sugestão do agente"></textarea>
+        <div class="qcard-actions">
+          <button class="btn btn-primary" type="submit">Enviar resposta</button>
+          <span class="muted small" data-contador>0 / {{ max_chars }}</span>
+        </div>
+      </form>
+    </article>
+  {% endfor %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="hoje-title">
+  <div class="card-head"><h2 id="hoje-title" class="card-title">Respondidas hoje</h2></div>
+  {% if answered %}
+  <ul class="answered">
+    {% for item in answered %}
+    <li>
+      <p class="answered-q"><span class="chip chip-{{ item.q.channel }}">{{ item.channel_label }}</span> “{{ item.q.text }}”</p>
+      <p class="answered-a">{{ item.q.answer_text }}</p>
+      <p class="muted small">às {{ item.at }}{% if item.q.status == 'respondida_simulacao' %} · simulação (não enviada){% endif %}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nenhuma ainda hoje.</p>
+  {% endif %}
+</section>
+{% endblock %}
