@@ -14,6 +14,7 @@ from app.core.timeutil import local_day_bounds_utc, local_today, to_local, utcno
 from app.models import Agent, AgentRun, AiUsage, Alert, IntegrationAccount, Order, OrderItem, Question
 from app.models.enums import (
     CHANNEL_LABELS,
+    KANBAN_COLUMNS,
     KANBAN_LABELS,
     PROVIDER_LABELS,
     AlertSeverity,
@@ -36,6 +37,7 @@ class IntegrationView:
     label: str
     status: str
     detail: str
+    is_real: bool = False  # conta de verdade (não a da simulação), com token
 
 
 @dataclass
@@ -86,6 +88,9 @@ class Overview:
     agents: list[AgentView]
     ai_cost_today_cents: int
     ai_budget_cents: int
+    # true quando há vendas de hoje cuja taxa do marketplace ainda não é conhecida
+    fees_missing: bool = False
+    tax_configured: bool = True
 
 
 def order_margin(order: Order, tax_rate_pct: float) -> MarginResult:
@@ -101,9 +106,11 @@ def order_margin(order: Order, tax_rate_pct: float) -> MarginResult:
 
 
 def _orders_between(db: Session, start: datetime, end: datetime, channel: str | None = None) -> list[Order]:
+    """Pedidos do período, sem os cancelados."""
     stmt = (
         select(Order)
-        .where(Order.ordered_at >= start, Order.ordered_at < end)
+        .where(Order.ordered_at >= start, Order.ordered_at < end,
+               Order.kanban_status != KanbanStatus.CANCELLED)
         .options(selectinload(Order.items).selectinload(OrderItem.product))
         .order_by(Order.ordered_at.desc())
     )
@@ -114,11 +121,14 @@ def _orders_between(db: Session, start: datetime, end: datetime, channel: str | 
 
 def integrations(db: Session) -> list[IntegrationView]:
     """Status das contas conectadas, na ordem do menu lateral."""
-    accounts = {a.provider: a for a in db.scalars(select(IntegrationAccount))}
+    # Conta real tem prioridade sobre a conta fictícia da simulação.
+    accounts: dict[str, IntegrationAccount] = {}
+    for account in db.scalars(select(IntegrationAccount).order_by(IntegrationAccount.is_demo.desc())):
+        accounts[account.provider] = account
     views = []
     for provider in (Provider.ML, Provider.SHOPEE, Provider.OLIST):
         account = accounts.get(provider)
-        if account is None:
+        if account is None or (not account.is_demo and not account.access_token_enc):
             views.append(IntegrationView(provider, PROVIDER_LABELS[provider],
                                          IntegrationStatus.DISCONNECTED, "Não conectado"))
             continue
@@ -127,17 +137,20 @@ def integrations(db: Session) -> list[IntegrationView]:
             IntegrationStatus.ERROR: "Com erro",
             IntegrationStatus.DISCONNECTED: "Desconectado",
         }.get(account.status, account.status)
-        views.append(IntegrationView(provider, PROVIDER_LABELS[provider], account.status, detail))
+        if account.status == IntegrationStatus.OK and account.last_ok_at and not account.is_demo:
+            detail = f"Atualizado {to_local(account.last_ok_at).strftime('%H:%M')}"
+        views.append(IntegrationView(provider, PROVIDER_LABELS[provider], account.status, detail,
+                                     is_real=not account.is_demo))
     return views
 
 
 def kanban(db: Session, channel: str | None = None) -> list[KanbanColumn]:
     """Quadro 'Pedidos de hoje', com filtro opcional por marketplace."""
-    if channel not in (None, Channel.ML, Channel.SHOPEE):
+    if channel not in (None, Channel.ML, Channel.SHOPEE, Channel.OTHER):
         channel = None
     start, end = local_day_bounds_utc(local_today())
     tax_rate = float(get_setting(db, "tax_rate_pct") or 0)
-    columns = {status: KanbanColumn(status, KANBAN_LABELS[status]) for status in KanbanStatus}
+    columns = {status: KanbanColumn(status, KANBAN_LABELS[status]) for status in KANBAN_COLUMNS}
     for order in _orders_between(db, start, end, channel):
         first = order.items[0].title if order.items else "Pedido"
         extra = len(order.items) - 1
@@ -201,7 +214,8 @@ def overview(db: Session) -> Overview:
     y_now = min(now - (end - start), start)
     revenue_yesterday = db.scalar(
         select(func.coalesce(func.sum(Order.items_total_cents), 0)).where(
-            Order.ordered_at >= y_start, Order.ordered_at < y_now
+            Order.ordered_at >= y_start, Order.ordered_at < y_now,
+            Order.kanban_status != KanbanStatus.CANCELLED,
         )
     )
 
@@ -212,7 +226,8 @@ def overview(db: Session) -> Overview:
     q_waiting = db.scalar(select(func.count()).select_from(Question).where(
         Question.status.in_([QuestionStatus.NEW, QuestionStatus.PROPOSED, QuestionStatus.HUMAN])))
 
-    accounts = {a.provider: a for a in db.scalars(select(IntegrationAccount))}
+    accounts = {a.provider: a for a in db.scalars(
+        select(IntegrationAccount).order_by(IntegrationAccount.is_demo.desc()))}
     ml, shopee = accounts.get(Provider.ML), accounts.get(Provider.SHOPEE)
     rep_ml = (ml.extra or {}).get("reputation_label") if ml else None
     rating = (shopee.extra or {}).get("rating") if shopee else None
@@ -241,4 +256,6 @@ def overview(db: Session) -> Overview:
         agents=_agents(db),
         ai_cost_today_cents=round((ai_millicents or 0) / 1000),
         ai_budget_cents=round(get_settings().ai_daily_budget_brl * 100),
+        fees_missing=any(not o.fees_known for o in orders_today),
+        tax_configured=tax_rate > 0,
     )

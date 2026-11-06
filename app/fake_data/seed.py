@@ -104,8 +104,12 @@ def _assert_safe_to_seed(db: Session) -> None:
         raise SeedRefused("Existe conta real conectada. A simulação não será carregada por segurança.")
 
 
-def _clear_demo(db: Session) -> None:
-    """Apaga somente o que foi criado pela simulação."""
+def clear_demo(db: Session, *, pause_agents: bool = False) -> None:
+    """Apaga somente o que foi criado pela simulação.
+
+    pause_agents: usado ao conectar uma conta real — os agentes voltam a
+    "Pausado" (na simulação eles aparecem ativos só para demonstração).
+    """
     demo_order_ids = select(Order.id).where(Order.is_demo.is_(True))
     db.execute(delete(OrderItem).where(OrderItem.order_id.in_(demo_order_ids)))
     db.execute(delete(Order).where(Order.is_demo.is_(True)))
@@ -114,6 +118,13 @@ def _clear_demo(db: Session) -> None:
     db.execute(delete(Product).where(Product.is_demo.is_(True)))
     for model in (Question, Alert, AgentRun, AiUsage, IntegrationAccount):
         db.execute(delete(model).where(model.is_demo.is_(True)))
+    if pause_agents:
+        for agent in db.scalars(select(Agent)):
+            agent.enabled = False
+        # A alíquota de exemplo da simulação não vale para a loja real.
+        if get_setting(db, "tax_rate_is_demo"):
+            set_setting(db, "tax_rate_pct", 0.0)
+            set_setting(db, "tax_rate_is_demo", False)
 
 
 def _cents(reais: float) -> int:
@@ -143,7 +154,7 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
     today = local_today()
     rng = random.Random(rng_seed if rng_seed is not None else today.toordinal())
 
-    _clear_demo(db)
+    clear_demo(db)
     db.flush()
 
     # --- Contas conectadas (fictícias) -----------------------------------
@@ -160,6 +171,7 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
 
     if not get_setting(db, "tax_rate_pct"):
         set_setting(db, "tax_rate_pct", DEMO_TAX_RATE_PCT)
+        set_setting(db, "tax_rate_is_demo", True)
 
     # --- Produtos e estoque -----------------------------------------------
     products: list[Product] = []
@@ -186,7 +198,7 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
         order = Order(channel=channel,
                       external_id=f"{'2000' if channel == Channel.ML else '24'}{9000000 + order_counter}",
                       olist_id=f"demo-{order_counter}", customer_short_name=_short_name(rng),
-                      kanban_status=kanban, problem_note=problem, ordered_at=ordered_at, is_demo=True)
+                      kanban_status=kanban, problem_note=problem, ordered_at=ordered_at, fees_known=True, is_demo=True)
         chosen = [only] if only else rng.sample(products, k=rng.choices([1, 2], weights=[80, 20])[0])
         for product in chosen:
             qty = rng.choices([1, 2, 3], weights=[75, 20, 5])[0]

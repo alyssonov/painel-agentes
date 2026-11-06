@@ -1,7 +1,11 @@
-"""Processo dos agentes (agendador). Inicie com `make worker`.
+"""Processo dos agentes (agendador). Inicie com `python tarefas.py worker`.
 
-Fase 1: só mantém os dados de simulação do dia em dia. Os agentes de verdade
-são registrados aqui a partir da Fase 3.
+O `python tarefas.py iniciar` (e o "Iniciar painel.bat") já liga este processo
+junto com o painel.
+
+Tarefas agendadas:
+- Fase 1: no modo simulação, mantém os dados fictícios do dia em dia.
+- Fase 2: lê o Olist (somente leitura) a cada OLIST_SYNC_MINUTES minutos.
 """
 
 import logging
@@ -11,6 +15,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from app.config import get_settings
 from app.core.db import get_sessionmaker
 from app.fake_data.seed import refresh_demo_if_stale
+from app.sync.olist_sync import run_olist_sync
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("worker")
@@ -23,6 +28,17 @@ def job_refresh_demo() -> None:
             logger.info("Dados de simulação do dia gerados.")
 
 
+def job_sync_olist() -> None:
+    """Lê novidades do Olist. Não faz nada se o Olist não estiver conectado.
+
+    Também mantém a autorização viva: cada leitura renova o token quando preciso
+    (o refresh token do Olist vale só 1 dia).
+    """
+    run = run_olist_sync(get_sessionmaker())
+    if run is not None:
+        logger.info("Olist: sincronização %s %s", run.status, run.counts)
+
+
 def main() -> None:
     settings = get_settings()
     settings.check_ready()
@@ -31,8 +47,11 @@ def main() -> None:
         scheduler.add_job(job_refresh_demo, "interval", minutes=15, id="refresh_demo",
                           max_instances=1, coalesce=True)
         job_refresh_demo()
+    scheduler.add_job(job_sync_olist, "interval", minutes=settings.olist_sync_minutes, id="sync_olist",
+                      max_instances=1, coalesce=True)
     logger.info("Worker iniciado (DRY_RUN=%s). Ctrl+C para parar.", settings.dry_run)
     try:
+        job_sync_olist()
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         logger.info("Worker parado.")

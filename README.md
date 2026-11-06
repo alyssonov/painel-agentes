@@ -5,8 +5,8 @@ perguntas, vigiar estoque, conferir notas, calcular a margem real, enviar
 relatórios e mais. O **Olist ERP é a fonte da verdade**: o sistema só lê do
 Olist e nunca mexe em estoque ou nota fiscal.
 
-> **Situação atual: Fase 1.** Login, Visão geral e modo simulação com dados
-> fictícios. As integrações reais chegam a partir da Fase 2.
+> **Situação atual: Fase 2.** Login, Visão geral, modo simulação e conexão
+> com o Olist ERP (somente leitura). Mercado Livre e Shopee chegam na Fase 3.
 > Veja `docs/ARQUITETURA.md`.
 
 ## Requisitos
@@ -101,11 +101,36 @@ python tarefas.py worker
 Na Fase 1 o worker só renova os dados de simulação quando o dia vira. O próprio
 painel também faz isso ao iniciar.
 
+## Conectar o Olist ERP (somente leitura)
+
+1. No Olist: **Menu > Configurações > aba Geral > Aplicativos > + novo
+   aplicativo**. Na URL de redirecionamento, coloque
+   `http://localhost:8000/integracoes/olist/retorno`. Nas permissões, marque
+   só o necessário (pedidos, produtos, estoque, notas fiscais). Salve e copie
+   o Client ID e o Client Secret.
+2. No arquivo `.env` (abra com `notepad .env` no terminal, na pasta do
+   projeto), preencha `OLIST_CLIENT_ID` e `OLIST_CLIENT_SECRET`. **Nunca**
+   envie essas chaves por chat ou e-mail.
+3. Ligue o painel e clique em **Contas conectadas** (canto inferior esquerdo)
+   → **Conectar o Olist**. Entre com o login do Olist e autorize.
+4. A importação começa sozinha (pedidos dos últimos 15 dias, produtos,
+   estoque e notas). Depois, o painel busca novidades a cada 10 minutos
+   enquanto estiver ligado.
+
+Bom saber:
+- A autorização do Olist vale **1 dia sem uso**. Se o painel ficar desligado
+  por mais tempo, aparece um alerta: é só clicar em **Conectar de novo**.
+- Ao conectar, a loja fictícia da simulação é apagada.
+- Em **Contas conectadas** também fica a **alíquota de impostos** usada na
+  margem real (informada pela contabilidade).
+
 ## Modo simulação (`DRY_RUN`)
 
 - Ligado por padrão (`DRY_RUN=true` no `.env`).
 - O painel mostra uma faixa amarela **MODO SIMULAÇÃO** no topo.
-- Usa dados fictícios e **nenhuma** ação real é enviada a clientes ou lojas.
+- **Nenhuma** ação real é enviada a clientes ou lojas.
+- Sem conta conectada, mostra uma loja fictícia. Com o Olist conectado,
+  mostra os dados reais (só leitura) e a faixa avisa isso.
 - Os dados fictícios ficam marcados (`is_demo`) e a simulação se recusa a
   rodar se o `DRY_RUN` estiver desligado ou se houver uma conta real
   conectada.

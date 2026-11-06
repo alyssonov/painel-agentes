@@ -14,8 +14,9 @@
       </a>
       {% endfor %}
     </nav>
-    <div class="accounts">
-      <p class="accounts-title">Contas conectadas</p>
+    <a class="accounts{% if current_path.startswith('/integracoes') %} is-active{% endif %}" href="/integracoes"
+       title="Ver e gerenciar as contas conectadas">
+      <p class="accounts-title">Contas conectadas <span class="accounts-more">Gerenciar</span></p>
       {% for acc in integrations %}
       <div class="account">
         <span class="dot dot-{{ acc.status }}" aria-hidden="true"></span>
@@ -23,7 +24,7 @@
         <span class="account-status">{{ acc.detail }}</span>
       </div>
       {% endfor %}
-    </div>
+    </a>
   </aside>
 
   <main class="content">
@@ -42,6 +43,9 @@
         </form>
       </div>
     </header>
+    {% if flash %}
+    <div class="flash flash-{{ flash.kind }}" role="status">{{ flash.message }}</div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 </div>

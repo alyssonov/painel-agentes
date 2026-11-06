@@ -25,8 +25,14 @@
     <p class="stat-value">{{ ov.avg_margin_pct|pct }}</p>
     {% if ov.loss_orders %}
       <p class="stat-foot down">{{ ov.loss_orders }} venda{{ 's' if ov.loss_orders > 1 }} com prejuízo</p>
-    {% else %}
+    {% elif ov.avg_margin_pct is not none %}
       <p class="stat-foot up">Nenhuma venda com prejuízo</p>
+    {% endif %}
+    {% if ov.fees_missing %}
+      <p class="stat-foot muted">Ainda sem as taxas do marketplace (chegam na Fase 3)</p>
+    {% endif %}
+    {% if not ov.tax_configured %}
+      <p class="stat-foot warn"><a class="link" href="/integracoes#imposto">Informe a alíquota de impostos</a></p>
     {% endif %}
   </article>
 

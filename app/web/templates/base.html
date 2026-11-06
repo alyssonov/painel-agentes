@@ -13,7 +13,11 @@
   {% include "_icons.html" %}
   {% if dry_run %}
   <div class="sim-banner" role="status">
+    {% if real_data %}
+    <strong>MODO SIMULAÇÃO</strong> — mostrando dados reais (só leitura). Nada é enviado aos clientes nem alterado nas lojas.
+    {% else %}
     <strong>MODO SIMULAÇÃO</strong> — dados fictícios. Nada é enviado aos clientes nem alterado nas lojas.
+    {% endif %}
   </div>
   {% endif %}
   {% block body %}{% endblock %}

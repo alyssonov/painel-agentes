@@ -275,7 +275,7 @@ Agentes 3, 7 e 9 **não usam IA** (são cálculos) — custo zero de tokens.
 |---|---|
 | 0 | Esta proposta + `CLAUDE.md` ✅ |
 | 1 | Base, banco, login, Visão geral, modo simulação com dados falsos ✅ |
-| 2 | Olist (OAuth, somente leitura) + painel com dados reais |
+| 2 | Olist (OAuth, somente leitura) + painel com dados reais ✅ |
 | 3 | ML + Shopee + Agente 1 com aprovação manual |
 | 4 | Agentes 3, 9 e 7 |
 | 5 | Agente 8 (WhatsApp/e-mail) |
@@ -308,3 +308,34 @@ usadas, cada uma com sua migração.
 Registros criados pela simulação têm `is_demo = true`; a simulação só apaga
 esses registros e se recusa a rodar com `DRY_RUN=false` ou com conta real
 conectada.
+
+## 11. Fase 2 — Olist (somente leitura)
+
+Documentação oficial consultada em 06/11/2026: especificação OpenAPI
+"Olist ERP API v3" 3.1 (`api.tiny.com.br/public-api/v3/swagger/swagger.json`)
+e os guias de autenticação e limites em `api-docs.erp.olist.com`.
+
+- **Conexão:** OAuth 2 (código de autorização) em `accounts.tiny.com.br`,
+  com `state` anti-falsificação. Tokens criptografados em
+  `integration_accounts`. Token de acesso: 4 h; refresh token: 1 dia.
+- **Cliente** (`app/integrations/olist/client.py`): só GET, com limitador
+  guiado pelos cabeçalhos `X-RateLimit-*`, novas tentativas com espera
+  crescente (erros 5xx/rede) ou espera do reset (429) e renovação do token
+  em caso de 401. Um teste lê o código e falha se aparecer qualquer escrita.
+- **Sincronização** (`app/sync/olist_sync.py`), a cada `OLIST_SYNC_MINUTES`
+  no worker: produtos (custo médio ou preço de custo) → estoque (fotografias
+  em `stock_snapshots`) → pedidos (lista + detalhe de cada pedido alterado) →
+  notas fiscais (janela de 7 dias). Depois da primeira vez, só o que mudou.
+  Falha → conta "Com erro" + alerta único; recuperou → alerta resolvido.
+- **Mapeamento das situações do pedido no quadro:** Aberto/Aprovado/Preparando
+  envio → A separar; Faturado/Pronto para envio → Embalado; Enviado/Entregue →
+  Enviado; Dados incompletos/Não entregue/Em devolução/desconhecida → Com
+  problema; Cancelado → fora do quadro e do faturamento.
+- **Canal:** pelo nome da integração de e-commerce do pedido no Olist
+  (Mercado Livre, Shopee ou "Outros").
+- **Margem:** o Olist não informa a taxa do marketplace; até a Fase 3 a margem
+  não a inclui e o painel avisa. A alíquota de impostos é editável em
+  "Contas conectadas".
+- **Dados pessoais:** do cliente guardamos só primeiro nome + inicial.
+- Tabelas novas: `invoices`, `sync_runs`. Pedidos passam a ser únicos por
+  `olist_id`.

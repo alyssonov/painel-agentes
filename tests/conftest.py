@@ -83,3 +83,4 @@ def logged_client(client, user):
     response = login(client)
     assert response.status_code == 303
     return client
+from tests.olist_helpers import olist_env  # noqa: E402,F401  (fixture)

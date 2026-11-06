@@ -1,0 +1,101 @@
+{% extends "app_layout.html" %}
+{% block title %}Contas conectadas{% endblock %}
+{% block page_title %}Contas conectadas{% endblock %}
+{% block page_subtitle %}<p class="muted">O painel só lê os dados destas contas. Ações que falam com clientes sempre passam pela sua aprovação.</p>{% endblock %}
+{% block content %}
+
+<section class="card integration" aria-labelledby="olist-title">
+  <div class="integration-head">
+    <div>
+      <p class="eyebrow">Sistema de gestão · somente leitura</p>
+      <h2 id="olist-title" class="card-title">Olist ERP</h2>
+    </div>
+    {% if connected and account.status == 'ok' %}
+      <span class="badge">Conectado</span>
+    {% elif connected %}
+      <span class="badge badge-erro">Com erro</span>
+    {% else %}
+      <span class="badge badge-pausado">Não conectado</span>
+    {% endif %}
+  </div>
+
+  {% if not olist_configured %}
+    <div class="notice">
+      <p><strong>Falta configurar as chaves do aplicativo do Olist.</strong></p>
+      <ol class="steps">
+        <li>No Olist: Menu &gt; Configurações &gt; aba Geral &gt; Aplicativos &gt; abra o seu aplicativo.</li>
+        <li>No arquivo <code>.env</code> do painel, preencha <code>OLIST_CLIENT_ID</code> e <code>OLIST_CLIENT_SECRET</code>.</li>
+        <li>Confira se a URL de redirecionamento do aplicativo é exatamente: <code>{{ redirect_uri }}</code></li>
+        <li>Feche a janela do painel e ligue de novo.</li>
+      </ol>
+    </div>
+  {% else %}
+    <dl class="facts">
+      {% if connected %}
+      <div><dt>Empresa</dt><dd>{{ account.account_name }}</dd></div>
+      <div><dt>Produtos importados</dt><dd>{{ products_count }}</dd></div>
+      {% endif %}
+      <div><dt>Última atualização</dt><dd>
+        {% if last_run %}
+          {{ last_run_label }} —
+          {% if last_run.status == 'ok' %}deu certo
+            {% if last_run.counts %}({{ last_run.counts.get('pedidos', 0) }} pedidos, {{ last_run.counts.get('produtos', 0) }} produtos, {{ last_run.counts.get('notas', 0) }} notas){% endif %}
+          {% elif last_run.status == 'rodando' %}em andamento…
+          {% else %}não deu certo{% endif %}
+        {% else %}nenhuma ainda{% endif %}
+      </dd></div>
+      <div><dt>Frequência</dt><dd>A cada {{ sync_minutes }} minutos, enquanto o painel estiver ligado</dd></div>
+    </dl>
+
+    {% if connected and account.last_error %}
+      <p class="form-error">{{ account.last_error }}</p>
+    {% endif %}
+
+    <div class="actions">
+      <a class="btn btn-primary" href="/integracoes/olist/conectar">{{ 'Conectar de novo' if connected else 'Conectar o Olist' }}</a>
+      {% if connected %}
+      <form method="post" action="/integracoes/olist/sincronizar">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-secondary" type="submit">Atualizar agora</button>
+      </form>
+      <form method="post" action="/integracoes/olist/desconectar" class="push-right">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost" type="submit">Desconectar</button>
+      </form>
+      {% endif %}
+    </div>
+    <p class="muted small">
+      A autorização do Olist vale por 1 dia sem uso. Se o painel ficar desligado por mais tempo,
+      basta clicar em “Conectar de novo”.
+    </p>
+  {% endif %}
+</section>
+
+<section class="card integration" id="imposto" aria-labelledby="tax-title">
+  <p class="eyebrow">Regra da loja</p>
+  <h2 id="tax-title" class="card-title">Impostos sobre a venda</h2>
+  <p class="muted">Usada no cálculo da margem real. Informe a alíquota efetiva passada pela contabilidade (regime Lucro Real).</p>
+  {% if tax_rate_is_demo %}<p class="stat-foot warn">O valor atual é só um exemplo da simulação.</p>{% endif %}
+  <form method="post" action="/integracoes/imposto" class="inline-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="field field-inline">
+      <span>Alíquota (%)</span>
+      <input type="text" name="tax_rate_pct" inputmode="decimal" value="{{ '%g'|format(tax_rate_pct) if tax_rate_pct else '' }}" placeholder="ex.: 14,25" required>
+    </label>
+    <button class="btn btn-primary" type="submit">Salvar</button>
+  </form>
+</section>
+
+<div class="integration-grid">
+  <section class="card integration">
+    <p class="eyebrow">Marketplace</p>
+    <h2 class="card-title">Mercado Livre</h2>
+    <p class="muted">A conexão chega na fase 3 (perguntas, mensagens, taxas e reputação).</p>
+  </section>
+  <section class="card integration">
+    <p class="eyebrow">Marketplace</p>
+    <h2 class="card-title">Shopee</h2>
+    <p class="muted">A conexão chega na fase 3 (perguntas, mensagens, taxas e avaliação).</p>
+  </section>
+</div>
+{% endblock %}

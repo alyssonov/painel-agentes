@@ -6,9 +6,11 @@ from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.catalog import Product, StockSnapshot
 from app.models.integration import IntegrationAccount
+from app.models.invoice import Invoice
 from app.models.order import Order, OrderItem
 from app.models.question import Question
 from app.models.settings import StoreSetting
+from app.models.sync import SyncRun
 from app.models.user import User
 
 __all__ = [
@@ -18,11 +20,13 @@ __all__ = [
     "Alert",
     "AuditLog",
     "IntegrationAccount",
+    "Invoice",
     "Order",
     "OrderItem",
     "Product",
     "Question",
     "StockSnapshot",
     "StoreSetting",
+    "SyncRun",
     "User",
 ]

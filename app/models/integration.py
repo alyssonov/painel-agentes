@@ -23,6 +23,8 @@ class IntegrationAccount(TimestampMixin, Base):
     access_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     refresh_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Validade do refresh token (no Olist, 1 dia). Passou disso, é preciso reconectar.
+    refresh_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default=IntegrationStatus.DISCONNECTED)
     last_ok_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)

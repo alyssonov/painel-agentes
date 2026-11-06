@@ -30,16 +30,25 @@ NAV_ITEMS = [
 ]
 
 
+def flash(request: Request, message: str, kind: str = "ok") -> None:
+    """Guarda uma mensagem para mostrar na próxima página (ex.: "Olist conectado!")."""
+    request.session["flash"] = {"message": message, "kind": kind}
+
+
 def render(request: Request, template: str, context: dict[str, Any] | None = None,
            *, db: Session | None = None, status_code: int = 200):
     """Renderiza uma página, incluindo os dados que toda página precisa."""
+    accounts = integrations(db) if db is not None else []
     base = {
         "dry_run": get_settings().dry_run,
+        # Há alguma conta real conectada? Muda o texto da faixa do modo simulação.
+        "real_data": any(a.is_real for a in accounts),
         "csrf_token": get_or_create_csrf_token(request.session),
         "nav_items": NAV_ITEMS,
         "current_path": request.url.path,
         "user": getattr(request.state, "user", None),
-        "integrations": integrations(db) if db is not None else [],
+        "integrations": accounts,
+        "flash": request.session.pop("flash", None),
     }
     base.update(context or {})
     return templates.TemplateResponse(request, template, base, status_code=status_code)

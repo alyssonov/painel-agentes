@@ -29,6 +29,15 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./data/painel.db"
 
+    # Olist ERP (API v3, somente leitura). Chaves do aplicativo criado no Olist.
+    olist_client_id: str = Field(default="", repr=False)
+    olist_client_secret: str = Field(default="", repr=False)
+    olist_redirect_uri: str = "http://localhost:8000/integracoes/olist/retorno"
+    # De quantos em quantos minutos o painel busca novidades no Olist.
+    olist_sync_minutes: int = 10
+    # Na primeira conexão, quantos dias de pedidos e notas para trás importar.
+    olist_initial_days: int = 15
+
     anthropic_api_key: str = Field(default="", repr=False)
     ai_daily_budget_brl: float = 10.0
 
@@ -44,6 +53,11 @@ class Settings(BaseSettings):
     def tz(self) -> ZoneInfo:
         """Fuso horário da loja (usado para definir o que é 'hoje')."""
         return ZoneInfo(self.timezone)
+
+    @property
+    def olist_configured(self) -> bool:
+        """True quando as chaves do aplicativo do Olist estão no .env."""
+        return bool(self.olist_client_id and self.olist_client_secret)
 
     @property
     def is_production(self) -> bool:

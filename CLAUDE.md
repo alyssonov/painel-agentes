@@ -37,8 +37,11 @@ loja: precisa ser **confiável, seguro e fácil para quem não é técnico**.
      (`app/core/actions.py`). Nenhum agente chama método de escrita de
      integração diretamente.
 4. **Modo simulação (`DRY_RUN=true`) é o padrão.**
-   - Usa clientes falsos com dados fictícios e **nunca** faz chamadas de escrita
-     reais. Só é desligado quando o dono decidir, editando o `.env`.
+   - **Nunca** faz chamadas de escrita reais (responder cliente, mudar preço,
+     anúncio etc.). Só é desligado quando o dono decidir, editando o `.env`.
+   - Sem conta conectada, mostra a loja fictícia (`is_demo`). Com conta real
+     conectada, **lê dados reais** (leitura é segura: o cliente do Olist não
+     tem escrita), e a loja fictícia é apagada.
    - O painel mostra uma faixa visível "MODO SIMULAÇÃO" enquanto estiver ligado.
 5. **Segurança.**
    - Segredos só no `.env` (nunca no código, nunca no git). Manter
@@ -118,6 +121,11 @@ automáticas, nada manual).
 - Datas no banco em UTC sem fuso (`utcnow()`); "hoje" é calculado no fuso da
   loja com `app/core/timeutil.py`.
 - Registros da simulação têm `is_demo=true`.
+- Integrações ficam em `app/integrations/<nome>/` (auth, client, mapping,
+  dates); a leitura API → banco fica em `app/sync/`. Testes de integração usam
+  APIs simuladas com `respx` (ex.: `tests/olist_fake.py`).
+- Olist: token de acesso vale 4 h e refresh token **1 dia** — a sincronização
+  periódica renova; passou disso, a pessoa precisa clicar em "Conectar de novo".
 - Toda rota POST usa a dependência `verify_csrf`; toda página usa
   `current_user`.
 - Sem scripts/estilos inline nem de terceiros (CSP `'self'`): JS e CSS ficam

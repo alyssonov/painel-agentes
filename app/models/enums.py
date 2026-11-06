@@ -8,9 +8,10 @@ class Channel(StrEnum):
 
     ML = "ml"
     SHOPEE = "shopee"
+    OTHER = "outro"  # pedidos do Olist de outros canais (loja própria, balcão...)
 
 
-CHANNEL_LABELS = {Channel.ML: "Mercado Livre", Channel.SHOPEE: "Shopee"}
+CHANNEL_LABELS = {Channel.ML: "Mercado Livre", Channel.SHOPEE: "Shopee", Channel.OTHER: "Outros"}
 
 
 class Provider(StrEnum):
@@ -37,6 +38,7 @@ class KanbanStatus(StrEnum):
     PACKED = "embalado"
     SHIPPED = "enviado"
     PROBLEM = "problema"
+    CANCELLED = "cancelado"  # não aparece no quadro nem no faturamento
 
 
 KANBAN_LABELS = {
@@ -45,6 +47,9 @@ KANBAN_LABELS = {
     KanbanStatus.SHIPPED: "Enviado",
     KanbanStatus.PROBLEM: "Com problema",
 }
+
+# Colunas que aparecem no quadro (pedidos cancelados ficam de fora).
+KANBAN_COLUMNS = [KanbanStatus.TO_PICK, KanbanStatus.PACKED, KanbanStatus.SHIPPED, KanbanStatus.PROBLEM]
 
 
 class QuestionStatus(StrEnum):
@@ -73,3 +78,9 @@ class AlertStatus(StrEnum):
 class UserRole(StrEnum):
     ADMIN = "admin"
     OPERATOR = "operador"
+
+
+class SyncStatus(StrEnum):
+    RUNNING = "rodando"
+    OK = "ok"
+    ERROR = "erro"

@@ -13,7 +13,7 @@ Comandos:
   worker     sobe o agendador dos agentes
   test       roda os testes
   atualizar  busca a versão nova no GitHub, instala dependências e atualiza o banco
-  iniciar    atualiza, liga o painel e abre o navegador (é o que o "Iniciar painel.bat" usa)
+  iniciar    atualiza, liga o painel + worker e abre o navegador (é o que o "Iniciar painel.bat" usa)
 """
 
 import hashlib
@@ -135,7 +135,17 @@ def start() -> int:
     print("Deixe esta janela aberta enquanto usa o painel. Para desligar: Ctrl+C ou feche a janela.")
     print()
     threading.Thread(target=_open_browser_when_ready, daemon=True).start()
-    return run(venv_python(), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000")
+    # O worker (agendador: leitura do Olist e, nas próximas fases, os agentes)
+    # roda junto, em segundo plano, e é desligado quando o painel desliga.
+    worker = subprocess.Popen([venv_python(), "-m", "app.worker"], cwd=ROOT)
+    try:
+        return run(venv_python(), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000")
+    finally:
+        worker.terminate()
+        try:
+            worker.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            worker.kill()
 
 
 COMMANDS = {
