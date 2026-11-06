@@ -101,7 +101,15 @@ python tarefas.py seed-demo  # recria os dados de simulação (só com DRY_RUN=t
 python tarefas.py dev        # sobe o painel em http://localhost:8000
 python tarefas.py worker     # sobe o agendador dos agentes
 python tarefas.py test       # roda os testes
+python tarefas.py atualizar  # git pull + dependências novas + migrações
+python tarefas.py iniciar    # atualizar + liga o painel + abre o navegador
 ```
+
+O usuário liga o painel com dois cliques em `Iniciar painel.bat`, que só chama
+`tarefas.py iniciar`. **Não altere o .bat** (o Windows lê .bat enquanto
+executa, e o `git pull` poderia trocá-lo no meio): coloque a lógica no
+`tarefas.py`. Toda fase nova deve funcionar só com esse fluxo (migrações
+automáticas, nada manual).
 
 ## Convenções de código
 

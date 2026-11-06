@@ -60,7 +60,30 @@ python tarefas.py seed-demo
 
 Carrega a loja fictícia (produtos, pedidos de hoje, perguntas, alertas).
 
-## Uso (dia a dia)
+## Uso (dia a dia) — jeito fácil
+
+No Windows, dê **dois cliques em `Iniciar painel.bat`** (na pasta do projeto).
+Ele faz tudo sozinho:
+
+1. busca a versão mais nova no GitHub (se não tiver internet, segue com a atual);
+2. instala dependências novas, se houver;
+3. atualiza o banco de dados;
+4. liga o painel e abre o navegador em http://127.0.0.1:8000.
+
+Deixe a janela preta aberta enquanto usa o painel. Para desligar, feche a
+janela (ou `Ctrl+C`).
+
+Dica: clique com o botão direito em `Iniciar painel.bat` → **Mostrar mais
+opções** → **Enviar para** → **Área de trabalho (criar atalho)**. Assim o
+painel liga direto da área de trabalho.
+
+Em qualquer sistema, o mesmo pode ser feito com:
+
+```bash
+python tarefas.py iniciar
+```
+
+## Uso (modo desenvolvimento)
 
 ```bash
 python tarefas.py dev
