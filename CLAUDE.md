@@ -142,10 +142,11 @@ automáticas, nada manual).
   Margem real, Relatórios, Agentes. Abaixo do menu: contas conectadas
   (Mercado Livre, Shopee, Olist ERP) com status.
 - Identidade visual (definida pelo usuário a partir de uma referência):
-  destaque azul-marinho `#1F3243` (hover `#2C4459`), cards brancos com cantos
-  de 16px, fundo cinza-azulado claro `#EEF2F6` nas páginas internas e degradê
-  escuro (`#1F3243` → `#344D66`) na tela de login, botões retangulares com
-  cantos de 8px, fonte do sistema (Segoe UI no Windows). Cores ficam como
+  **fundo azul-marinho em degradê** (`#1F3243` → `#344D66`) em TODAS as
+  páginas (login e internas), com **cards e opções brancos** por cima (item
+  ativo do menu em branco, texto do menu em branco translúcido), destaque
+  `#1F3243` (hover `#2C4459`) nos botões, cards com cantos de 16px, botões
+  retangulares com cantos de 8px, fonte do sistema (Segoe UI no Windows). Cores ficam como
   variáveis em `:root` no `app/web/static/css/app.css`.
 - Visão geral: 4 cards (faturamento hoje, margem média real, perguntas
   respondidas, reputação); faixa verde-escura "O que pede atenção"; lista

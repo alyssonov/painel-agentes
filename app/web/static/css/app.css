@@ -301,3 +301,22 @@ code { background: rgba(31,50,67,.08); border-radius: 6px; padding: 1px 6px; fon
 .notice.small { font-size: 13px; padding: 8px 12px; }
 @media (max-width: 520px) { .agent-grid { grid-template-columns: minmax(0, 1fr); } }
 .input-group input:focus-visible { outline: none; }
+
+
+/* Páginas internas: fundo azul-marinho em degradê (como o login) e cards/opções brancos */
+body.page-app { background: linear-gradient(160deg, var(--login-from) 0%, var(--login-to) 100%) fixed; }
+.page-app .brand { color: #fff; }
+.page-app .brand-mark { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); }
+.page-app .nav-item { color: rgba(255,255,255,.78); }
+.page-app .nav-item:hover { background: rgba(255,255,255,.10); color: #fff; }
+.page-app .nav-item.is-active { background: #fff; color: var(--brand); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+.page-app .page-title { color: #fff; }
+.page-app .topbar .muted { color: rgba(255,255,255,.72); }
+.page-app .topbar .btn-ghost { color: rgba(255,255,255,.8); }
+.page-app .topbar .btn-ghost:hover { background: rgba(255,255,255,.10); color: #fff; }
+.page-app .card, .page-app .accounts { box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+/* "O que pede atenção": faixa um pouco mais clara que o fundo, para se destacar */
+.page-app .attention { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); }
+.page-app .attention-item { background: rgba(255,255,255,.08); }
+.page-app .flash { box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+.page-app .flash-ok { background: #fff; color: var(--brand); }
