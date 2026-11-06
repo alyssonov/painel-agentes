@@ -141,8 +141,12 @@ automáticas, nada manual).
 - Menu lateral: Visão geral, Perguntas, Anúncios, Estoque e preços, Pós-venda,
   Margem real, Relatórios, Agentes. Abaixo do menu: contas conectadas
   (Mercado Livre, Shopee, Olist ERP) com status.
-- Fundo verde-claro suave, cards brancos com cantos bem arredondados, destaque
-  verde-escuro `#1E3A2A`, fonte Inter.
+- Identidade visual (definida pelo usuário a partir de uma referência):
+  destaque azul-marinho `#1F3243` (hover `#2C4459`), cards brancos com cantos
+  de 16px, fundo cinza-azulado claro `#EEF2F6` nas páginas internas e degradê
+  escuro (`#1F3243` → `#344D66`) na tela de login, botões retangulares com
+  cantos de 8px, fonte do sistema (Segoe UI no Windows). Cores ficam como
+  variáveis em `:root` no `app/web/static/css/app.css`.
 - Visão geral: 4 cards (faturamento hoje, margem média real, perguntas
   respondidas, reputação); faixa verde-escura "O que pede atenção"; lista
   "Agentes agora"; kanban "Pedidos de hoje" (A separar, Embalado, Enviado,

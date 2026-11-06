@@ -28,3 +28,15 @@ document.addEventListener("input", function (event) {
   var counter = box.closest("[data-card]") && box.closest("[data-card]").querySelector("[data-contador]");
   if (counter) counter.textContent = box.value.length + " / " + box.maxLength;
 });
+
+// Botão de olho no login: mostra/esconde a senha.
+document.addEventListener("click", function (event) {
+  var button = event.target.closest("[data-mostrar-senha]");
+  if (!button) return;
+  var input = button.parentElement.querySelector("[data-senha]");
+  if (!input) return;
+  var show = input.type === "password";
+  input.type = show ? "text" : "password";
+  button.setAttribute("aria-pressed", show ? "true" : "false");
+  button.setAttribute("aria-label", show ? "Esconder senha" : "Mostrar senha");
+});

@@ -1,24 +1,44 @@
 {% extends "base.html" %}
 {% block title %}Entrar{% endblock %}
+{% block body_class %}page-login{% endblock %}
 {% block body %}
 <main class="login-wrap">
+  <div class="login-brand">
+    <span class="login-logo"><svg class="icon"><use href="#i-leaf"/></svg></span>
+    <span class="login-name">Painel de Agentes</span>
+    <span class="login-tagline">Mercado Livre · Shopee · Olist ERP</span>
+  </div>
+
   <form class="card login-card" method="post" action="/login" novalidate>
-    <div class="brand brand-center">
-      <span class="brand-mark"><svg class="icon"><use href="#i-leaf"/></svg></span>
-      <span>Painel de Agentes</span>
+    <div>
+      <h1 class="login-title">Bem-vindo!</h1>
     </div>
-    <h1 class="login-title">Entrar</h1>
+    <p class="login-sub">Informe suas credenciais para acessar.</p>
     {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label class="field">
       <span>E-mail</span>
-      <input type="email" name="email" value="{{ email or '' }}" autocomplete="username" required autofocus>
+      <span class="input-group">
+        <span class="addon"><svg class="icon"><use href="#i-mail"/></svg></span>
+        <input type="email" name="email" value="{{ email or '' }}" placeholder="seu@email.com"
+               autocomplete="username" required autofocus>
+      </span>
     </label>
     <label class="field">
       <span>Senha</span>
-      <input type="password" name="password" autocomplete="current-password" required>
+      <span class="input-group">
+        <span class="addon"><svg class="icon"><use href="#i-lock"/></svg></span>
+        <input type="password" name="password" autocomplete="current-password" required data-senha>
+        <button class="reveal" type="button" data-mostrar-senha aria-label="Mostrar senha" aria-pressed="false">
+          <svg class="icon"><use href="#i-eye"/></svg>
+        </button>
+      </span>
     </label>
-    <button class="btn btn-primary btn-block" type="submit">Entrar</button>
+    <button class="btn btn-primary btn-block btn-lg" type="submit">
+      <svg class="icon"><use href="#i-login"/></svg><span>Entrar</span>
+    </button>
   </form>
+
+  <p class="login-footer">Painel interno da loja · acesso restrito</p>
 </main>
 {% endblock %}
