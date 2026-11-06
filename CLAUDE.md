@@ -88,15 +88,19 @@ loja: precisa ser **confiável, seguro e fácil para quem não é técnico**.
 
 ## Comandos
 
+O usuário trabalha no **Windows** (sem `make`). Os comandos oficiais são os do
+`tarefas.py`, que funciona em qualquer sistema; o `Makefile` é só um atalho
+equivalente para Mac/Linux. Ao criar um comando novo, adicione nos dois.
+
 ```bash
-make install    # cria o .venv e instala as dependências
-make setup      # cria o .env com chaves novas (não sobrescreve)
-make migrate    # aplica as migrações do banco
-make user       # cria um usuário do painel (ou redefine a senha)
-make seed-demo  # recria os dados de simulação (só com DRY_RUN=true)
-make dev        # sobe o painel em http://localhost:8000
-make worker     # sobe o agendador dos agentes
-make test       # roda os testes
+python tarefas.py install    # cria o .venv e instala as dependências
+python tarefas.py setup      # cria o .env com chaves novas (não sobrescreve)
+python tarefas.py migrate    # aplica as migrações do banco
+python tarefas.py user       # cria um usuário do painel (ou redefine a senha)
+python tarefas.py seed-demo  # recria os dados de simulação (só com DRY_RUN=true)
+python tarefas.py dev        # sobe o painel em http://localhost:8000
+python tarefas.py worker     # sobe o agendador dos agentes
+python tarefas.py test       # roda os testes
 ```
 
 ## Convenções de código

@@ -11,54 +11,68 @@ Olist e nunca mexe em estoque ou nota fiscal.
 
 ## Requisitos
 
-- Python 3.12
-- `make`
+- Python 3.12 ou mais novo. No Windows, ao instalar pelo site python.org, marque
+  **"Add python.exe to PATH"**.
 - (Produção, Fase 8) Docker e um VPS
 
-## Instalação (desenvolvimento)
+## Comandos
+
+Todos os comandos são rodados no terminal, **dentro da pasta do projeto**, com
+`python tarefas.py <comando>`. Funciona no Windows, Mac e Linux.
+
+> No Windows, se `python` não for reconhecido, use `py` no lugar
+> (ex.: `py tarefas.py install`). Quem tem `make` (Mac/Linux) pode usar
+> `make <comando>`, que faz a mesma coisa.
+
+## Instalação (primeira vez)
 
 ```bash
-make install
+python tarefas.py install
 ```
 
+Cria a pasta `.venv` e instala as dependências (demora alguns minutos).
+
 ```bash
-make setup
+python tarefas.py setup
 ```
 
-`make setup` cria o arquivo `.env` com chaves de segurança novas. **Guarde uma
-cópia segura do `.env`**, principalmente da `ENCRYPTION_KEY`: sem ela, os
-tokens das contas conectadas não podem ser lidos e será preciso reconectar.
+Cria o arquivo `.env` com chaves de segurança novas. **Guarde uma cópia segura
+do `.env`**, principalmente da `ENCRYPTION_KEY`: sem ela, os tokens das contas
+conectadas não podem ser lidos e será preciso reconectar.
 
 ```bash
-make migrate
+python tarefas.py migrate
 ```
 
+Cria o banco de dados (arquivo `data/painel.db`).
+
 ```bash
-make user
+python tarefas.py user
 ```
 
-`make user` pede e-mail, nome e senha (mínimo 10 caracteres, com letras e
-números). Rode de novo com o mesmo e-mail para trocar a senha; isso também
-desconecta as sessões abertas desse usuário.
+Pede e-mail, nome e senha (mínimo 10 caracteres, com letras e números). A
+senha não aparece enquanto você digita, é normal. Rode de novo com o mesmo
+e-mail para trocar a senha; isso também desconecta as sessões abertas.
 
 ```bash
-make seed-demo
+python tarefas.py seed-demo
 ```
 
 Carrega a loja fictícia (produtos, pedidos de hoje, perguntas, alertas).
 
-## Uso
+## Uso (dia a dia)
 
 ```bash
-make dev
+python tarefas.py dev
 ```
 
-Abra http://localhost:8000 e entre com o usuário criado.
+Abra http://localhost:8000 no navegador e entre com o usuário criado. Para
+parar o painel, aperte `Ctrl+C` no terminal.
 
 Em outro terminal (opcional na Fase 1):
 
 ```bash
-make worker
+python tarefas.py worker
 ```
 
 Na Fase 1 o worker só renova os dados de simulação quando o dia vira. O próprio
@@ -93,7 +107,7 @@ O `.env` **nunca** vai para o git (está no `.gitignore`).
 ## Testes
 
 ```bash
-make test
+python tarefas.py test
 ```
 
 Os testes usam bancos temporários e nunca acessam a internet.
@@ -128,4 +142,5 @@ app/
 alembic/            migrações do banco
 tests/              testes automáticos
 docs/               arquitetura e (na Fase 8) guia de implantação
+tarefas.py          atalhos dos comandos (substitui o make)
 ```
