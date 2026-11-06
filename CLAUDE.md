@@ -146,7 +146,12 @@ automáticas, nada manual).
   páginas (login e internas), com **cards e opções brancos** por cima (item
   ativo do menu em branco, texto do menu em branco translúcido), destaque
   `#1F3243` (hover `#2C4459`) nos botões, cards com cantos de 16px, botões
-  retangulares com cantos de 8px, fonte do sistema (Segoe UI no Windows). Cores ficam como
+  retangulares com cantos de 8px, fonte do sistema (Segoe UI no Windows).
+- **Cores de status, com significado fixo** (variáveis `--ok`, `--warn`,
+  `--danger`, `--info` e versões `-soft`): verde = tudo certo; âmbar = atenção
+  / precisa de você; vermelho = problema / urgente; azul = informação / em
+  andamento. Usar pouco, só para sinalizar; sempre junto com texto ou ícone
+  (nunca só a cor); texto colorido sobre fundo claro com contraste ≥ 4,5:1. Cores ficam como
   variáveis em `:root` no `app/web/static/css/app.css`.
 - Visão geral: 4 cards (faturamento hoje, margem média real, perguntas
   respondidas, reputação); faixa verde-escura "O que pede atenção"; lista

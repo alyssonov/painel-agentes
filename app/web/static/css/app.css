@@ -16,11 +16,17 @@
   --brand-soft: #E6ECF2;
   --login-from: #1F3243;
   --login-to: #344D66;
-  --ok: #2E9E5B;
-  --warn: #C98A12;
-  --danger: #C4432F;
-  --danger-soft: #FBE9E6;
-  --warn-soft: #FFF4DC;
+  /* Cores com significado fixo (usar SEMPRE com texto ou ícone, nunca sozinhas):
+     verde = tudo certo · âmbar = atenção/precisa de você · vermelho = problema/urgente · azul = informação */
+  --ok: #17733F;
+  --ok-soft: #E5F5EC;
+  --warn: #8F5600;
+  --warn-soft: #FFF3D6;
+  --danger: #C0362C;
+  --danger-soft: #FDECEA;
+  --info: #2563A6;
+  --info-soft: #E7F0FA;
+  --neutral-soft: #EEF1F4;
   --ml: #F2D600;
   --ml-ink: #3D3500;
   --shopee: #EE4D2D;
@@ -185,7 +191,7 @@ a { color: inherit; }
 .badge-pausado, .badge-sem_execucao { background: #EEF1F4; color: var(--muted); }
 
 /* Login: degradê escuro, marca acima do card */
-body.page-login { background: linear-gradient(160deg, var(--login-from) 0%, var(--login-to) 100%); min-height: 100vh; }
+body.page-login { background-color: var(--login-to); background-image: linear-gradient(160deg, var(--login-from) 0%, var(--login-to) 100%); background-attachment: fixed; min-height: 100vh; }
 .login-wrap { min-height: calc(100vh - 40px); display: flex; flex-direction: column; align-items: center;
               justify-content: center; gap: 24px; padding: 32px 16px; }
 .login-brand { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: #fff; }
@@ -304,7 +310,10 @@ code { background: rgba(31,50,67,.08); border-radius: 6px; padding: 1px 6px; fon
 
 
 /* Páginas internas: fundo azul-marinho em degradê (como o login) e cards/opções brancos */
-body.page-app { background: linear-gradient(160deg, var(--login-from) 0%, var(--login-to) 100%) fixed; }
+html:has(body.page-app), html:has(body.page-login) { background-color: var(--login-to); }
+body.page-app { min-height: 100vh; background-color: var(--login-to);
+                background-image: linear-gradient(160deg, var(--login-from) 0%, var(--login-to) 100%);
+                background-attachment: fixed; }
 .page-app .brand { color: #fff; }
 .page-app .brand-mark { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); }
 .page-app .nav-item { color: rgba(255,255,255,.78); }
@@ -320,3 +329,55 @@ body.page-app { background: linear-gradient(160deg, var(--login-from) 0%, var(--
 .page-app .attention-item { background: rgba(255,255,255,.08); }
 .page-app .flash { box-shadow: 0 6px 18px rgba(0,0,0,.15); }
 .page-app .flash-ok { background: #fff; color: var(--brand); }
+
+
+/* ===== Cores de status (verde ok · âmbar atenção · vermelho problema · azul informação) ===== */
+.badge { background: var(--neutral-soft); color: var(--muted); }
+.badge-ok, .badge-sucesso { background: var(--ok-soft); color: var(--ok); }
+.badge-erro { background: var(--danger-soft); color: var(--danger); }
+.badge-atencao, .badge-sem_execucao { background: var(--warn-soft); color: var(--warn); }
+.badge-rodando, .badge-info { background: var(--info-soft); color: var(--info); }
+.badge-pausado { background: var(--neutral-soft); color: var(--muted); }
+.conf-alta { background: var(--ok-soft); color: var(--ok); }
+.conf-media { background: var(--warn-soft); color: var(--warn); }
+.conf-baixa { background: var(--danger-soft); color: var(--danger); }
+
+/* Cards do topo: faixa colorida na lateral conforme a situação */
+.stat { border-left: 5px solid transparent; }
+.stat.tone-ok { border-left-color: var(--ok); }
+.stat.tone-warn { border-left-color: #E0A100; }
+.stat.tone-bad { border-left-color: var(--danger); }
+.stat.tone-info { border-left-color: var(--info); }
+.stat-foot.up { color: var(--ok); }
+.stat-foot.down { color: var(--danger); }
+.stat-foot.warn { color: var(--warn); }
+
+/* "O que pede atenção": cada alerta com a cor da gravidade */
+.attention-item { border-left: 4px solid transparent; }
+.attention-item.sev-critico { border-left-color: #F28B7A; background: rgba(242,139,122,.12); }
+.attention-item.sev-atencao { border-left-color: #F5C95C; background: rgba(245,201,92,.10); }
+.attention-item.sev-info { border-left-color: #8DB8EC; background: rgba(141,184,236,.12); }
+.sev-info .sev-pill { background: #BFD8F5; color: #0F2F57; }
+.attention-empty::before { content: "✓ "; color: #8FE0B0; font-weight: 700; }
+
+/* Quadro de pedidos: cada coluna com sua cor */
+.kcol { border-top: 4px solid transparent; }
+.kcol-a_separar { border-top-color: #E0A100; }
+.kcol-embalado { border-top-color: var(--info); }
+.kcol-enviado { border-top-color: var(--ok); }
+.kcol-problema { border-top-color: var(--danger); background: #FFF6F5; }
+.kcol-problema .kcol-head { color: var(--danger); }
+.order-problem { background: var(--danger-soft); color: var(--danger); }
+.order-loss { background: var(--warn-soft); color: var(--warn); }
+
+/* Mensagens após uma ação */
+.page-app .flash-ok, .flash-ok { background: var(--ok-soft); color: var(--ok); border-left: 4px solid var(--ok); }
+.flash-erro { background: var(--danger-soft); color: var(--danger); border-left: 4px solid var(--danger); }
+
+/* Contas conectadas e avisos */
+.notice { background: var(--warn-soft); border-left: 4px solid #E0A100; }
+.qcard-human { border-color: #F2C1B8; border-left: 4px solid var(--danger); }
+.qcard-reason { background: var(--warn-soft); color: var(--warn); }
+.dot-ok, .dot-agent-ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(31,138,76,.18); }
+.dot-agent-rodando { background: var(--info); box-shadow: 0 0 0 3px rgba(37,99,166,.18); }
+.dot-agent-sem_execucao { background: #E0A100; }

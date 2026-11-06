@@ -21,7 +21,7 @@
         <span class="chip chip-{{ q.channel }}">{{ item.channel_label }}</span>
         <span class="muted small">{{ item.asked }}</span>
         {% if a.status == 'falhou' %}<span class="badge badge-erro">Não foi enviada</span>
-        {% elif a.needs_human %}<span class="badge badge-erro">Precisa de você</span>
+        {% elif a.needs_human %}<span class="badge badge-atencao">Precisa de você</span>
         {% else %}<span class="badge conf-{{ a.confidence }}">Confiança {{ a.confidence }}</span>{% endif %}
       </div>
       {% if q.listing_title %}<p class="qcard-product">{{ q.listing_title }}</p>{% endif %}
@@ -56,7 +56,7 @@
       <div class="qcard-top">
         <span class="chip chip-{{ q.channel }}">{{ item.channel_label }}</span>
         <span class="muted small">{{ item.asked }}</span>
-        <span class="badge badge-pausado">Sem sugestão ainda</span>
+        <span class="badge badge-info">Sem sugestão ainda</span>
       </div>
       {% if q.listing_title %}<p class="qcard-product">{{ q.listing_title }}</p>{% endif %}
       <p class="qcard-question">“{{ q.text }}”</p>

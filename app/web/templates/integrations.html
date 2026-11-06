@@ -11,7 +11,7 @@
       <h2 id="olist-title" class="card-title">Olist ERP</h2>
     </div>
     {% if connected and account.status == 'ok' %}
-      <span class="badge">Conectado</span>
+      <span class="badge badge-ok">Conectado</span>
     {% elif connected %}
       <span class="badge badge-erro">Com erro</span>
     {% else %}
@@ -93,7 +93,7 @@
       <h2 id="ml-title" class="card-title">Mercado Livre</h2>
     </div>
     {% if ml.connected and ml.account.status == 'ok' %}
-      <span class="badge">Conectado</span>
+      <span class="badge badge-ok">Conectado</span>
     {% elif ml.connected %}
       <span class="badge badge-erro">Com erro</span>
     {% else %}

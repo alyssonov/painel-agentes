@@ -17,6 +17,21 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.filters["brl"] = format_brl
 templates.env.filters["pct"] = format_pct
 
+
+def reputation_tone(label: str | None) -> str:
+    """Cor do card de reputação: verde (boa), âmbar (amarela), vermelho (laranja/vermelha)."""
+    text = (label or "").lower()
+    if not text or "sem reputação" in text:
+        return "info"
+    if "vermelha" in text or "laranja" in text:
+        return "bad"
+    if "amarela" in text:
+        return "warn"
+    return "ok"
+
+
+templates.env.filters["rep_tone"] = reputation_tone
+
 # Itens do menu lateral: (endereço, nome, ícone).
 NAV_ITEMS = [
     ("/", "Visão geral", "home"),

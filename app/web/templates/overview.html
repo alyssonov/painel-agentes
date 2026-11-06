@@ -7,7 +7,8 @@
 {% block content %}
 
 <section class="stats" aria-label="Resumo do dia">
-  <article class="card stat">
+  {% set rev_diff = ((ov.revenue_today_cents - ov.revenue_yesterday_cents) / ov.revenue_yesterday_cents * 100) if ov.revenue_yesterday_cents else none %}
+  <article class="card stat {{ 'tone-info' if rev_diff is none else ('tone-ok' if rev_diff >= 0 else 'tone-warn') }}">
     <p class="stat-label">Faturamento hoje</p>
     <p class="stat-value">{{ ov.revenue_today_cents|brl }}</p>
     {% if ov.revenue_yesterday_cents %}
@@ -20,7 +21,7 @@
     {% endif %}
   </article>
 
-  <article class="card stat">
+  <article class="card stat {{ 'tone-bad' if ov.loss_orders else ('tone-warn' if not ov.tax_configured or ov.avg_margin_pct is none else 'tone-ok') }}">
     <p class="stat-label">Margem média real</p>
     <p class="stat-value">{{ ov.avg_margin_pct|pct }}</p>
     {% if ov.loss_orders %}
@@ -36,7 +37,7 @@
     {% endif %}
   </article>
 
-  <article class="card stat">
+  <article class="card stat {{ 'tone-warn' if ov.questions_waiting else 'tone-ok' }}">
     <p class="stat-label">Perguntas respondidas</p>
     <p class="stat-value">{{ ov.questions_answered }}<span class="stat-of"> de {{ ov.questions_today }}</span></p>
     {% if ov.questions_waiting %}
@@ -46,7 +47,7 @@
     {% endif %}
   </article>
 
-  <article class="card stat">
+  <article class="card stat tone-{{ ov.reputation_ml|rep_tone }}">
     <p class="stat-label">Reputação</p>
     <p class="stat-value stat-value-sm">{{ ov.reputation_ml or '—' }}</p>
     <p class="stat-foot muted">Mercado Livre{% if ov.reputation_shopee %} · Shopee {{ ov.reputation_shopee }}{% endif %}</p>

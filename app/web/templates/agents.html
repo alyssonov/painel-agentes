@@ -10,7 +10,7 @@
     <div class="integration-head">
       <h2 id="ag-{{ a.slug }}" class="card-title">{{ a.name }}</h2>
       {% if not c.implemented %}<span class="badge badge-pausado">Chega na fase {{ c.phase }}</span>
-      {% elif a.enabled %}<span class="badge">Ativo</span>{% else %}<span class="badge badge-pausado">Pausado</span>{% endif %}
+      {% elif a.enabled %}<span class="badge badge-ok">Ativo</span>{% else %}<span class="badge badge-pausado">Pausado</span>{% endif %}
     </div>
     <p class="muted">{{ a.description }}</p>
 
