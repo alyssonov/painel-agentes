@@ -154,7 +154,7 @@ automáticas, nada manual).
   (nunca só a cor); texto colorido sobre fundo claro com contraste ≥ 4,5:1. Cores ficam como
   variáveis em `:root` no `app/web/static/css/app.css`.
 - Visão geral: 4 cards (faturamento hoje, margem média real, perguntas
-  respondidas, reputação); faixa verde-escura "O que pede atenção"; lista
+  respondidas, reputação, com faixa lateral na cor da situação); faixa "O que pede atenção" (um pouco mais clara que o fundo, alertas com borda na cor da gravidade); lista
   "Agentes agora"; kanban "Pedidos de hoje" (A separar, Embalado, Enviado,
   Com problema) com filtro Todos / Mercado Livre / Shopee.
 - Linguagem do painel: português simples, sem jargão técnico.
