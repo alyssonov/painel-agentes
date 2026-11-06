@@ -262,3 +262,29 @@ def test_pergunta_respondida_direto_no_ml_sai_da_fila(db, ml_env):
     assert db.get(Question, old.id).status == QuestionStatus.ANSWERED
     assert db.get(Question, old.id).answer_text == "Respondi pelo app"
     assert db.get(Action, action.id).status == ActionStatus.REJECTED
+
+
+@respx.mock
+def test_pergunta_em_analise_volta_quando_liberada(db, ml_env):
+    """O Mercado Livre segura algumas perguntas 'em análise'; quando libera, ela entra na fila."""
+    connect_ml(db)
+    routes = ml_fake.install(respx.mock)
+    review = {"id": 9100, "item_id": "MLB1", "status": "UNDER_REVIEW", "text": "Pergunta em análise",
+              "date_created": "2026-11-06T11:00:00.000-03:00"}
+
+    def questions(request, state={"status": "UNDER_REVIEW"}):
+        q = {**review, "status": state["status"]}
+        wanted = request.url.params.get("status")
+        data = [q] if not wanted or wanted == q["status"] else []
+        return httpx.Response(200, json={"total": len(data), "questions": data})
+
+    routes["questions"].mock(side_effect=questions)
+    respx.get(f"{ml_fake.BASE_URL}/questions/9100").mock(
+        side_effect=lambda r: httpx.Response(200, json={**review, "status": questions.__defaults__[0]["status"]}))
+    sync()
+    q = db.scalar(select(Question).where(Question.external_id == "9100"))
+    assert q.status == QuestionStatus.REVIEW
+    questions.__defaults__[0]["status"] = "UNANSWERED"
+    sync()
+    db.refresh(q)
+    assert q.status == QuestionStatus.NEW

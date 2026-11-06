@@ -109,7 +109,8 @@ def sync_questions(db: Session, client: MLClient, account, seller_id: str, start
     #    "sem resposta" no Mercado Livre (ex.: respondidas direto lá): confere uma a uma.
     open_local = db.scalars(select(Question).where(
         Question.channel == Channel.ML, Question.is_demo.is_(False),
-        Question.status.in_([QuestionStatus.NEW, QuestionStatus.PROPOSED, QuestionStatus.HUMAN])))
+        Question.status.in_([QuestionStatus.NEW, QuestionStatus.PROPOSED, QuestionStatus.HUMAN,
+                             QuestionStatus.REVIEW])))
     for question in open_local:
         if question.external_id in unanswered_ids or question.external_id in seen:
             continue

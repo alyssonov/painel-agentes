@@ -59,6 +59,7 @@ class QuestionStatus(StrEnum):
     SIMULATED = "respondida_simulacao"  # aprovada no modo simulação: nada foi enviado
     HUMAN = "humano"  # encaminhada para uma pessoa responder
     CLOSED = "encerrada"  # apagada, banida ou fechada sem resposta no marketplace
+    REVIEW = "em_analise"  # o marketplace ainda está analisando a pergunta (volta a "nova" quando liberar)
 
 
 class AgentMode(StrEnum):

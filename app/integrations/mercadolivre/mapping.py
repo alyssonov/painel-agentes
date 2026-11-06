@@ -28,7 +28,9 @@ def question_status(ml_status: str | None) -> QuestionStatus:
         return QuestionStatus.NEW
     if status == "ANSWERED":
         return QuestionStatus.ANSWERED
-    return QuestionStatus.CLOSED  # CLOSED_UNANSWERED, UNDER_REVIEW, BANNED, DELETED...
+    if status == "UNDER_REVIEW":
+        return QuestionStatus.REVIEW  # ainda em análise: vira "nova" quando o Mercado Livre liberar
+    return QuestionStatus.CLOSED  # CLOSED_UNANSWERED, BANNED, DELETED...
 
 
 def order_fee_cents(order: dict) -> int:
