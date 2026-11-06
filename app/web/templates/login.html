@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Entrar{% endblock %}
+{% block body %}
+<main class="login-wrap">
+  <form class="card login-card" method="post" action="/login" novalidate>
+    <div class="brand brand-center">
+      <span class="brand-mark"><svg class="icon"><use href="#i-leaf"/></svg></span>
+      <span>Painel de Agentes</span>
+    </div>
+    <h1 class="login-title">Entrar</h1>
+    {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="field">
+      <span>E-mail</span>
+      <input type="email" name="email" value="{{ email or '' }}" autocomplete="username" required autofocus>
+    </label>
+    <label class="field">
+      <span>Senha</span>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn btn-primary btn-block" type="submit">Entrar</button>
+  </form>
+</main>
+{% endblock %}

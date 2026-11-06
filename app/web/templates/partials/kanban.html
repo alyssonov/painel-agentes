@@ -1,0 +1,33 @@
+<div id="kanban" class="kanban-wrap">
+  <div class="segmented" role="group" aria-label="Filtrar por marketplace">
+    {% for value, label in channel_filters %}
+    <button type="button" class="seg{% if channel == value %} is-active{% endif %}"
+            aria-pressed="{{ 'true' if channel == value else 'false' }}"
+            hx-get="/parciais/pedidos?canal={{ value }}" hx-target="#kanban" hx-swap="outerHTML">{{ label }}</button>
+    {% endfor %}
+  </div>
+  <div class="kanban">
+    {% for col in columns %}
+    <div class="kcol kcol-{{ col.status }}">
+      <p class="kcol-head"><span>{{ col.label }}</span><span class="count">{{ col.orders|length }}</span></p>
+      {% for o in col.orders %}
+      <article class="order">
+        <div class="order-top">
+          <span class="chip chip-{{ o.channel }}">{{ o.channel_label }}</span>
+          <span class="muted small">{{ o.time_label }}</span>
+        </div>
+        <p class="order-title">{{ o.summary }}</p>
+        <p class="order-meta">
+          <span>{{ o.customer }}</span>
+          <strong>{{ o.total_cents|brl }}</strong>
+        </p>
+        {% if o.problem %}<p class="order-problem">{{ o.problem }}</p>{% endif %}
+        {% if o.is_loss %}<p class="order-loss">Venda com prejuízo</p>{% endif %}
+      </article>
+      {% else %}
+      <p class="kcol-empty">Nenhum pedido</p>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>

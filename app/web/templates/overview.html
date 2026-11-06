@@ -1,0 +1,87 @@
+{% extends "app_layout.html" %}
+{% block title %}Visão geral{% endblock %}
+{% block page_title %}Visão geral{% endblock %}
+{% block page_subtitle %}
+<p class="muted">{{ ov.orders_today }} pedidos hoje · Gasto com IA hoje: {{ ov.ai_cost_today_cents|brl }} de {{ ov.ai_budget_cents|brl }}</p>
+{% endblock %}
+{% block content %}
+
+<section class="stats" aria-label="Resumo do dia">
+  <article class="card stat">
+    <p class="stat-label">Faturamento hoje</p>
+    <p class="stat-value">{{ ov.revenue_today_cents|brl }}</p>
+    {% if ov.revenue_yesterday_cents %}
+      {% set diff = (ov.revenue_today_cents - ov.revenue_yesterday_cents) / ov.revenue_yesterday_cents * 100 %}
+      <p class="stat-foot {{ 'up' if diff >= 0 else 'down' }}">
+        {{ '▲' if diff >= 0 else '▼' }} {{ diff|abs|pct(0) }} em relação a ontem neste horário
+      </p>
+    {% else %}
+      <p class="stat-foot muted">Sem vendas ontem até este horário</p>
+    {% endif %}
+  </article>
+
+  <article class="card stat">
+    <p class="stat-label">Margem média real</p>
+    <p class="stat-value">{{ ov.avg_margin_pct|pct }}</p>
+    {% if ov.loss_orders %}
+      <p class="stat-foot down">{{ ov.loss_orders }} venda{{ 's' if ov.loss_orders > 1 }} com prejuízo</p>
+    {% else %}
+      <p class="stat-foot up">Nenhuma venda com prejuízo</p>
+    {% endif %}
+  </article>
+
+  <article class="card stat">
+    <p class="stat-label">Perguntas respondidas</p>
+    <p class="stat-value">{{ ov.questions_answered }}<span class="stat-of"> de {{ ov.questions_today }}</span></p>
+    {% if ov.questions_waiting %}
+      <p class="stat-foot warn">{{ ov.questions_waiting }} aguardando você</p>
+    {% else %}
+      <p class="stat-foot up">Nenhuma pendente</p>
+    {% endif %}
+  </article>
+
+  <article class="card stat">
+    <p class="stat-label">Reputação</p>
+    <p class="stat-value stat-value-sm">{{ ov.reputation_ml or '—' }}</p>
+    <p class="stat-foot muted">Mercado Livre{% if ov.reputation_shopee %} · Shopee {{ ov.reputation_shopee }}{% endif %}</p>
+  </article>
+</section>
+
+<section class="attention" aria-labelledby="attention-title">
+  <h2 id="attention-title" class="attention-title">
+    <svg class="icon"><use href="#i-alert"/></svg> O que pede atenção
+  </h2>
+  {% if ov.alerts %}
+  <ul class="attention-list">
+    {% for alert in ov.alerts %}
+    <li class="attention-item sev-{{ alert.severity }}">
+      <span class="sev-pill">{{ {'critico': 'Urgente', 'atencao': 'Atenção', 'info': 'Aviso'}[alert.severity] }}</span>
+      <div>
+        <p class="attention-text">{{ alert.title }}</p>
+        {% if alert.detail %}<p class="attention-detail">{{ alert.detail }}</p>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="attention-empty">Tudo em ordem por aqui. Nenhum alerta aberto.</p>
+  {% endif %}
+</section>
+
+<div class="overview-grid">
+  <section class="card" aria-labelledby="orders-title">
+    <div class="card-head">
+      <h2 id="orders-title" class="card-title">Pedidos de hoje</h2>
+    </div>
+    {% include "partials/kanban.html" %}
+  </section>
+
+  <section class="card" aria-labelledby="agents-title">
+    <div class="card-head">
+      <h2 id="agents-title" class="card-title">Agentes agora</h2>
+      <a class="link" href="/agentes">Ver todos</a>
+    </div>
+    {% include "partials/agents.html" %}
+  </section>
+</div>
+{% endblock %}

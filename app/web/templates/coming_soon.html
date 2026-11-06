@@ -1,0 +1,11 @@
+{% extends "app_layout.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="card empty-state">
+  <p class="eyebrow">Chega na fase {{ phase }}</p>
+  <h2>Esta seção ainda está sendo construída</h2>
+  <p class="muted">{{ what }}</p>
+  <a class="btn btn-primary" href="/">Voltar para a Visão geral</a>
+</section>
+{% endblock %}

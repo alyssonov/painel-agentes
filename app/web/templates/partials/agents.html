@@ -1,0 +1,17 @@
+<ul id="agents-now" class="agents" hx-get="/parciais/agentes" hx-trigger="every 60s" hx-swap="outerHTML">
+  {% for a in ov.agents %}
+  <li class="agent">
+    <span class="dot dot-agent-{{ a.status }}" aria-hidden="true"></span>
+    <div class="agent-body">
+      <p class="agent-name">{{ a.name }}</p>
+      <p class="agent-metric">{{ a.metric }}</p>
+    </div>
+    <div class="agent-side">
+      <span class="badge badge-{{ a.status }}">
+        {{ {'ok': 'Ativo', 'erro': 'Com erro', 'pausado': 'Pausado', 'rodando': 'Rodando', 'sem_execucao': 'Aguardando'}.get(a.status, a.status) }}
+      </span>
+      {% if a.last_run_label %}<span class="muted small">às {{ a.last_run_label }}</span>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>

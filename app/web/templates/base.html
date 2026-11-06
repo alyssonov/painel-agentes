@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false}'>
+  <title>{% block title %}Painel{% endblock %} · Painel de Agentes</title>
+  <link rel="preload" href="/static/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/vendor/htmx.min.js" defer></script>
+</head>
+<body hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'>
+  {% include "_icons.html" %}
+  {% if dry_run %}
+  <div class="sim-banner" role="status">
+    <strong>MODO SIMULAÇÃO</strong> — dados fictícios. Nada é enviado aos clientes nem alterado nas lojas.
+  </div>
+  {% endif %}
+  {% block body %}{% endblock %}
+</body>
+</html>

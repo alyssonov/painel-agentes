@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark"><svg class="icon"><use href="#i-leaf"/></svg></span>
+      <span>Painel de Agentes</span>
+    </div>
+    <nav class="nav" aria-label="Menu principal">
+      {% for href, label, icon in nav_items %}
+      <a href="{{ href }}" class="nav-item{% if current_path == href %} is-active{% endif %}"
+         {% if current_path == href %}aria-current="page"{% endif %}>
+        <svg class="icon"><use href="#i-{{ icon }}"/></svg><span>{{ label }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="accounts">
+      <p class="accounts-title">Contas conectadas</p>
+      {% for acc in integrations %}
+      <div class="account">
+        <span class="dot dot-{{ acc.status }}" aria-hidden="true"></span>
+        <span class="account-name">{{ acc.label }}</span>
+        <span class="account-status">{{ acc.detail }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+        {% block page_subtitle %}{% endblock %}
+      </div>
+      <div class="topbar-user">
+        {% if user %}<span class="muted">{{ user.name }}</span>{% endif %}
+        <form method="post" action="/logout">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="btn btn-ghost" type="submit" title="Sair">
+            <svg class="icon"><use href="#i-logout"/></svg><span>Sair</span>
+          </button>
+        </form>
+      </div>
+    </header>
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}
