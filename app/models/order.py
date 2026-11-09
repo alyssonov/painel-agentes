@@ -19,6 +19,8 @@ class Order(TimestampMixin, Base):
     # Identificador do pedido no Olist (único): é por ele que a sincronização atualiza.
     olist_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     olist_number: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Nota fiscal vinculada no Olist (campo idNotaFiscal do pedido). Só leitura.
+    invoice_olist_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Só o nome abreviado do cliente (ex.: "Maria S.") — minimizamos dados pessoais.
     customer_short_name: Mapped[str] = mapped_column(String(80))
     olist_status: Mapped[str | None] = mapped_column(String(40), nullable=True)

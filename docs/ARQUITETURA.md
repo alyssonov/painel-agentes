@@ -277,7 +277,7 @@ Agentes 3, 7 e 9 **não usam IA** (são cálculos) — custo zero de tokens.
 | 1 | Base, banco, login, Visão geral, modo simulação com dados falsos ✅ |
 | 2 | Olist (OAuth, somente leitura) + painel com dados reais ✅ |
 | 3 | ML + Shopee + Agente 1 com aprovação manual |
-| 4 | Agentes 3, 9 e 7 |
+| 4 | Agentes 3, 9 e 7 ✅ |
 | 5 | Agente 8 (WhatsApp/e-mail) |
 | 6 | Agente 5 |
 | 7 | Agentes 2, 4 e 6 |
@@ -396,3 +396,28 @@ e packs.
   Tirar da fila, e "Respondidas hoje") e `/agentes` (ativar/pausar, manual/
   automático, regras das respostas, métrica do dia, gasto de IA).
 - Tabelas novas: `actions`, `ai_cache`.
+
+## 14. Fase 4 — Vigia de estoque, Conferência de NF-e e Margem real
+
+Sem IA. Os três só leem e criam/resolvem alertas.
+
+- **Alertas** (`app/core/alerts.py`): cada agente informa a lista de alertas
+  que valem agora (por chave); `sync_alerts` cria, atualiza e resolve — sem
+  duplicar. Os agentes não rodam sem conta real conectada (`has_real_data`).
+- **Regras por agente** (`app/agents/config.py`): valores padrão e limites;
+  salvas em `agents.config` pela página Agentes.
+- **Anúncios do Mercado Livre** (`listings`, só leitura): `GET
+  /users/{id}/items/search` (modo `scan` acima de 1000) + `/items?ids=`, uma
+  linha por variação, ligadas ao produto do Olist pelo SKU. Relidos de hora
+  em hora. Anúncios Full (`logistic_type=fulfillment`) não entram na
+  comparação de estoque.
+- **Vigia de estoque** (`agents/stock_watch.py`, `services/stock.py`):
+  disponível = saldo − reservado do Olist; média diária na janela; dias
+  restantes; esgotado / acabando / divergência; até 8 alertas + 1 resumo.
+- **Conferência de NF-e** (`agents/nfe_check.py`): usa a situação do pedido
+  no Olist, o `idNotaFiscal` do pedido (nova coluna `orders.invoice_olist_id`)
+  e as notas lidas (`invoices`). Nota "ok" = situações 2, 6, 7, 8.
+- **Margem real** (`services/margin_report.py`, `agents/margin.py`): taxa,
+  frete e imposto do pedido rateados entre os itens pelo valor; calculado na
+  hora (sem tabela `margin_entries`, desnecessária neste volume).
+- Páginas: `/estoque-precos` e `/margem`.

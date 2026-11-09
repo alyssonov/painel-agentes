@@ -16,6 +16,8 @@ Endpoints usados (todos GET):
   /items/{id}                       ficha do anúncio (preço, estoque, atributos)
   /items/{id}/description           descrição do anúncio
   /orders/search?seller=...         vendas, com a taxa (sale_fee) de cada item
+  /users/{id}/items/search          ids de todos os anúncios da loja (modo scan acima de 1000)
+    https://developers.mercadolivre.com.br/itens-e-buscas
 """
 
 from collections.abc import Iterator
@@ -28,6 +30,7 @@ BASE_URL = "https://api.mercadolibre.com"
 QUESTIONS_PAGE = 50
 ORDERS_PAGE = 50
 ITEMS_BATCH = 20
+ITEMS_PAGE = 100
 _UTC = ZoneInfo("UTC")
 
 
@@ -85,6 +88,46 @@ class MLClient(ReadOnlyApiClient):
         """GET /items/{id}/description — texto da descrição (vazio se não houver)."""
         data = self._get(f"/items/{item_id}/description") or {}
         return data.get("plain_text") or ""
+
+    def iter_my_item_ids(self, seller_id: int | str, *, status: str = "active") -> Iterator[str]:
+        """GET /users/{id}/items/search — ids dos anúncios da loja.
+
+        Até 1000 anúncios usa limit/offset; acima disso, o modo "scan" com scroll_id
+        (como manda a documentação "Itens e buscas").
+        """
+        path = f"/users/{seller_id}/items/search"
+        data = self._get(path, {"status": status, "limit": ITEMS_PAGE, "offset": 0}) or {}
+        total = int((data.get("paging") or {}).get("total") or 0)
+        if total <= 1000:
+            offset = 0
+            while True:
+                results = data.get("results") or []
+                yield from results
+                offset += len(results)
+                if not results or offset >= total:
+                    return
+                data = self._get(path, {"status": status, "limit": ITEMS_PAGE, "offset": offset}) or {}
+        params = {"status": status, "search_type": "scan", "limit": ITEMS_PAGE}
+        data = self._get(path, params) or {}
+        while True:
+            results = data.get("results") or []
+            yield from results
+            scroll_id = data.get("scroll_id")
+            if not results or not scroll_id:
+                return
+            data = self._get(path, {**params, "scroll_id": scroll_id}) or {}
+
+    def get_items_full(self, item_ids: list[str]) -> list[dict]:
+        """GET /items?ids=... — anúncios com estoque, preço, SKU e variações (lotes de 20)."""
+        items: list[dict] = []
+        attrs = "id,title,price,available_quantity,status,permalink,seller_custom_field,attributes,variations,shipping"
+        for start in range(0, len(item_ids), ITEMS_BATCH):
+            batch = item_ids[start:start + ITEMS_BATCH]
+            data = self._get("/items", {"ids": ",".join(batch), "attributes": attrs}) or []
+            for entry in data if isinstance(data, list) else []:
+                if isinstance(entry, dict) and entry.get("code") == 200 and isinstance(entry.get("body"), dict):
+                    items.append(entry["body"])
+        return items
 
     def iter_orders(self, seller_id: int | str, *, created_from: datetime) -> Iterator[dict]:
         """GET /orders/search — vendas criadas desde a data (UTC)."""

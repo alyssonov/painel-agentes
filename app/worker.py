@@ -8,13 +8,17 @@ Tarefas agendadas:
 - Fase 2: lê o Olist (somente leitura) a cada OLIST_SYNC_MINUTES minutos.
 - Fase 3: lê o Mercado Livre (perguntas, reputação, taxas) a cada ML_SYNC_MINUTES
   e roda o Respondedor de perguntas a cada AGENT_QUESTIONS_MINUTES.
+- Fase 4: Vigia de estoque e Conferência de NF-e a cada 30 min; Margem real a cada hora.
 """
 
 import logging
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 
+from app.agents.margin import run_margin_agent
+from app.agents.nfe_check import run_nfe_check
 from app.agents.questions import run_questions_agent
+from app.agents.stock_watch import run_stock_watch
 
 from app.config import get_settings
 from app.core.db import get_sessionmaker
@@ -58,6 +62,21 @@ def job_agent_questions() -> None:
         logger.info("Respondedor de perguntas: %s — %s", run.status, run.summary)
 
 
+def job_checks() -> None:
+    """Fase 4: Vigia de estoque e Conferência de NF-e (sem IA, só leitura e alertas)."""
+    for name, runner in (("Vigia de estoque", run_stock_watch), ("Conferência de NF-e", run_nfe_check)):
+        run = runner(get_sessionmaker())
+        if run is not None:
+            logger.info("%s: %s — %s", name, run.status, run.summary)
+
+
+def job_margin() -> None:
+    """Fase 4: Calculadora de margem real."""
+    run = run_margin_agent(get_sessionmaker())
+    if run is not None:
+        logger.info("Margem real: %s — %s", run.status, run.summary)
+
+
 def main() -> None:
     settings = get_settings()
     settings.check_ready()
@@ -72,10 +91,14 @@ def main() -> None:
                       max_instances=1, coalesce=True)
     scheduler.add_job(job_agent_questions, "interval", minutes=settings.agent_questions_minutes,
                       id="agent_questions", max_instances=1, coalesce=True)
+    scheduler.add_job(job_checks, "interval", minutes=30, id="checks", max_instances=1, coalesce=True)
+    scheduler.add_job(job_margin, "interval", minutes=60, id="margin", max_instances=1, coalesce=True)
     logger.info("Worker iniciado (DRY_RUN=%s). Ctrl+C para parar.", settings.dry_run)
     try:
         job_sync_olist()
         job_sync_ml()
+        job_checks()
+        job_margin()
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         logger.info("Worker parado.")

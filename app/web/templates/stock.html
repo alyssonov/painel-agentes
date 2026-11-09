@@ -1,0 +1,61 @@
+{% extends "app_layout.html" %}
+{% block title %}Estoque e preços{% endblock %}
+{% block page_title %}Estoque e preços{% endblock %}
+{% block page_subtitle %}<p class="muted">Estoque do Olist (somente leitura) e ritmo de vendas dos últimos {{ window }} dias. Sugestões de preço chegam na fase 7.</p>{% endblock %}
+{% block content %}
+<section class="stats" aria-label="Resumo do estoque">
+  <article class="card stat {{ 'tone-bad' if counts.esgotado else 'tone-ok' }}">
+    <p class="stat-label">Esgotados</p><p class="stat-value">{{ counts.esgotado }}</p>
+    <p class="stat-foot muted">Produtos que vendiam e zeraram</p>
+  </article>
+  <article class="card stat {{ 'tone-warn' if counts.baixo else 'tone-ok' }}">
+    <p class="stat-label">Acabando</p><p class="stat-value">{{ counts.baixo }}</p>
+    <p class="stat-foot muted">Duram menos de {{ alert_days }} dias</p>
+  </article>
+  <article class="card stat {{ 'tone-warn' if counts.divergencia else 'tone-ok' }}">
+    <p class="stat-label">Divergências</p><p class="stat-value">{{ counts.divergencia }}</p>
+    <p class="stat-foot muted">Olist diferente do anúncio</p>
+  </article>
+  <article class="card stat tone-ok">
+    <p class="stat-label">Em dia</p><p class="stat-value">{{ counts.ok }}</p>
+    <p class="stat-foot muted">de {{ total }} produtos ativos</p>
+  </article>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2 class="card-title">Produtos</h2>
+    <div class="segmented" role="group" aria-label="Filtro">
+      <a class="seg{% if filtro != 'todos' %} is-active{% endif %}" href="?filtro=atencao">Pedem atenção</a>
+      <a class="seg{% if filtro == 'todos' %} is-active{% endif %}" href="?filtro=todos">Todos</a>
+    </div>
+  </div>
+  {% if not rows %}
+    <p class="muted">{{ 'Nenhum produto pedindo atenção agora.' if filtro != 'todos' else 'Nenhum produto ativo encontrado.' }}</p>
+  {% else %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Produto</th><th class="num">Disponível no Olist</th><th class="num">Vendas/dia</th>
+        <th class="num">Dura</th><th>Anúncios</th><th>Situação</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        {% set label, tone = status_labels[r.status] %}
+        <tr>
+          <td><span class="t-strong">{{ r.name }}</span><br><span class="muted small">{{ r.sku }}</span></td>
+          <td class="num">{{ r.available if r.available is not none else '—' }}</td>
+          <td class="num">{{ ('%.1f'|format(r.avg_daily))|replace('.', ',') }}</td>
+          <td class="num">{% if r.days_left is not none %}{{ '%.0f'|format(r.days_left) }} dias{% else %}—{% endif %}</td>
+          <td>
+            {% for l in r.listings %}
+              <div class="small {{ 'text-danger' if l.diverges }}">{{ l.channel_label }}: {{ l.quantity }}{% if l.fulfillment %} (Full){% endif %}{% if l.diverges %} — diferente do Olist{% endif %}</div>
+            {% else %}<span class="muted small">—</span>{% endfor %}
+          </td>
+          <td><span class="badge badge-{{ tone }}">{{ label }}</span>{% if r.diverges %} <span class="badge badge-atencao">Divergência</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

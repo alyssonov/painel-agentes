@@ -5,10 +5,9 @@ perguntas, vigiar estoque, conferir notas, calcular a margem real, enviar
 relatórios e mais. O **Olist ERP é a fonte da verdade**: o sistema só lê do
 Olist e nunca mexe em estoque ou nota fiscal.
 
-> **Situação atual: Fase 3 (em andamento).** Login, Visão geral, modo
-> simulação, Olist ERP (somente leitura), Mercado Livre e o **Respondedor de
-> perguntas** com aprovação manual. A Shopee vem a seguir.
-> Veja `docs/ARQUITETURA.md`.
+> **Situação atual: Fase 4.** Olist (somente leitura), Mercado Livre,
+> Respondedor de perguntas, Vigia de estoque, Conferência de NF-e e Margem
+> real. A Shopee entra quando o cadastro de desenvolvedor for aprovado.
 
 ## Requisitos
 
@@ -161,6 +160,27 @@ Custo: usa o modelo mais barato (Claude Haiku), com cache de perguntas
 repetidas e teto diário (`AI_DAILY_BUDGET_BRL`). O gasto estimado do dia
 aparece na Visão geral e em Agentes. Com `DRY_RUN=true`, as respostas
 aprovadas **não são enviadas** (ficam marcadas como simulação).
+
+## Vigia de estoque, Conferência de NF-e e Margem real (Fase 4)
+
+Agentes **sem IA** (custo zero), que só **leem e avisam** — nunca alteram
+estoque, pedidos ou notas. Ative cada um em **Agentes**; as regras (dias de
+alerta, horas sem nota, margem mínima...) ficam em "Regras deste agente".
+
+- **Vigia de estoque** (a cada 30 min): média de vendas por dia, previsão de
+  quando cada produto acaba, produtos esgotados e divergência entre o estoque
+  do Olist e o dos anúncios do Mercado Livre (anúncios Full ficam de fora).
+  Página: **Estoque e preços**.
+- **Conferência de NF-e** (a cada 30 min): pedido "Pronto para envio" sem
+  nota (urgente), pedido parado sem nota há mais de X horas e notas
+  rejeitadas/denegadas. A correção é sempre feita no Olist.
+- **Margem real** (a cada hora): lucro por produto e por venda (preço − taxa
+  do marketplace − frete − custo do Olist − impostos), avisos de prejuízo,
+  margem abaixo da mínima e produtos sem custo no Olist. Página: **Margem
+  real** (hoje, 7 ou 30 dias).
+
+Os alertas aparecem em "O que pede atenção" e **somem sozinhos** quando o
+problema é resolvido.
 
 ## Modo simulação (`DRY_RUN`)
 

@@ -52,3 +52,37 @@ def order_refs(order: dict) -> list[str]:
     if order.get("pack_id"):
         refs.append(str(order["pack_id"]))
     return refs
+
+
+def _sku_from(entity: dict) -> str | None:
+    for attr in entity.get("attributes") or []:
+        if attr.get("id") == "SELLER_SKU" and attr.get("value_name"):
+            return str(attr["value_name"]).strip()
+    value = entity.get("seller_custom_field")
+    return str(value).strip() if value else None
+
+
+def listing_rows(item: dict) -> list[dict]:
+    """Uma linha por anúncio — ou uma por variação, cada uma com SKU e estoque próprios."""
+    shipping = item.get("shipping") or {}
+    base = {
+        "item_id": item["id"],
+        "title": item.get("title") or item["id"],
+        "price_cents": to_cents(item.get("price")),
+        "status": item.get("status") or "",
+        "permalink": item.get("permalink"),
+        "fulfillment": shipping.get("logistic_type") == "fulfillment",
+    }
+    variations = item.get("variations") or []
+    if not variations:
+        return [{**base, "external_id": item["id"], "sku": _sku_from(item), "variation_label": None,
+                 "available_quantity": int(item.get("available_quantity") or 0)}]
+    rows = []
+    for var in variations:
+        label = " / ".join(str(c.get("value_name")) for c in var.get("attribute_combinations") or []
+                           if c.get("value_name"))
+        rows.append({**base, "external_id": f"{item['id']}-{var.get('id')}", "sku": _sku_from(var) or _sku_from(item),
+                     "variation_label": label or None,
+                     "price_cents": to_cents(var.get("price")) or base["price_cents"],
+                     "available_quantity": int(var.get("available_quantity") or 0)})
+    return rows

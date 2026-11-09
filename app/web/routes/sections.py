@@ -13,9 +13,7 @@ router = APIRouter()
 # endereço -> (título, fase em que chega, o que vai ter)
 SECTIONS = {
     "/anuncios": ("Anúncios", 7, "Criação de anúncios e sugestões de melhoria para os anúncios fracos."),
-    "/estoque-precos": ("Estoque e preços", 4, "Previsão de fim de estoque, divergências e sugestões de preço."),
     "/pos-venda": ("Pós-venda", 6, "Mensagens dos pedidos e reclamações abertas."),
-    "/margem": ("Margem real", 4, "Lucro e margem de cada venda e de cada produto, com destaque para os prejuízos."),
     "/relatorios": ("Relatórios", 5, "Relatório diário por WhatsApp/e-mail e relatórios semanal e mensal em PDF."),
 }
 

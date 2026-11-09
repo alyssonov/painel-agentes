@@ -190,6 +190,9 @@ def upsert_order(db: Session, summary: dict, detail: dict, products: dict[str, i
     order.external_id = str(ecommerce.get("numeroPedidoEcommerce") or ecommerce.get("numeroPedidoCanalVenda")
                             or f"olist-{number}")
     order.olist_number = str(number) if number is not None else None
+    invoice_id = to_int(detail.get("idNotaFiscal")) or to_int((detail.get("notaFiscal") or {}).get("id")
+                                                              if isinstance(detail.get("notaFiscal"), dict) else None)
+    order.invoice_olist_id = str(invoice_id) if invoice_id else None  # 0/vazio = sem nota
     order.customer_short_name = short_customer_name((detail.get("cliente") or summary.get("cliente") or {}).get("nome"))
     order.olist_status = order_status_label(situacao)
     order.kanban_status = kanban_for(situacao)

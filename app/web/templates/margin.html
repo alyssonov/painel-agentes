@@ -1,0 +1,83 @@
+{% extends "app_layout.html" %}
+{% block title %}Margem real{% endblock %}
+{% block page_title %}Margem real{% endblock %}
+{% block page_subtitle %}<p class="muted">Preço − taxa do marketplace − frete − custo (Olist) − impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}%).</p>{% endblock %}
+{% block content %}
+<div class="segmented segmented-light" role="group" aria-label="Período">
+  {% for value, label in periods %}
+  <a class="seg{% if periodo == value %} is-active{% endif %}" href="?periodo={{ value }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% set t = r.totals %}
+<section class="stats" aria-label="Totais do período">
+  <article class="card stat tone-info">
+    <p class="stat-label">Faturamento</p><p class="stat-value">{{ t.revenue|brl }}</p>
+    <p class="stat-foot muted">{{ t.orders }} pedido(s)</p>
+  </article>
+  <article class="card stat {{ 'tone-bad' if t.profit < 0 else 'tone-ok' }}">
+    <p class="stat-label">Lucro real</p><p class="stat-value">{{ t.profit|brl }}</p>
+    <p class="stat-foot {{ 'down' if t.profit < 0 else 'up' }}">Margem {{ t.margin_pct|pct }}</p>
+  </article>
+  <article class="card stat tone-info">
+    <p class="stat-label">Taxas + frete</p><p class="stat-value stat-value-sm">{{ (t.fees + t.shipping)|brl }}</p>
+    <p class="stat-foot muted">Taxas {{ t.fees|brl }} · Frete {{ t.shipping|brl }}</p>
+  </article>
+  <article class="card stat tone-info">
+    <p class="stat-label">Custo + impostos</p><p class="stat-value stat-value-sm">{{ (t.cost + t.tax)|brl }}</p>
+    <p class="stat-foot muted">Custo {{ t.cost|brl }} · Impostos {{ t.tax|brl }}</p>
+  </article>
+</section>
+
+{% if r.orders_missing_fees or r.products_missing_cost or not tax_rate %}
+<section class="card notice-list">
+  <h2 class="card-title">Para a margem ficar exata</h2>
+  <ul>
+    {% if r.products_missing_cost %}<li><span class="badge badge-atencao">Atenção</span> {{ r.products_missing_cost }} produto(s) vendido(s) sem custo cadastrado no Olist — o lucro deles aparece maior que o real.</li>{% endif %}
+    {% if r.orders_missing_fees %}<li><span class="badge badge-info">Aviso</span> {{ r.orders_missing_fees }} pedido(s) ainda sem a taxa do marketplace (Shopee e outros canais chegam depois).</li>{% endif %}
+    {% if not tax_rate %}<li><span class="badge badge-atencao">Atenção</span> Alíquota de impostos não informada — <a class="link" href="/integracoes#imposto">informar agora</a>.</li>{% endif %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Por produto</h2><span class="muted small">Prejuízo primeiro</span></div>
+  {% if r.products %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Produto</th><th class="num">Vendidos</th><th class="num">Faturamento</th><th class="num">Lucro</th><th class="num">Margem</th></tr></thead>
+      <tbody>
+      {% for p in r.products %}
+        {% set tone = 'erro' if p.profit < 0 else ('atencao' if p.margin_pct is not none and p.margin_pct < min_margin else 'ok') %}
+        <tr>
+          <td><span class="t-strong">{{ p.name }}</span><br><span class="muted small">{{ p.sku }}</span>
+            {% if p.missing_cost %}<span class="badge badge-atencao">Sem custo no Olist</span>{% endif %}</td>
+          <td class="num">{{ p.units }}</td>
+          <td class="num">{{ p.revenue|brl }}</td>
+          <td class="num {{ 'text-danger' if p.profit < 0 }}">{{ p.profit|brl }}</td>
+          <td class="num"><span class="badge badge-{{ tone }}">{{ p.margin_pct|pct }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="muted">Nenhuma venda no período.</p>{% endif %}
+</section>
+
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Vendas com prejuízo</h2><span class="badge {{ 'badge-erro' if loss_orders else 'badge-ok' }}">{{ loss_orders|length }}</span></div>
+  {% if loss_orders %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Pedido</th><th>Quando</th><th class="num">Valor</th><th class="num">Resultado</th></tr></thead>
+      <tbody>
+      {% for item in loss_orders %}
+        <tr><td>{{ item.o.label }} <span class="muted small">· {{ item.o.channel_label }}</span></td><td>{{ item.when }}</td>
+          <td class="num">{{ item.o.revenue|brl }}</td><td class="num text-danger">{{ item.o.profit|brl }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="muted">Nenhuma venda com prejuízo no período.</p>{% endif %}
+</section>
+{% endblock %}

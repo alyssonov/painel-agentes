@@ -17,7 +17,7 @@ from app.core.db import get_sessionmaker
 from app.fake_data.seed import refresh_demo_if_stale
 from app.web.auth import CsrfFailed, LoginRequired, csrf_failed_handler, login_required_handler
 from app.web.middleware import SecurityHeadersMiddleware
-from app.web.routes import agents, auth, dashboard, integrations, questions, sections
+from app.web.routes import agents, auth, dashboard, integrations, questions, reports, sections
 
 logger = logging.getLogger("painel")
 
@@ -63,6 +63,7 @@ def create_app() -> FastAPI:
     app.include_router(integrations.router)
     app.include_router(questions.router)
     app.include_router(agents.router)
+    app.include_router(reports.router)
 
     @app.get("/saude", include_in_schema=False)
     def health():

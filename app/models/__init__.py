@@ -9,6 +9,7 @@ from app.models.catalog import Product, StockSnapshot
 from app.models.fee import MarketplaceFee
 from app.models.integration import IntegrationAccount
 from app.models.invoice import Invoice
+from app.models.listing import Listing
 from app.models.order import Order, OrderItem
 from app.models.question import Question
 from app.models.settings import StoreSetting
@@ -26,6 +27,7 @@ __all__ = [
     "IntegrationAccount",
     "MarketplaceFee",
     "Invoice",
+    "Listing",
     "Order",
     "OrderItem",
     "Product",

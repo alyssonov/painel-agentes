@@ -19,9 +19,15 @@ from app.core.db import utcnow
 from app.integrations.errors import IntegrationError, NotConnected
 from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
 from app.integrations.mercadolivre.client import MLClient
-from app.integrations.mercadolivre.mapping import order_fee_cents, order_refs, question_status, reputation_label
+from app.integrations.mercadolivre.mapping import (
+    listing_rows,
+    order_fee_cents,
+    order_refs,
+    question_status,
+    reputation_label,
+)
 from app.integrations.olist.dates import parse_olist_datetime as parse_datetime
-from app.models import Action, MarketplaceFee, Order, Question, SyncRun
+from app.models import Action, Listing, MarketplaceFee, Order, Product, Question, SyncRun
 from app.models.enums import ActionStatus, ActionType, Channel, Provider, QuestionStatus, SyncStatus
 from app.sync.common import (
     SyncAlreadyRunning,
@@ -66,6 +72,7 @@ def run_ml_sync(session_factory: sessionmaker[Session],
             seller_id = sync_profile(db, client, account)
             counts["perguntas"] = sync_questions(db, client, account, seller_id, started)
             counts["taxas"] = sync_fees(db, client, account, seller_id, started)
+            counts["anuncios"] = sync_listings(db, client, account, seller_id, started)
             mark_ok(db, account)
             db.commit()
         status, error = SyncStatus.OK, None
@@ -200,3 +207,38 @@ def sync_fees(db: Session, client: MLClient, account, seller_id: str, started) -
     set_cursor(account, "cursor_taxas", started)
     db.commit()
     return len(fees)
+
+
+# Anúncios: relidos de hora em hora (estoque muda pouco e o Olist é a fonte da verdade).
+LISTINGS_EVERY = timedelta(minutes=60)
+
+
+def sync_listings(db: Session, client: MLClient, account, seller_id: str, started) -> int:
+    """Estoque, preço e SKU dos anúncios ativos (para o Vigia de estoque comparar com o Olist)."""
+    last = get_cursor(account, "cursor_anuncios")
+    if last and started - last < LISTINGS_EVERY:
+        return 0
+    ids = list(client.iter_my_item_ids(seller_id))
+    by_sku = dict(db.execute(select(Product.sku, Product.id).where(Product.is_demo.is_(False))).all())
+    seen: set[str] = set()
+    for item in client.get_items_full(ids):
+        for row in listing_rows(item):
+            seen.add(row["external_id"])
+            listing = db.scalar(select(Listing).where(Listing.channel == Channel.ML,
+                                                      Listing.external_id == row["external_id"]))
+            if listing is None:
+                listing = Listing(channel=Channel.ML, external_id=row["external_id"], item_id=row["item_id"],
+                                  title=row["title"], status=row["status"], synced_at=started)
+                db.add(listing)
+            for key in ("item_id", "title", "price_cents", "available_quantity", "status", "permalink",
+                        "fulfillment", "sku", "variation_label"):
+                setattr(listing, key, row[key])
+            listing.product_id = by_sku.get(row["sku"]) if row["sku"] else None
+            listing.synced_at = started
+    # Anúncios que não estão mais ativos: marcados como tal (não entram na comparação).
+    for listing in db.scalars(select(Listing).where(Listing.channel == Channel.ML,
+                                                    Listing.external_id.not_in(seen) if seen else True)):
+        listing.status = "inativo"
+    set_cursor(account, "cursor_anuncios", started)
+    db.commit()
+    return len(seen)

@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.agents.config import RULES, agent_rules
 from app.agents.registry import AGENTS, agent_phase
 from app.ai.client import spent_today_brl
 from app.config import get_settings
@@ -22,7 +23,9 @@ from app.web.templating import flash, render
 router = APIRouter(prefix="/agentes")
 
 # Agentes que já têm lógica pronta (os outros chegam nas próximas fases).
-IMPLEMENTED = {"perguntas"}
+IMPLEMENTED = {"perguntas", "estoque", "nfe", "margem"}
+# Frequência de cada agente (minutos), para mostrar no painel.
+INTERVALS = {"estoque": 30, "nfe": 30, "margem": 60}
 RULE_FIELDS = {
     "store_name": ("Nome da loja (como o agente se refere à loja)", 80),
     "answer_tone": ("Tom das respostas", 80),
@@ -46,6 +49,8 @@ def agents_page(request: Request, db: Session = Depends(get_db), user: User = De
             "metric": run.summary if run and run.summary else "Ainda não rodou",
             "last_run": to_local(run.finished_at or run.started_at).strftime("%d/%m %H:%M") if run else None,
             "run_status": run.status if run else None,
+            "rules": [(rule, agent_rules(agent)[rule.key]) for rule in RULES.get(agent.slug, [])],
+            "interval": INTERVALS.get(agent.slug, settings.agent_questions_minutes),
         })
     ml = get_ml_account(db)
     return render(request, "agents.html", {
@@ -107,4 +112,37 @@ async def save_rules(request: Request, db: Session = Depends(get_db), user: User
         audit.record(db, actor=f"user:{user.id}", event="loja.regras_alteradas", details=changed)
     db.commit()
     flash(request, "Regras salvas." if changed else "Nada mudou.")
+    return RedirectResponse("/agentes", status_code=303)
+
+
+@router.post("/{slug}/config", dependencies=[Depends(verify_csrf)])
+async def save_config(request: Request, slug: str, db: Session = Depends(get_db),
+                      user: User = Depends(current_user)):
+    """Salva as regras numéricas de um agente (dentro dos limites de cada regra)."""
+    agent = _get_agent(db, slug)
+    if agent is None or slug not in RULES:
+        flash(request, "Este agente não tem regras para ajustar.", "erro")
+        return RedirectResponse("/agentes", status_code=303)
+    form = await request.form()
+    config = dict(agent.config or {})
+    errors = []
+    for rule in RULES[slug]:
+        raw = str(form.get(rule.key, "")).strip().replace(",", ".")
+        try:
+            value = float(raw)
+        except ValueError:
+            errors.append(rule.label)
+            continue
+        if not rule.minimum <= value <= rule.maximum:
+            errors.append(rule.label)
+            continue
+        config[rule.key] = value
+    if errors:
+        flash(request, "Valor fora do permitido em: " + "; ".join(errors), "erro")
+        return RedirectResponse("/agentes", status_code=303)
+    agent.config = config
+    audit.record(db, actor=f"user:{user.id}", event="agente.regras_alteradas", target_type="agente",
+                 target_id=slug, details=config)
+    db.commit()
+    flash(request, f"{agent.name}: regras salvas.")
     return RedirectResponse("/agentes", status_code=303)

@@ -381,3 +381,20 @@ body.page-app { min-height: 100vh; background-color: var(--login-to);
 .dot-ok, .dot-agent-ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(31,138,76,.18); }
 .dot-agent-rodando { background: var(--info); box-shadow: 0 0 0 3px rgba(37,99,166,.18); }
 .dot-agent-sem_execucao { background: #E0A100; }
+
+/* Tabelas (Fase 4) */
+.table-wrap { overflow-x: auto; margin: 0 -4px; }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase;
+            letter-spacing: .03em; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.table td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table tr:last-child td { border-bottom: 0; }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.t-strong { font-weight: 600; }
+.text-danger { color: var(--danger); font-weight: 600; }
+.card-head .segmented { margin-bottom: 0; }
+a.seg { text-decoration: none; display: inline-block; }
+.segmented-light { background: rgba(255,255,255,.12); }
+.segmented-light .seg { color: rgba(255,255,255,.85); }
+.segmented-light .seg.is-active { background: #fff; color: var(--brand); }
+.notice-list ul { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }

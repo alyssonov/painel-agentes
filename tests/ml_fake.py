@@ -1,5 +1,7 @@
 """API do Mercado Livre simulada para os testes (respx)."""
 
+import re
+
 import httpx
 import respx
 
@@ -23,6 +25,20 @@ QUESTIONS = [
 
 ITEMS = {"MLB1": "Caneca Térmica 500ml", "MLB2": "Garrafa Térmica 1L"}
 
+# Anúncios completos (lista de anúncios da loja): um simples e um com variações.
+FULL_ITEMS = {
+    "MLB1": {"id": "MLB1", "title": "Caneca Térmica 500ml", "price": 69.9, "available_quantity": 7,
+             "status": "active", "permalink": "https://produto.mercadolivre.com.br/MLB1",
+             "attributes": [{"id": "SELLER_SKU", "value_name": "CAN-01"}], "shipping": {"logistic_type": "xd_drop_off"}},
+    "MLB2": {"id": "MLB2", "title": "Garrafa Térmica 1L", "price": 99.9, "available_quantity": 50,
+             "status": "active", "attributes": [], "shipping": {"logistic_type": "fulfillment"},
+             "variations": [
+                 {"id": 11, "available_quantity": 30, "attribute_combinations": [{"value_name": "Preta"}],
+                  "attributes": [{"id": "SELLER_SKU", "value_name": "GAR-01"}]},
+                 {"id": 12, "available_quantity": 20, "attribute_combinations": [{"value_name": "Azul"}],
+                  "attributes": [{"id": "SELLER_SKU", "value_name": "GAR-02"}]}]},
+}
+
 ORDERS = [
     # pedido simples: taxa 2 × 10,49
     {"id": 2000001, "pack_id": None, "order_items": [{"quantity": 2, "sale_fee": 10.49}]},
@@ -40,7 +56,8 @@ def _questions(request):
 
 def _items(request):
     ids = request.url.params["ids"].split(",")
-    return httpx.Response(200, json=[{"code": 200, "body": {"id": i, "title": ITEMS.get(i, "?")}} for i in ids])
+    return httpx.Response(200, json=[{"code": 200, "body": FULL_ITEMS.get(i, {"id": i, "title": ITEMS.get(i, "?")})}
+                                     for i in ids])
 
 
 def install(router: respx.Router) -> dict[str, respx.Route]:
@@ -51,6 +68,8 @@ def install(router: respx.Router) -> dict[str, respx.Route]:
         "me": router.get(f"{BASE_URL}/users/me").mock(return_value=httpx.Response(200, json=ME)),
         "questions": router.get(f"{BASE_URL}/questions/search").mock(side_effect=_questions),
         "items": router.get(f"{BASE_URL}/items").mock(side_effect=_items),
+        "my_items": router.get(url__regex=re.escape(BASE_URL) + r"/users/\d+/items/search").mock(
+            return_value=httpx.Response(200, json={"results": list(FULL_ITEMS), "paging": {"total": len(FULL_ITEMS)}})),
         "orders": router.get(f"{BASE_URL}/orders/search").mock(return_value=httpx.Response(200, json={
             "results": ORDERS, "paging": {"total": len(ORDERS), "offset": 0, "limit": 50}})),
     }
