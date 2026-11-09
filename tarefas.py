@@ -67,7 +67,10 @@ def update() -> int:
     """
     if (ROOT / ".git").exists() and shutil.which("git"):
         print("Buscando atualizações no GitHub...")
-        if run("git", "pull", "--ff-only"):
+        # GIT_ASK_YESNO=false: no Windows, se o antivírus/OneDrive estiver segurando
+        # algum arquivo interno do Git, ele não para mais perguntando "try again? (y/n)".
+        git_env = {**os.environ, "GIT_ASK_YESNO": "false"}
+        if subprocess.call(["git", "pull", "--ff-only"], cwd=ROOT, env=git_env):
             print("Não foi possível atualizar agora. Seguindo com a versão atual.")
     else:
         print("Git não encontrado: seguindo com a versão atual.")
