@@ -23,9 +23,9 @@ from app.web.templating import flash, render
 router = APIRouter(prefix="/agentes")
 
 # Agentes que já têm lógica pronta (os outros chegam nas próximas fases).
-IMPLEMENTED = {"perguntas", "estoque", "nfe", "margem"}
+IMPLEMENTED = {"perguntas", "estoque", "nfe", "margem", "relatorio"}
 # Frequência de cada agente (minutos), para mostrar no painel.
-INTERVALS = {"estoque": 30, "nfe": 30, "margem": 60}
+INTERVALS = {"estoque": 30, "nfe": 30, "margem": 60, "relatorio": 10}
 RULE_FIELDS = {
     "store_name": ("Nome da loja (como o agente se refere à loja)", 80),
     "answer_tone": ("Tom das respostas", 80),

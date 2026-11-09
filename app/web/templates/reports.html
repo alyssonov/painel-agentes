@@ -1,0 +1,62 @@
+{% extends "app_layout.html" %}
+{% block title %}Relatórios{% endblock %}
+{% block page_title %}Relatórios{% endblock %}
+{% block page_subtitle %}<p class="muted">Resumo do dia por e-mail, todo dia a partir das {{ hour }}h. Relatórios semanal e mensal em PDF chegam na próxima etapa.</p>{% endblock %}
+{% block content %}
+<div class="report-grid">
+  <div class="report-side">
+    <section class="card integration">
+      <div class="integration-head">
+        <h2 class="card-title">Relatório diário</h2>
+        {% if enabled %}<span class="badge badge-ok">Ativo</span>{% else %}<span class="badge badge-pausado">Pausado</span>{% endif %}
+      </div>
+      {% if not email_configured %}
+        <div class="notice">
+          <p><strong>Falta configurar o e-mail que envia os relatórios.</strong></p>
+          <ol class="steps">
+            <li>No Gmail: myaccount.google.com &gt; Segurança &gt; ative a <b>Verificação em duas etapas</b>.</li>
+            <li>Ainda em Segurança, abra <b>Senhas de app</b>, crie uma chamada “Painel de Agentes” e copie a senha de 16 letras.</li>
+            <li>No arquivo <code>.env</code>, preencha <code>SMTP_USER</code> (o e-mail) e <code>SMTP_PASSWORD</code> (a senha de app).</li>
+            <li>Feche a janela do painel e ligue de novo.</li>
+          </ol>
+        </div>
+      {% else %}
+        <p class="muted small">Enviado por: <b>{{ email_from }}</b></p>
+      {% endif %}
+      {% if not enabled %}<p class="muted small">Ative o agente “Relatório diário” em <a class="link" href="/agentes">Agentes</a> para o envio automático. O horário também se ajusta lá.</p>{% endif %}
+
+      <form method="post" action="/relatorios/destinatarios" class="rules-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="field"><span>Quem recebe (e-mails separados por vírgula)</span>
+          <input type="text" name="recipients" value="{{ recipients }}" placeholder="voce@email.com, dono@email.com"></label>
+        <button class="btn btn-primary" type="submit">Salvar destinatários</button>
+      </form>
+
+      <form method="post" action="/relatorios/enviar-agora">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-secondary" type="submit" {% if not email_configured %}disabled{% endif %}>Enviar agora (teste)</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 class="card-title">Histórico</h2></div>
+      {% if history %}
+      <ul class="answered">
+        {% for h in history %}
+        <li>
+          <p><span class="badge badge-{{ h.label[1] }}">{{ h.label[0] }}</span> <b>{{ h.kind }}</b> de {{ h.r.period_start.strftime('%d/%m') }} <span class="muted small">· {{ h.when }}</span></p>
+          {% if h.r.sent_to %}<p class="muted small">Para: {{ h.r.sent_to }}</p>{% endif %}
+          {% if h.r.error %}<p class="small text-danger">{{ h.r.error }}</p>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="muted">Nenhum relatório enviado ainda.</p>{% endif %}
+    </section>
+  </div>
+
+  <section class="card report-preview">
+    <div class="card-head"><h2 class="card-title">Prévia de hoje</h2><span class="muted small">exatamente como chega no e-mail</span></div>
+    <iframe src="/relatorios/previa" title="Prévia do relatório de hoje" class="preview-frame"></iframe>
+  </section>
+</div>
+{% endblock %}

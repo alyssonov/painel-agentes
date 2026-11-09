@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     ml_redirect_uri: str = "https://alyssonov.github.io/painel-retorno/mercadolivre/"
     ml_sync_minutes: int = 5
 
+    # E-mail para os relatórios (Gmail: smtp.gmail.com, porta 587, "senha de app").
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = Field(default="", repr=False)
+    email_from: str = ""  # vazio = usa o SMTP_USER
+
     anthropic_api_key: str = Field(default="", repr=False)
     ai_daily_budget_brl: float = 10.0
     # Cotação usada só para ESTIMAR o gasto em reais (a cobrança é em dólar).
@@ -75,6 +82,11 @@ class Settings(BaseSettings):
     def ml_configured(self) -> bool:
         """True quando as chaves do aplicativo do Mercado Livre estão no .env."""
         return bool(self.ml_client_id and self.ml_client_secret)
+
+    @property
+    def email_configured(self) -> bool:
+        """True quando o e-mail que envia os relatórios está configurado no .env."""
+        return bool(self.smtp_host and self.smtp_user and self.smtp_password)
 
     @property
     def is_production(self) -> bool:

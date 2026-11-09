@@ -278,7 +278,7 @@ Agentes 3, 7 e 9 **não usam IA** (são cálculos) — custo zero de tokens.
 | 2 | Olist (OAuth, somente leitura) + painel com dados reais ✅ |
 | 3 | ML + Shopee + Agente 1 com aprovação manual |
 | 4 | Agentes 3, 9 e 7 ✅ |
-| 5 | Agente 8 (WhatsApp/e-mail) |
+| 5 | Agente 8 (WhatsApp/e-mail) — e-mail ✅; WhatsApp e PDFs a seguir |
 | 6 | Agente 5 |
 | 7 | Agentes 2, 4 e 6 |
 | 8 | Revisão de segurança, testes, Docker, guia do VPS |
@@ -421,3 +421,20 @@ Sem IA. Os três só leem e criam/resolvem alertas.
   frete e imposto do pedido rateados entre os itens pelo valor; calculado na
   hora (sem tabela `margin_entries`, desnecessária neste volume).
 - Páginas: `/estoque-precos` e `/margem`.
+
+## 15. Fase 5 — Relatório diário (e-mail)
+
+- **Envio interno** (`app/notify/email.py`): SMTP com STARTTLS (Gmail com
+  senha de app), texto + HTML. Só para a loja; clientes nunca passam por aqui.
+- **Relatório** (`app/reports/daily.py`): números do dia (margem pelo
+  `margin_report`, comparação com ontem no mesmo horário, canais, mais
+  vendidos, perguntas, alertas abertos, resumo de cada agente, gasto de IA),
+  renderizados em texto e HTML (estilos inline, padrão de e-mail). Sem IA.
+- **Agendamento**: o worker confere a cada 10 min; envia se já passou do
+  `hora_envio` (regra do agente, padrão 19) e o de hoje ainda não saiu.
+  Tabela `reports` (único por tipo + dia) impede duplicidade; falha → alerta
+  e nova tentativa a cada 30 min; envio de teste é registrado à parte
+  (`kind=teste`).
+- **Página** `/relatorios`: destinatários (`store_settings.report_recipients`),
+  envio de teste, histórico e prévia em `/relatorios/previa` (única rota com
+  CSP que permite estilos inline, exibida só dentro do painel).

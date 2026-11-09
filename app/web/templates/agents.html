@@ -47,8 +47,11 @@
         {% if a.slug == 'perguntas' %}
           {% if a.mode == 'automatico' %}Automático: respostas com <strong>confiança alta</strong> saem sozinhas; o resto espera você.
           {% else %}Manual: toda resposta espera a sua aprovação em <a class="link" href="/perguntas">Perguntas</a>.{% endif %}
-        {% else %}Só lê e avisa: não altera nada no Olist nem nos marketplaces.{% endif %}
-        Roda a cada {{ c.interval }} minutos.
+          Roda a cada {{ c.interval }} minutos.
+        {% elif a.slug == 'relatorio' %}Envia o resumo do dia por e-mail para quem estiver cadastrado em <a class="link" href="/relatorios">Relatórios</a>.
+        Confere a cada {{ c.interval }} minutos se já está na hora.
+        {% else %}Só lê e avisa: não altera nada no Olist nem nos marketplaces.
+        Roda a cada {{ c.interval }} minutos.{% endif %}
       </p>
 
       {% if c.rules %}

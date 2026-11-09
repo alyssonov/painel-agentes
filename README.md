@@ -5,9 +5,10 @@ perguntas, vigiar estoque, conferir notas, calcular a margem real, enviar
 relatórios e mais. O **Olist ERP é a fonte da verdade**: o sistema só lê do
 Olist e nunca mexe em estoque ou nota fiscal.
 
-> **Situação atual: Fase 4.** Olist (somente leitura), Mercado Livre,
-> Respondedor de perguntas, Vigia de estoque, Conferência de NF-e e Margem
-> real. A Shopee entra quando o cadastro de desenvolvedor for aprovado.
+> **Situação atual: Fase 5.** Olist (somente leitura), Mercado Livre,
+> Respondedor de perguntas, Vigia de estoque, Conferência de NF-e, Margem
+> real e Relatório diário por e-mail. WhatsApp e PDFs semanal/mensal vêm a
+> seguir; a Shopee entra quando o cadastro de desenvolvedor for aprovado.
 
 ## Requisitos
 
@@ -181,6 +182,23 @@ alerta, horas sem nota, margem mínima...) ficam em "Regras deste agente".
 
 Os alertas aparecem em "O que pede atenção" e **somem sozinhos** quando o
 problema é resolvido.
+
+## Relatório diário por e-mail (Fase 5)
+
+1. No Gmail que vai **enviar** os relatórios: myaccount.google.com >
+   Segurança > ative a **Verificação em duas etapas** > **Senhas de app** >
+   crie "Painel de Agentes" e copie a senha de 16 letras.
+2. No `.env`: `SMTP_USER=seu@gmail.com` e `SMTP_PASSWORD=<senha de app>`.
+   Feche e abra o painel.
+3. Em **Relatórios**, cadastre quem recebe (e-mails separados por vírgula) e
+   clique em **Enviar agora (teste)**.
+4. Em **Agentes**, ative o **Relatório diário**. O horário (padrão 19h) fica
+   em "Regras deste agente".
+
+O resumo traz vendas, faturamento (comparado com ontem), margem real, mais
+vendidos, perguntas, o que pede atenção e o que cada agente fez. Se o
+computador estiver desligado no horário, sai assim que o painel ligar (até o
+fim do dia), e nunca duas vezes. Falha no envio vira alerta. Sem custo de IA.
 
 ## Modo simulação (`DRY_RUN`)
 

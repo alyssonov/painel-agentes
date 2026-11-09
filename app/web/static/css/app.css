@@ -398,3 +398,10 @@ a.seg { text-decoration: none; display: inline-block; }
 .segmented-light .seg { color: rgba(255,255,255,.85); }
 .segmented-light .seg.is-active { background: #fff; color: var(--brand); }
 .notice-list ul { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+
+/* Relatórios (Fase 5) */
+.report-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; align-items: start; }
+.report-side { display: flex; flex-direction: column; gap: 16px; }
+.preview-frame { width: 100%; height: 900px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #EEF2F6; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+@media (max-width: 1180px) { .report-grid { grid-template-columns: minmax(0, 1fr); } .preview-frame { height: 700px; } }

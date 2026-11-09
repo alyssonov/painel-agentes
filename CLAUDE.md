@@ -43,6 +43,10 @@ loja: precisa ser **confiável, seguro e fácil para quem não é técnico**.
      conectada, **lê dados reais** (leitura é segura: o cliente do Olist não
      tem escrita), e a loja fictícia é apagada.
    - O painel mostra uma faixa visível "MODO SIMULAÇÃO" enquanto estiver ligado.
+   - Mensagens **internas** (relatórios para a própria loja, por e-mail ou
+     WhatsApp) não são ações para clientes: são enviadas também no modo
+     simulação, pelo `app/notify/`, e ficam registradas em `reports` e no
+     `audit_log`. Mensagens para clientes continuam só pelo `ActionGateway`.
 5. **Segurança.**
    - Segredos só no `.env` (nunca no código, nunca no git). Manter
      `.env.example` atualizado e comentado.

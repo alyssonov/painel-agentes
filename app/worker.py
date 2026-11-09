@@ -9,6 +9,7 @@ Tarefas agendadas:
 - Fase 3: lê o Mercado Livre (perguntas, reputação, taxas) a cada ML_SYNC_MINUTES
   e roda o Respondedor de perguntas a cada AGENT_QUESTIONS_MINUTES.
 - Fase 4: Vigia de estoque e Conferência de NF-e a cada 30 min; Margem real a cada hora.
+- Fase 5: Relatório diário (confere a cada 10 min se já passou do horário de envio).
 """
 
 import logging
@@ -19,6 +20,7 @@ from app.agents.margin import run_margin_agent
 from app.agents.nfe_check import run_nfe_check
 from app.agents.questions import run_questions_agent
 from app.agents.stock_watch import run_stock_watch
+from app.reports.daily import run_daily_report
 
 from app.config import get_settings
 from app.core.db import get_sessionmaker
@@ -77,6 +79,13 @@ def job_margin() -> None:
         logger.info("Margem real: %s — %s", run.status, run.summary)
 
 
+def job_daily_report() -> None:
+    """Fase 5: relatório diário (confere a cada 10 min se já passou do horário)."""
+    run = run_daily_report(get_sessionmaker())
+    if run is not None:
+        logger.info("Relatório diário: %s — %s", run.status, run.summary)
+
+
 def main() -> None:
     settings = get_settings()
     settings.check_ready()
@@ -93,12 +102,14 @@ def main() -> None:
                       id="agent_questions", max_instances=1, coalesce=True)
     scheduler.add_job(job_checks, "interval", minutes=30, id="checks", max_instances=1, coalesce=True)
     scheduler.add_job(job_margin, "interval", minutes=60, id="margin", max_instances=1, coalesce=True)
+    scheduler.add_job(job_daily_report, "interval", minutes=10, id="daily_report", max_instances=1, coalesce=True)
     logger.info("Worker iniciado (DRY_RUN=%s). Ctrl+C para parar.", settings.dry_run)
     try:
         job_sync_olist()
         job_sync_ml()
         job_checks()
         job_margin()
+        job_daily_report()
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         logger.info("Worker parado.")

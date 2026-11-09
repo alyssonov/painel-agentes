@@ -14,7 +14,6 @@ router = APIRouter()
 SECTIONS = {
     "/anuncios": ("Anúncios", 7, "Criação de anúncios e sugestões de melhoria para os anúncios fracos."),
     "/pos-venda": ("Pós-venda", 6, "Mensagens dos pedidos e reclamações abertas."),
-    "/relatorios": ("Relatórios", 5, "Relatório diário por WhatsApp/e-mail e relatórios semanal e mensal em PDF."),
 }
 
 

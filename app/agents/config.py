@@ -27,6 +27,9 @@ RULES: dict[str, list[Rule]] = {
     "nfe": [
         Rule("horas_sem_nota", "Avisar pedido parado sem nota há mais de", 24, 1, 120, "horas"),
     ],
+    "relatorio": [
+        Rule("hora_envio", "Enviar o relatório diário a partir das", 19, 0, 23, "horas"),
+    ],
     "margem": [
         Rule("janela_dias", "Analisar as vendas dos últimos", 7, 1, 60, "dias"),
         Rule("margem_minima_pct", "Avisar produtos com margem abaixo de", 5, -50, 80, "%"),

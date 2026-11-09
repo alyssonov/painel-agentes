@@ -12,6 +12,7 @@ from app.models.invoice import Invoice
 from app.models.listing import Listing
 from app.models.order import Order, OrderItem
 from app.models.question import Question
+from app.models.report import Report
 from app.models.settings import StoreSetting
 from app.models.sync import SyncRun
 from app.models.user import User
@@ -32,6 +33,7 @@ __all__ = [
     "OrderItem",
     "Product",
     "Question",
+    "Report",
     "StockSnapshot",
     "StoreSetting",
     "SyncRun",
