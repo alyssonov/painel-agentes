@@ -72,7 +72,15 @@ def run_ml_sync(session_factory: sessionmaker[Session],
             seller_id = sync_profile(db, client, account)
             counts["perguntas"] = sync_questions(db, client, account, seller_id, started)
             counts["taxas"] = sync_fees(db, client, account, seller_id, started)
-            counts["anuncios"] = sync_listings(db, client, account, seller_id, started)
+            try:
+                counts["anuncios"] = sync_listings(db, client, account, seller_id, started)
+            except IntegrationError as exc:
+                # A lista de anúncios é complementar (Vigia de estoque): uma falha aqui
+                # não pode parar perguntas, reputação e taxas.
+                db.rollback()
+                account = get_ml_account(db)
+                logger.warning("Não foi possível ler os anúncios do Mercado Livre: %s", exc)
+                counts["anuncios_erro"] = 1
             mark_ok(db, account)
             db.commit()
         status, error = SyncStatus.OK, None

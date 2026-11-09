@@ -24,6 +24,7 @@ from collections.abc import Iterator
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from app.integrations.errors import AuthExpired, IntegrationError, TemporaryError
 from app.integrations.http import ReadOnlyApiClient
 
 BASE_URL = "https://api.mercadolibre.com"
@@ -72,7 +73,13 @@ class MLClient(ReadOnlyApiClient):
         items: list[dict] = []
         for start in range(0, len(item_ids), ITEMS_BATCH):
             batch = item_ids[start:start + ITEMS_BATCH]
-            data = self._get("/items", {"ids": ",".join(batch), "attributes": "id,title,permalink,price"}) or []
+            try:
+                data = self._get("/items", {"ids": ",".join(batch), "attributes": "id,title,permalink,price"}) or []
+            except (AuthExpired, TemporaryError):
+                raise
+            except IntegrationError:  # consulta em lote recusada: um por vez
+                items += [item for item in (self.get_item(item_id) for item_id in batch) if item]
+                continue
             if isinstance(data, dict):  # um anúncio só pode vir sem a "embalagem" da consulta múltipla
                 data = [{"code": 200, "body": data}]
             for entry in data if isinstance(data, list) else []:
@@ -123,7 +130,15 @@ class MLClient(ReadOnlyApiClient):
         attrs = "id,title,price,available_quantity,status,permalink,seller_custom_field,attributes,variations,shipping"
         for start in range(0, len(item_ids), ITEMS_BATCH):
             batch = item_ids[start:start + ITEMS_BATCH]
-            data = self._get("/items", {"ids": ",".join(batch), "attributes": attrs}) or []
+            try:
+                data = self._get("/items", {"ids": ",".join(batch), "attributes": attrs}) or []
+            except (AuthExpired, TemporaryError):
+                raise
+            except IntegrationError:
+                # Plano B: algumas contas/aplicativos recebem 403 na consulta em lote,
+                # mas a consulta de um anúncio por vez (GET /items/{id}) funciona.
+                items += [item for item in (self.get_item(item_id) for item_id in batch) if item]
+                continue
             for entry in data if isinstance(data, list) else []:
                 if isinstance(entry, dict) and entry.get("code") == 200 and isinstance(entry.get("body"), dict):
                     items.append(entry["body"])

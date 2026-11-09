@@ -121,7 +121,8 @@
         {% if ml.last_run %}
           {{ ml.last_run_label }} —
           {% if ml.last_run.status == 'ok' %}deu certo
-            {% if ml.last_run.counts %}({{ ml.last_run.counts.get('perguntas', 0) }} perguntas, {{ ml.last_run.counts.get('taxas', 0) }} vendas com taxa){% endif %}
+            {% if ml.last_run.counts %}({{ ml.last_run.counts.get('perguntas', 0) }} perguntas, {{ ml.last_run.counts.get('taxas', 0) }} vendas com taxa{% if ml.last_run.counts.get('anuncios') %}, {{ ml.last_run.counts.get('anuncios') }} anúncios{% endif %}){% endif %}
+            {% if ml.last_run.counts and ml.last_run.counts.get('anuncios_erro') %}<br><span class="badge badge-atencao">Atenção</span> <span class="small">a lista de anúncios não pôde ser lida desta vez (o resto funcionou)</span>{% endif %}
           {% elif ml.last_run.status == 'rodando' %}em andamento…
           {% else %}não deu certo{% endif %}
         {% else %}nenhuma ainda{% endif %}

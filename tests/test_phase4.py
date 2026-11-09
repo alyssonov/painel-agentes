@@ -237,3 +237,37 @@ def test_regras_dos_agentes(logged_client, db):
     r = logged_client.post("/agentes/estoque/config", data={"csrf_token": token, "dias_alerta": "999",
                                                             "janela_vendas_dias": "14", "tolerancia_divergencia": "1"})
     assert "fora do permitido" in r.text
+
+
+@respx.mock
+def test_consulta_em_lote_recusada_usa_um_por_vez(db, ml_env):
+    """O Mercado Livre recusou /items?ids= (403) para o usuário: o painel lê um anúncio por vez."""
+    import httpx
+
+    from tests import ml_fake
+    from tests.test_ml import connect_ml, sync
+    product(db, "CAN-01", stock=5)
+    db.commit()
+    connect_ml(db)
+    routes = ml_fake.install(respx.mock)
+    routes["items"].mock(return_value=httpx.Response(403, json={"message": "forbidden"}))
+    for item_id, body in ml_fake.FULL_ITEMS.items():
+        respx.get(f"{ml_fake.BASE_URL}/items/{item_id}").mock(return_value=httpx.Response(200, json=body))
+    run = sync()
+    assert run.status == "ok", run.error
+    assert run.counts["anuncios"] == 3
+    assert db.scalar(select(Listing).where(Listing.external_id == "MLB1")).available_quantity == 7
+
+
+@respx.mock
+def test_falha_nos_anuncios_nao_para_perguntas_e_taxas(db, ml_env):
+    import httpx
+
+    from tests import ml_fake
+    from tests.test_ml import connect_ml, sync
+    connect_ml(db)
+    routes = ml_fake.install(respx.mock)
+    routes["my_items"].mock(return_value=httpx.Response(403, json={"message": "forbidden"}))
+    run = sync()
+    assert run.status == "ok", run.error
+    assert run.counts["perguntas"] == 3 and run.counts["anuncios_erro"] == 1
