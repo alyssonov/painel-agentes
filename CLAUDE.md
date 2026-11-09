@@ -6,6 +6,9 @@ Leia-o inteiro antes de mudar qualquer coisa. A arquitetura detalhada está em
 
 ## O que é o projeto
 
+Nome do produto: **Gerente do Ano** (logo em `app/web/static/img/`: selo
+circular completo no login; troféu no menu lateral e na aba do navegador).
+
 Sistema único com painel web onde agentes de IA automatizam o dia a dia de uma
 loja que vende no **Mercado Livre** e na **Shopee**, usando o **Olist ERP
 (antigo Tiny)** como sistema de gestão. O painel será apresentado ao dono da

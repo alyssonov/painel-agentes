@@ -127,7 +127,7 @@ def render_text(c: dict) -> str:
         lines.append(f"  … e mais {c['alertas_total'] - len(c['alertas'])} no painel")
     if c["agentes"]:
         lines += ["", "O QUE OS AGENTES FIZERAM:"] + [f"  {a}" for a in c["agentes"]]
-    lines += ["", f"Gasto com IA hoje: {c['gasto_ia']}", "", "Painel de Agentes — para detalhes, abra o painel."]
+    lines += ["", f"Gasto com IA hoje: {c['gasto_ia']}", "", "Gerente do Ano — para detalhes, abra o painel."]
     return "\n".join(lines)
 
 
@@ -171,7 +171,7 @@ def render_html(c: dict) -> str:
         f'<tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" '
         f'style="max-width:600px;width:100%;background:#fff;border-radius:16px;overflow:hidden">'
         f'<tr><td style="background:{navy};color:#fff;padding:20px 24px"><div style="font-size:13px;opacity:.75">'
-        f'Painel de Agentes</div><div style="font-size:20px;font-weight:700">{e(c["titulo"])}</div></td></tr>'
+        f'🏆 Gerente do Ano</div><div style="font-size:20px;font-weight:700">{e(c["titulo"])}</div></td></tr>'
         f'{banner}{"".join(rows)}'
         f'<tr><td style="padding:14px 24px;border-top:1px solid #E0E3E8;font-size:12px;color:{muted}">'
         f'Gasto com IA hoje: {e(c["gasto_ia"])} · Para detalhes, abra o painel.</td></tr>'

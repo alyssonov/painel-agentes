@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -38,7 +38,7 @@ async def lifespan(_app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title="Painel de Agentes", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(title="Gerente do Ano", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
     # Ordem: o último adicionado roda primeiro.
     app.add_middleware(SecurityHeadersMiddleware)
@@ -65,6 +65,11 @@ def create_app() -> FastAPI:
     app.include_router(agents.router)
     app.include_router(reports.router)
     app.include_router(report_pages.router)
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon():
+        """Ícone da aba do navegador (o troféu da logo)."""
+        return FileResponse(static_dir / "img" / "favicon.ico", media_type="image/x-icon")
 
     @app.get("/saude", include_in_schema=False)
     def health():

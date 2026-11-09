@@ -38,7 +38,7 @@ def send_email(to: list[str], subject: str, text: str, html: str | None = None,
         raise EmailError("Nenhum destinatário cadastrado.")
     message = EmailMessage()
     message["Subject"] = subject
-    message["From"] = formataddr(("Painel de Agentes", settings.email_from or settings.smtp_user))
+    message["From"] = formataddr(("Gerente do Ano", settings.email_from or settings.smtp_user))
     message["To"] = ", ".join(to)
     message.set_content(text)
     if html:

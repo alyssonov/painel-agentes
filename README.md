@@ -1,4 +1,4 @@
-# Painel de Agentes — Mercado Livre + Shopee + Olist ERP
+# Gerente do Ano — painel de agentes para Mercado Livre + Shopee + Olist ERP
 
 Painel web onde agentes de IA ajudam no dia a dia da loja: responder
 perguntas, vigiar estoque, conferir notas, calcular a margem real, enviar

@@ -3,10 +3,10 @@
 {% block body %}
 <div class="shell">
   <aside class="sidebar">
-    <div class="brand">
-      <span class="brand-mark"><svg class="icon"><use href="#i-leaf"/></svg></span>
-      <span>Painel de Agentes</span>
-    </div>
+    <a class="brand" href="/" title="Gerente do Ano — Visão geral">
+      <span class="brand-mark"><svg class="icon"><use href="#i-trophy"/></svg></span>
+      <span class="brand-name">Gerente <span class="brand-sub">do Ano</span></span>
+    </a>
     <nav class="nav" aria-label="Menu principal">
       {% for href, label, icon in nav_items %}
       <a href="{{ href }}" class="nav-item{% if current_path == href %} is-active{% endif %}"
