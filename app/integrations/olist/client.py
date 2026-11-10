@@ -17,6 +17,7 @@ Endpoints usados (todos GET):
   /pedidos           lista de pedidos (paginada)
   /pedidos/{id}      detalhe do pedido (itens, frete)
   /notas             lista de notas fiscais (paginada)
+  /contas-receber    contas a receber (paginada) — previsão de recebimentos (swagger consultado em 11/11/2026)
 """
 
 import logging
@@ -91,3 +92,11 @@ class OlistClient(ReadOnlyApiClient):
             "dataInicial": to_olist_datetime(created_since, date_only=True),
         })
 
+    def iter_receivables(self, *, due_from: datetime, due_until: datetime,
+                         situacao: str = "aberto") -> Iterator[dict]:
+        """GET /contas-receber — contas a receber com vencimento no período (só leitura)."""
+        return self._paginate("/contas-receber", {
+            "situacao": situacao,
+            "dataInicialVencimento": to_olist_datetime(due_from, date_only=True),
+            "dataFinalVencimento": to_olist_datetime(due_until, date_only=True),
+        })

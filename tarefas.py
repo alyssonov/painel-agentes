@@ -13,6 +13,7 @@ Comandos:
   worker     sobe o agendador dos agentes
   test       roda os testes
   diagnostico mostra a situação dos envios do Mercado Livre (sem dados de clientes)
+  diagnostico-recebimentos  de onde dá para prever os recebimentos (sem dados de clientes)
   atualizar  busca a versão nova no GitHub, instala dependências e atualiza o banco
   iniciar    atualiza, liga o painel + worker e abre o navegador (é o que o "Iniciar painel.bat" usa)
 """
@@ -167,6 +168,7 @@ COMMANDS = {
     "worker": lambda: run(venv_python(), "-m", "app.worker"),
     "test": lambda: run(venv_python(), "-m", "pytest"),
     "diagnostico": lambda: run(venv_python(), "-m", "app.cli", "diag-envios"),
+    "diagnostico-recebimentos": lambda: run(venv_python(), "-m", "app.cli", "diag-recebimentos"),
 }
 
 

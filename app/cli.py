@@ -176,6 +176,79 @@ def cmd_diag_envios(_args) -> int:
     return 0
 
 
+def cmd_diag_recebimentos(_args) -> int:
+    """De onde dá para prever os recebimentos? (Mercado Livre/Mercado Pago e Olist; sem dados de clientes)."""
+    from datetime import timedelta
+
+    from app.core.db import get_sessionmaker, utcnow
+    from app.integrations.errors import IntegrationError
+    from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
+    from app.integrations.mercadolivre.client import MLClient
+    from app.integrations.mercadopago.client import MercadoPagoClient
+    from app.integrations.olist.auth import OlistTokenProvider, get_olist_account
+    from app.core.money import format_brl
+    from app.integrations.olist.client import OlistClient
+
+    sm = get_sessionmaker()
+    with sm() as db:
+        ml, olist = get_ml_account(db), get_olist_account(db)
+        seller = ml.external_id if ml else None
+        has_olist = bool(olist and olist.access_token_enc)
+
+    print("== Mercado Livre: pagamentos das vendas ==")
+    payment_ids = []
+    if not seller:
+        print("  Mercado Livre não está conectado.")
+    else:
+        try:
+            with MLClient(MLTokenProvider(sm)) as client:
+                for order in client.iter_orders(seller, created_from=utcnow() - timedelta(days=3)):
+                    if order.get("status") != "paid":
+                        continue
+                    for pay in order.get("payments") or []:
+                        if len(payment_ids) < 3 and pay.get("id"):
+                            payment_ids.append(str(pay["id"]))
+                            dates = {k: v for k, v in pay.items() if "date" in k and v}
+                            print(f"  pagamento: status={pay.get('status')} campos={sorted(pay.keys())}"[:500])
+                            print(f"    datas: {dates}")
+                    if len(payment_ids) >= 3:
+                        break
+        except IntegrationError as exc:
+            print(f"  ERRO ao ler vendas: {exc}")
+
+    print("\n== Mercado Pago: data de liberação do dinheiro ==")
+    if payment_ids:
+        try:
+            with MercadoPagoClient(MLTokenProvider(sm)) as mp:
+                for pid in payment_ids[:2]:
+                    data = mp.get_payment(pid) or {}
+                    details = data.get("transaction_details") or {}
+                    print(f"  pagamento: status={data.get('status')} liberação={data.get('money_release_date')} "
+                          f"situação_liberação={data.get('money_release_status')} "
+                          f"valor={data.get('transaction_amount')} líquido={details.get('net_received_amount')}")
+        except IntegrationError as exc:
+            print(f"  Sem acesso ao Mercado Pago com a conta do Mercado Livre: {exc}")
+    else:
+        print("  Nenhum pagamento recente para consultar.")
+
+    print("\n== Olist: contas a receber em aberto (próximos 30 dias) ==")
+    if not has_olist:
+        print("  Olist não está conectado.")
+    else:
+        try:
+            with OlistClient(OlistTokenProvider(sm)) as client:
+                now = utcnow()
+                rows = list(client.iter_receivables(due_from=now - timedelta(days=1), due_until=now + timedelta(days=30)))
+                total = sum(float(r.get("valor") or 0) for r in rows)
+                dues = sorted(r.get("dataVencimento") for r in rows if r.get("dataVencimento"))
+                print(f"  {len(rows)} conta(s), total {format_brl(round(total * 100))}")
+                if dues:
+                    print(f"  vencimentos de {dues[0]} até {dues[-1]}")
+        except IntegrationError as exc:
+            print(f"  ERRO: {exc}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description="Administração do painel")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -187,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:
     p_user.set_defaults(func=cmd_create_user)
     sub.add_parser("seed-demo").set_defaults(func=cmd_seed_demo)
     sub.add_parser("diag-envios").set_defaults(func=cmd_diag_envios)
+    sub.add_parser("diag-recebimentos").set_defaults(func=cmd_diag_recebimentos)
     args = parser.parse_args(argv)
     return args.func(args)
 
