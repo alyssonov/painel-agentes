@@ -180,6 +180,15 @@ alerta, horas sem nota, margem mínima...) ficam em "Regras deste agente".
   margem abaixo da mínima e produtos sem custo no Olist. Página: **Margem
   real** (hoje, 7 ou 30 dias).
 
+- **Alerta de despacho** (a cada 15 min): pedidos do Mercado Livre que
+  precisam ser despachados dentro do prazo de aviso (padrão 24 h) e os que já
+  passaram do prazo (urgente). O prazo vem do próprio Mercado Livre. Envios
+  Full ficam de fora.
+- **Termômetro da reputação** (a cada hora): taxas de reclamações, atrasos e
+  cancelamentos do Mercado Livre comparadas com o limite do "verde" (ajustável
+  em Agentes; padrões 2%, 10% e 1,5%). Avisa ao chegar a 80% do limite e
+  alerta quando passa dele.
+
 Os alertas aparecem em "O que pede atenção" e **somem sozinhos** quando o
 problema é resolvido.
 

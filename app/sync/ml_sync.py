@@ -20,14 +20,16 @@ from app.integrations.errors import IntegrationError, NotConnected
 from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
 from app.integrations.mercadolivre.client import MLClient
 from app.integrations.mercadolivre.mapping import (
+    WAITING_DISPATCH,
     listing_rows,
     order_fee_cents,
     order_refs,
     question_status,
     reputation_label,
+    reputation_metrics,
 )
 from app.integrations.olist.dates import parse_olist_datetime as parse_datetime
-from app.models import Action, Listing, MarketplaceFee, Order, Product, Question, SyncRun
+from app.models import Action, Listing, MarketplaceFee, Order, Product, Question, Shipment, SyncRun
 from app.models.enums import ActionStatus, ActionType, Channel, Provider, QuestionStatus, SyncStatus
 from app.sync.common import (
     SyncAlreadyRunning,
@@ -71,7 +73,15 @@ def run_ml_sync(session_factory: sessionmaker[Session],
             account = get_ml_account(db)
             seller_id = sync_profile(db, client, account)
             counts["perguntas"] = sync_questions(db, client, account, seller_id, started)
-            counts["taxas"] = sync_fees(db, client, account, seller_id, started)
+            seen_shipments: dict[str, str] = {}
+            counts["taxas"] = sync_fees(db, client, account, seller_id, started, seen_shipments)
+            try:
+                counts["envios"] = sync_shipments(db, client, account, started, seen_shipments)
+            except IntegrationError as exc:
+                db.rollback()
+                account = get_ml_account(db)
+                logger.warning("Não foi possível ler os envios do Mercado Livre: %s", exc)
+                counts["envios_erro"] = 1
             try:
                 counts["anuncios"] = sync_listings(db, client, account, seller_id, started)
             except IntegrationError as exc:
@@ -102,7 +112,8 @@ def sync_profile(db: Session, client: MLClient, account) -> str:
         raise IntegrationError("O Mercado Livre não informou o número da conta.")
     account.external_id = seller_id
     account.account_name = me.get("nickname") or account.account_name
-    account.extra = {**(account.extra or {}), "reputation_label": reputation_label(me)}
+    account.extra = {**(account.extra or {}), "reputation_label": reputation_label(me),
+                     "reputation_metrics": reputation_metrics(me)}
     db.commit()
     return seller_id
 
@@ -191,12 +202,18 @@ def _close_stale_suggestions(db: Session) -> None:
                            reason="Respondida (ou encerrada) direto no Mercado Livre")
 
 
-def sync_fees(db: Session, client: MLClient, account, seller_id: str, started) -> int:
+def sync_fees(db: Session, client: MLClient, account, seller_id: str, started,
+              shipments: dict[str, str] | None = None) -> int:
+    """Taxas das vendas. Se `shipments` for passado, também anota os envios vistos (id → pedido)."""
     first = get_cursor(account, "cursor_taxas") is None
     created_from = started - timedelta(days=FIRST_FEES_DAYS if first else FEES_WINDOW_DAYS)
     # Soma por pacote: no Olist, um pacote com vários pedidos costuma virar um pedido só.
     fees: dict[str, int] = {}
+    shipments = shipments if shipments is not None else {}
     for order in client.iter_orders(seller_id, created_from=created_from):
+        shipping_id = (order.get("shipping") or {}).get("id")
+        if shipping_id and order.get("status") not in ("cancelled", "invalid"):
+            shipments[str(shipping_id)] = str(order.get("pack_id") or order.get("id"))
         fee = order_fee_cents(order)
         for ref in order_refs(order):
             fees[ref] = fees.get(ref, 0) + fee if ref == str(order.get("pack_id")) else fee
@@ -215,6 +232,38 @@ def sync_fees(db: Session, client: MLClient, account, seller_id: str, started) -
     set_cursor(account, "cursor_taxas", started)
     db.commit()
     return len(fees)
+
+
+SHIPMENTS_EVERY = timedelta(minutes=15)
+
+
+def sync_shipments(db: Session, client: MLClient, account, started, new: dict[str, str]) -> int:
+    """Situação e prazo de despacho dos envios que ainda não saíram (de 15 em 15 min)."""
+    last = get_cursor(account, "cursor_envios")
+    if last and started - last < SHIPMENTS_EVERY and not new:
+        return 0
+    # Novos + os que ainda esperavam despacho na última leitura.
+    pending = {s.shipment_id: s.order_ref for s in db.scalars(select(Shipment).where(
+        Shipment.channel == Channel.ML, Shipment.status.in_(WAITING_DISPATCH)))}
+    known = set(db.scalars(select(Shipment.shipment_id).where(Shipment.channel == Channel.ML)))
+    to_check = {**pending, **{sid: ref for sid, ref in new.items() if sid not in known}}
+    for shipment_id, order_ref in to_check.items():
+        data = client.get_shipment(shipment_id) or {}
+        row = db.scalar(select(Shipment).where(Shipment.channel == Channel.ML, Shipment.shipment_id == shipment_id))
+        if row is None:
+            row = Shipment(channel=Channel.ML, shipment_id=shipment_id, order_ref=order_ref,
+                           status=data.get("status") or "desconhecido", checked_at=started)
+            db.add(row)
+        row.status = data.get("status") or row.status
+        row.substatus = data.get("substatus")
+        row.logistic_type = data.get("logistic_type") or (data.get("logistic") or {}).get("type")
+        if row.status in WAITING_DISPATCH and row.logistic_type != "fulfillment":
+            sla = client.get_shipment_sla(shipment_id) or {}
+            row.dispatch_deadline = parse_datetime(sla.get("expected_date")) or row.dispatch_deadline
+        row.checked_at = started
+    set_cursor(account, "cursor_envios", started)
+    db.commit()
+    return len(to_check)
 
 
 # Anúncios: relidos de hora em hora (estoque muda pouco e o Olist é a fonte da verdade).

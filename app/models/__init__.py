@@ -14,6 +14,7 @@ from app.models.order import Order, OrderItem
 from app.models.question import Question
 from app.models.report import Report
 from app.models.settings import StoreSetting
+from app.models.shipment import Shipment
 from app.models.sync import SyncRun
 from app.models.user import User
 
@@ -35,6 +36,7 @@ __all__ = [
     "Question",
     "Report",
     "StockSnapshot",
+    "Shipment",
     "StoreSetting",
     "SyncRun",
     "User",

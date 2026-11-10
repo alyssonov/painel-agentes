@@ -41,6 +41,10 @@ AGENTS: list[AgentDef] = [
              "Envia todo dia às 19h um resumo simples por WhatsApp e/ou e-mail.", 5),
     AgentDef("nfe", "Conferência de NF-e",
              "Confere se todo pedido pronto para envio tem nota emitida no Olist. Não emite nem altera notas.", 4),
+    AgentDef("despacho", "Alerta de despacho",
+             "Avisa os pedidos do Mercado Livre que precisam ser despachados hoje e os que já passaram do prazo.", 4),
+    AgentDef("reputacao", "Termômetro da reputação",
+             "Acompanha reclamações, atrasos e cancelamentos do Mercado Livre e avisa antes de a reputação cair.", 4),
 ]
 
 

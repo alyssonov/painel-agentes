@@ -27,6 +27,15 @@ RULES: dict[str, list[Rule]] = {
     "nfe": [
         Rule("horas_sem_nota", "Avisar pedido parado sem nota há mais de", 24, 1, 120, "horas"),
     ],
+    "despacho": [
+        Rule("horas_aviso", "Avisar quando faltar menos de", 24, 1, 72, "horas para o prazo"),
+    ],
+    "reputacao": [
+        Rule("limite_reclamacoes", "Limite do verde para reclamações", 2, 0.1, 20, "%"),
+        Rule("limite_atrasos", "Limite do verde para atrasos no envio", 10, 0.5, 40, "%"),
+        Rule("limite_cancelamentos", "Limite do verde para cancelamentos", 1.5, 0.1, 20, "%"),
+        Rule("aviso_pct", "Avisar ao chegar a esta parte do limite", 80, 30, 100, "% do limite"),
+    ],
     "relatorio": [
         Rule("hora_envio", "Enviar o relatório diário a partir das", 19, 0, 23, "horas"),
     ],

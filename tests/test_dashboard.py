@@ -46,7 +46,8 @@ def test_numeros_da_visao_geral(db):
     assert ov.avg_margin_pct is not None
     assert ov.loss_orders >= 1  # a simulação inclui uma venda com prejuízo
     assert ov.alerts[0].severity == "critico"  # urgentes primeiro
-    assert len(ov.agents) == 9
+    from app.agents.registry import AGENTS
+    assert len(ov.agents) == len(AGENTS)
 
 
 def test_simulacao_e_idempotente(db):

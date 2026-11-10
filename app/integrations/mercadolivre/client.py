@@ -17,6 +17,10 @@ Endpoints usados (todos GET):
   /items/{id}/description           descrição do anúncio
   /orders/search?seller=...         vendas, com a taxa (sale_fee) de cada item
   /users/{id}/items/search          ids de todos os anúncios da loja (modo scan acima de 1000)
+  /shipments/{id}                   situação do envio (pendente, pronto para enviar, enviado...)
+  /shipments/{id}/sla               prazo limite de despacho (expected_date)
+    https://developers.mercadolivre.com.br/pt-br/gerenciamento-de-envios
+    https://developers.mercadolivre.com.br/pt-br/mercado-envios-agora (consultado em 10/11/2026)
     https://developers.mercadolivre.com.br/itens-e-buscas
 """
 
@@ -143,6 +147,14 @@ class MLClient(ReadOnlyApiClient):
                 if isinstance(entry, dict) and entry.get("code") == 200 and isinstance(entry.get("body"), dict):
                     items.append(entry["body"])
         return items
+
+    def get_shipment(self, shipment_id: str) -> dict | None:
+        """GET /shipments/{id} — situação e tipo logístico do envio."""
+        return self._get(f"/shipments/{shipment_id}")
+
+    def get_shipment_sla(self, shipment_id: str) -> dict | None:
+        """GET /shipments/{id}/sla — prazo limite para despachar (expected_date)."""
+        return self._get(f"/shipments/{shipment_id}/sla")
 
     def iter_orders(self, seller_id: int | str, *, created_from: datetime) -> Iterator[dict]:
         """GET /orders/search — vendas criadas desde a data (UTC)."""

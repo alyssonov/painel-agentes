@@ -86,3 +86,27 @@ def listing_rows(item: dict) -> list[dict]:
                      "price_cents": to_cents(var.get("price")) or base["price_cents"],
                      "available_quantity": int(var.get("available_quantity") or 0)})
     return rows
+
+
+# Situações do envio que ainda esperam a loja despachar.
+WAITING_DISPATCH = {"pending", "handling", "ready_to_ship"}
+
+
+def reputation_metrics(user: dict) -> dict:
+    """Taxas (%) de reclamações, atrasos e cancelamentos e o período considerado.
+
+    Documentação: https://developers.mercadolivre.com.br/pt-br/reputacao-de-vendedores
+    """
+    metrics = (user.get("seller_reputation") or {}).get("metrics") or {}
+
+    def rate(key: str) -> float | None:
+        value = (metrics.get(key) or {}).get("rate")
+        return round(float(value) * 100, 2) if value is not None else None
+
+    return {
+        "reclamacoes": rate("claims"),
+        "atrasos": rate("delayed_handling_time"),
+        "cancelamentos": rate("cancellations"),
+        "periodo": (metrics.get("sales") or {}).get("period") or (metrics.get("claims") or {}).get("period"),
+        "vendas": (metrics.get("sales") or {}).get("completed"),
+    }

@@ -9,7 +9,11 @@ from app.integrations.mercadolivre.auth import TOKEN_URL
 from app.integrations.mercadolivre.client import BASE_URL
 
 ME = {"id": 123456, "nickname": "LOJATESTE",
-      "seller_reputation": {"level_id": "5_green", "power_seller_status": "gold"}}
+      "seller_reputation": {"level_id": "5_green", "power_seller_status": "gold", "metrics": {
+          "sales": {"period": "60 days", "completed": 420},
+          "claims": {"period": "60 days", "rate": 0.0175, "value": 7},
+          "delayed_handling_time": {"period": "60 days", "rate": 0.03, "value": 12},
+          "cancellations": {"period": "60 days", "rate": 0.002, "value": 1}}}}
 
 QUESTIONS = [
     {"id": 9001, "item_id": "MLB1", "status": "UNANSWERED", "text": "Serve para bebida gelada?",
@@ -41,9 +45,11 @@ FULL_ITEMS = {
 
 ORDERS = [
     # pedido simples: taxa 2 × 10,49
-    {"id": 2000001, "pack_id": None, "order_items": [{"quantity": 2, "sale_fee": 10.49}]},
+    {"id": 2000001, "pack_id": None, "order_items": [{"quantity": 2, "sale_fee": 10.49}],
+     "status": "paid", "shipping": {"id": 4100001}},
     # pacote com dois pedidos: no Olist vira um pedido só (número do pacote)
-    {"id": 2000002, "pack_id": 3000001, "order_items": [{"quantity": 1, "sale_fee": 5.0}]},
+    {"id": 2000002, "pack_id": 3000001, "order_items": [{"quantity": 1, "sale_fee": 5.0}],
+     "status": "paid", "shipping": {"id": 4100002}},
     {"id": 2000003, "pack_id": 3000001, "order_items": [{"quantity": 1, "sale_fee": 7.5}]},
 ]
 
@@ -60,6 +66,14 @@ def _items(request):
                                      for i in ids])
 
 
+# Envios: um pronto para enviar (prazo vem do SLA), um do Full, um já enviado.
+SHIPMENTS = {
+    "4100001": {"id": 4100001, "status": "ready_to_ship", "substatus": "ready_to_print", "logistic_type": "xd_drop_off"},
+    "4100002": {"id": 4100002, "status": "ready_to_ship", "logistic_type": "fulfillment"},
+}
+SLA = {"4100001": {"status": "on_time", "expected_date": "2026-11-10T15:00:00.000-03:00"}}
+
+
 def install(router: respx.Router) -> dict[str, respx.Route]:
     return {
         "token": router.post(TOKEN_URL).mock(return_value=httpx.Response(200, json={
@@ -70,6 +84,10 @@ def install(router: respx.Router) -> dict[str, respx.Route]:
         "items": router.get(f"{BASE_URL}/items").mock(side_effect=_items),
         "my_items": router.get(url__regex=re.escape(BASE_URL) + r"/users/\d+/items/search").mock(
             return_value=httpx.Response(200, json={"results": list(FULL_ITEMS), "paging": {"total": len(FULL_ITEMS)}})),
+        "shipment": router.get(url__regex=re.escape(BASE_URL) + r"/shipments/(?P<sid>\d+)$").mock(
+            side_effect=lambda r, sid: httpx.Response(200, json=SHIPMENTS.get(sid, {"status": "shipped"}))),
+        "sla": router.get(url__regex=re.escape(BASE_URL) + r"/shipments/(?P<sid>\d+)/sla$").mock(
+            side_effect=lambda r, sid: httpx.Response(200, json=SLA.get(sid, {}))),
         "orders": router.get(f"{BASE_URL}/orders/search").mock(return_value=httpx.Response(200, json={
             "results": ORDERS, "paging": {"total": len(ORDERS), "offset": 0, "limit": 50}})),
     }

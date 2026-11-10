@@ -438,3 +438,20 @@ Sem IA. Os três só leem e criam/resolvem alertas.
 - **Página** `/relatorios`: destinatários (`store_settings.report_recipients`),
   envio de teste, histórico e prévia em `/relatorios/previa` (única rota com
   CSP que permite estilos inline, exibida só dentro do painel).
+
+## 16. Alerta de despacho e Termômetro da reputação (extras da Fase 4)
+
+- **Envios** (`shipments`, só leitura): na leitura das vendas do Mercado Livre
+  anotamos o `shipping.id` de cada pedido; de 15 em 15 min o painel consulta
+  `GET /shipments/{id}` (situação e tipo logístico) e, para os que esperam
+  despacho, `GET /shipments/{id}/sla` (`expected_date` = prazo limite).
+  Envios já despachados deixam de ser consultados. Full fica de fora.
+- **Agente `despacho`**: atrasado → urgente; vence dentro de `horas_aviso` →
+  atenção; até 10 alertas + resumo.
+- **Reputação**: `GET /users/me` → `seller_reputation.metrics` (claims,
+  delayed_handling_time, cancellations; taxa e período) guardados em
+  `integration_accounts.extra.reputation_metrics`.
+- **Agente `reputacao`**: limites do verde configuráveis (a documentação
+  oficial traz tabelas diferentes entre páginas/países; padrões da tabela MLB:
+  reclamações 2%, atrasos 10%, cancelamentos 1,5%); aviso a partir de 80% do
+  limite, urgente acima dele.

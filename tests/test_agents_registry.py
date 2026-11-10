@@ -10,7 +10,7 @@ from app.models.enums import AgentMode
 def test_cria_os_nove_agentes_pausados_e_manuais(db):
     ensure_agents(db)
     agents = list(db.scalars(select(Agent)))
-    assert len(agents) == len(AGENTS) == 9
+    assert len(agents) == len(AGENTS) == 11
     assert all(not a.enabled and a.mode == AgentMode.MANUAL for a in agents)
 
 
