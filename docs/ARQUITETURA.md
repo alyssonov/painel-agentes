@@ -548,3 +548,20 @@ real. Classe A = produtos que somam os primeiros 80%, B = até 95%, C = o resto
 (no critério lucro, quem deu prejuízo fica em C). Enquanto o histórico do Olist
 não cobre o período, a página avisa. Barra do acumulado com `<progress>`
 (sem estilo inline, por causa da CSP).
+
+## 21. Previsão de recebimentos (extra)
+
+- Diagnóstico real (11/11/2026): o pedido do ML traz os pagamentos (id,
+  status, valor, aprovação) mas não a liberação; o **Mercado Pago**
+  (`GET /v1/payments/{id}`, mesmo token do ML) traz `money_release_date`,
+  `money_release_status` e `transaction_details.net_received_amount`.
+  Liberação observada ~28 dias depois da venda.
+- `app/sync/ml_payments.py`: os pagamentos são gravados a partir da lista de
+  vendas que a sincronização já lê (sem chamada extra); na 1ª vez lê 35 dias
+  de vendas. O Mercado Pago completa data e valor líquido, até 120 por rodada;
+  pendentes são reconferidos a cada 6 h (a cada 1 h quando faltam ≤ 2 dias).
+  Recusa do Mercado Pago nunca desconecta o Mercado Livre.
+- Tabela `payments` (migração 0010). `app/services/receivables.py` agrupa por
+  dia (fuso da loja). Página `/margem/recebimentos`.
+- Contas a receber do Olist (`GET /contas-receber`, só leitura) ficaram só no
+  diagnóstico (`python tarefas.py diagnostico-recebimentos`).

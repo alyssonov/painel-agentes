@@ -9,7 +9,10 @@
     <a class="seg{% if periodo == value %} is-active{% endif %}" href="?periodo={{ value }}">{{ label }}</a>
     {% endfor %}
   </div>
-  <a class="btn btn-secondary" href="/margem/curva-abc">Curva ABC dos produtos →</a>
+  <div class="toolbar-actions">
+    <a class="btn btn-secondary" href="/margem/recebimentos">Previsão de recebimentos →</a>
+    <a class="btn btn-secondary" href="/margem/curva-abc">Curva ABC dos produtos →</a>
+  </div>
 </div>
 
 {% set t = r.totals %}

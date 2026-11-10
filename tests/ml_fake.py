@@ -46,7 +46,9 @@ FULL_ITEMS = {
 ORDERS = [
     # pedido simples: taxa 2 × 10,49
     {"id": 2000001, "pack_id": None, "order_items": [{"quantity": 2, "sale_fee": 10.49}],
-     "status": "paid", "shipping": {"id": 4100001}},
+     "status": "paid", "shipping": {"id": 4100001},
+     "payments": [{"id": 8000001, "status": "approved", "total_paid_amount": 94.9,
+                   "date_approved": "2026-11-10T17:59:15.000-04:00"}]},
     # pacote com dois pedidos: no Olist vira um pedido só (número do pacote)
     {"id": 2000002, "pack_id": 3000001, "order_items": [{"quantity": 1, "sale_fee": 5.0}],
      "status": "paid", "shipping": {"id": 4100002}},
@@ -104,6 +106,14 @@ CLAIM_DETAIL = {"due_date": "2026-11-12T10:00:00.000-03:00", "action_responsible
                 "problem": "O comprador diz que o produto não chegou"}
 
 
+# Mercado Pago: data de liberação e valor líquido (formato confirmado com dados reais em 11/11/2026).
+MP_PAYMENTS = {
+    "8000001": {"status": "approved", "money_release_date": "2026-12-08T17:59:16.000-04:00",
+                "money_release_status": "pending", "transaction_amount": 94.9,
+                "transaction_details": {"net_received_amount": 68.76}},
+}
+
+
 def install(router: respx.Router) -> dict[str, respx.Route]:
     return {
         "token": router.post(TOKEN_URL).mock(return_value=httpx.Response(200, json={
@@ -128,6 +138,8 @@ def install(router: respx.Router) -> dict[str, respx.Route]:
         "claim_reputation": router.get(
             url__regex=re.escape(BASE_URL) + r"/post-purchase/v1/claims/\d+/affects-reputation$").mock(
             return_value=httpx.Response(200, json={"affects_reputation": "affected", "has_incentive": True})),
+        "mp_payment": router.get(url__regex=r"https://api\.mercadopago\.com/v1/payments/(?P<pid>\d+)$").mock(
+            side_effect=lambda r, pid: httpx.Response(200, json=MP_PAYMENTS.get(pid, {"status": "approved"}))),
         "orders": router.get(f"{BASE_URL}/orders/search").mock(return_value=httpx.Response(200, json={
             "results": ORDERS, "paging": {"total": len(ORDERS), "offset": 0, "limit": 50}})),
     }

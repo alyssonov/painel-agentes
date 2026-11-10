@@ -20,6 +20,7 @@ from app.core.money import format_brl
 from app.services.margin_report import margin_report
 from app.services.abc import CLASS_INFO, abc_curve
 from app.services.idle import IDLE_LABELS, idle_products
+from app.services.receivables import forecast
 from app.services.purchase import URGENCY_LABELS, purchase_suggestions
 from app.services.stock import stock_rows
 from app.services.store_settings import get_setting
@@ -159,3 +160,15 @@ def abc_csv(periodo: str = "90", criterio: str = "faturamento", db: Session = De
     filename = f"curva-abc-{criterio}-{periodo}dias-{local_today():%Y-%m-%d}.csv"
     return Response("\ufeff" + out.getvalue(), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+WEEKDAYS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
+
+
+@router.get("/margem/recebimentos")
+def receivables_page(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    result = forecast(db, demo=not has_real_data(db))
+    today = local_today()
+    days = [{"label": "Hoje" if d.day == today else "Amanhã" if d.day == today + timedelta(days=1)
+             else f"{WEEKDAYS[d.day.weekday()]} {d.day:%d/%m}", "d": d} for d in result.days]
+    return render(request, "receivables.html", {"f": result, "days": days}, db=db)

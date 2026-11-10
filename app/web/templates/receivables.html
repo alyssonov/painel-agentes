@@ -1,0 +1,54 @@
+{% extends "app_layout.html" %}
+{% block title %}Recebimentos{% endblock %}
+{% block page_title %}Previsão de recebimentos{% endblock %}
+{% block page_subtitle %}<p class="muted">Quando o dinheiro das vendas do Mercado Livre fica disponível no Mercado Pago (valor líquido, já sem taxas e frete). <a class="link-light" href="/margem">← Voltar para Margem real</a></p>{% endblock %}
+{% block content %}
+<section class="stats" aria-label="Resumo dos recebimentos">
+  <article class="card stat tone-ok">
+    <p class="stat-label">Próximos 7 dias</p><p class="stat-value">{{ f.next_7_cents|brl }}</p>
+    <p class="stat-foot muted">Vai ficar disponível nesta semana</p>
+  </article>
+  <article class="card stat tone-info">
+    <p class="stat-label">Próximos 30 dias</p><p class="stat-value">{{ f.next_30_cents|brl }}</p>
+    <p class="stat-foot muted">Somando dia a dia (lista abaixo)</p>
+  </article>
+  <article class="card stat tone-info">
+    <p class="stat-label">Total a liberar</p><p class="stat-value">{{ f.pending_total_cents|brl }}</p>
+    <p class="stat-foot muted">Vendas aprovadas ainda não liberadas</p>
+  </article>
+  <article class="card stat tone-ok">
+    <p class="stat-label">Liberado (7 dias)</p><p class="stat-value">{{ f.released_7_cents|brl }}</p>
+    <p class="stat-foot muted">Já ficou disponível na última semana</p>
+  </article>
+</section>
+
+{% if f.overdue_count %}
+<p class="card qcard-reason">{{ f.overdue_count }} pagamento(s) ({{ f.overdue_cents|brl }}) passaram da data e ainda não foram liberados. Normalmente é entrega ainda não confirmada ou reclamação aberta — confira no Mercado Pago.</p>
+{% endif %}
+
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Dia a dia (próximos 30 dias)</h2></div>
+  <p class="muted small">As datas são as informadas pelo Mercado Pago e podem mudar (por exemplo, se a entrega atrasar ou houver reclamação). O painel confere de novo a cada poucas horas.
+    {% if f.reading %} Ainda lendo {{ f.reading }} pagamento(s) no Mercado Pago: os valores vão aparecendo aos poucos.{% endif %}</p>
+  {% if days %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Dia</th><th class="num">Vendas</th><th class="num">Valor líquido</th><th></th></tr></thead>
+      <tbody>
+      {% for item in days %}{% set d = item.d %}
+        <tr>
+          <td class="t-strong">{{ item.label }}</td>
+          <td class="num">{{ d.payments }}</td>
+          <td class="num t-strong">{{ d.net_cents|brl }}</td>
+          <td><progress class="abc-bar" max="{{ f.max_day_cents }}" value="{{ d.net_cents }}">{{ d.net_cents|brl }}</progress></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">Nada previsto para os próximos 30 dias{% if f.reading %} (ainda lendo os pagamentos){% endif %}.</p>
+  {% endif %}
+  <p class="muted small">Por enquanto só Mercado Livre. A Shopee entra quando a conta for conectada.</p>
+</section>
+{% endblock %}

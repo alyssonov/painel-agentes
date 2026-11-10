@@ -226,6 +226,15 @@ poucos e em segundo plano, até 120 dias de vendas antigas do Olist
 (`OLIST_HISTORY_DAYS`). Os dois limites se ajustam em **Agentes → Vigia de
 estoque**.
 
+## Previsão de recebimentos
+
+Em **Margem real → Previsão de recebimentos**: quanto dinheiro das vendas do
+Mercado Livre fica disponível no Mercado Pago em cada dia dos próximos 30 dias
+(valor líquido, já sem taxas e frete), o total a liberar e o que foi liberado
+na última semana. As datas vêm do Mercado Pago e podem mudar (entrega atrasada,
+reclamação); o painel confere de novo a cada poucas horas. Usa o mesmo acesso
+do Mercado Livre conectado: não precisa conectar nada novo.
+
 ## Curva ABC
 
 Em **Margem real → Curva ABC dos produtos**: os produtos do que mais vende

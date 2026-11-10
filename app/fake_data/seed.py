@@ -32,6 +32,7 @@ from app.models import (
     IntegrationAccount,
     Order,
     OrderItem,
+    Payment,
     Product,
     Question,
     StockSnapshot,
@@ -126,6 +127,7 @@ def clear_demo(db: Session, *, pause_agents: bool = False) -> None:
         db.execute(delete(ConversationMessage).where(ConversationMessage.conversation_id.in_(demo_conversation_ids)))
         db.execute(delete(Conversation).where(Conversation.id.in_(demo_conversation_ids)))
     db.execute(delete(Claim).where(Claim.is_demo.is_(True)))
+    db.execute(delete(Payment).where(Payment.is_demo.is_(True)))
     demo_order_ids = select(Order.id).where(Order.is_demo.is_(True))
     db.execute(delete(OrderItem).where(OrderItem.order_id.in_(demo_order_ids)))
     db.execute(delete(Order).where(Order.is_demo.is_(True)))
@@ -283,6 +285,25 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
                       confidence="baixa" if human else "alta", topic="negociacao" if human else "produto",
                       reason="Pedido de desconto ou negociação: precisa de uma pessoa." if human else
                       "A resposta está na ficha do produto.", needs_human=human, dry_run=True))
+
+    # --- Recebimentos: o Mercado Pago libera ~28 dias depois da venda ----------
+    for order in db.scalars(select(Order).where(Order.is_demo.is_(True), Order.channel == Channel.ML)):
+        release = order.ordered_at + timedelta(days=28)
+        db.add(Payment(channel=Channel.ML, payment_id=f"demo-pay-{order.id}", order_ref=order.external_id,
+                       status="approved", amount_cents=order.items_total_cents,
+                       net_cents=round(order.items_total_cents * 0.74), approved_at=order.ordered_at,
+                       release_date=release, release_status="released" if release < now else "pending",
+                       checked_at=now, is_demo=True))
+    # Vendas mais antigas (sem pedido fictício) para a previsão mostrar as próximas semanas.
+    for days_ago in range(8, 35):
+        sold = now - timedelta(days=days_ago)
+        release = sold + timedelta(days=28)
+        for k in range(rng.randint(8, 20)):
+            amount = _cents(rng.uniform(40, 160))
+            db.add(Payment(channel=Channel.ML, payment_id=f"demo-pay-old-{days_ago}-{k}", order_ref="demo",
+                           status="approved", amount_cents=amount, net_cents=round(amount * 0.74),
+                           approved_at=sold, release_date=release,
+                           release_status="released" if release < now else "pending", checked_at=now, is_demo=True))
 
     # --- Pós-venda: conversas e uma reclamação --------------------------------
     demo_conversations = [

@@ -33,6 +33,8 @@ from app.integrations.mercadolivre.mapping import (
 from app.integrations.olist.dates import parse_olist_datetime as parse_datetime
 from app.models import Action, Listing, MarketplaceFee, Order, Product, Question, Shipment, SyncRun
 from app.models.enums import ActionStatus, ActionType, Channel, Provider, QuestionStatus, SyncStatus
+from app.integrations.mercadopago.client import MercadoPagoClient
+from app.sync.ml_payments import record_order_payments, sync_payments
 from app.sync.ml_postsale import sync_claims, sync_messages
 from app.sync.common import (
     SyncAlreadyRunning,
@@ -60,8 +62,8 @@ CURSOR_OVERLAP = timedelta(minutes=10)
 ClientFactory = Callable[[], MLClient]
 
 
-def run_ml_sync(session_factory: sessionmaker[Session],
-                client_factory: ClientFactory | None = None) -> SyncRun | None:
+def run_ml_sync(session_factory: sessionmaker[Session], client_factory: ClientFactory | None = None,
+                mp_factory: Callable[[], MercadoPagoClient] | None = None) -> SyncRun | None:
     with session_factory() as db:
         account = get_ml_account(db)
         if account is None or not account.access_token_enc:
@@ -98,6 +100,16 @@ def run_ml_sync(session_factory: sessionmaker[Session],
                 account = get_ml_account(db)
                 logger.warning("Não foi possível ler os anúncios do Mercado Livre: %s", exc)
                 counts["anuncios_erro"] = 1
+            # Recebimentos (Mercado Pago): complementar, uma falha não para o resto.
+            try:
+                mp_make = mp_factory or (lambda: MercadoPagoClient(MLTokenProvider(session_factory)))
+                with mp_make() as mp:
+                    counts["recebimentos"] = sync_payments(db, client, mp, account, seller_id, started)
+            except IntegrationError as exc:
+                db.rollback()
+                account = get_ml_account(db)
+                logger.warning("Não foi possível ler os recebimentos: %s", exc)
+                counts["recebimentos_erro"] = 1
             # Pós-venda (Fase 6): cada parte isolada, uma falha não para as outras.
             for key, step in (("mensagens", sync_messages), ("reclamacoes", sync_claims)):
                 try:
@@ -235,6 +247,7 @@ def sync_fees(db: Session, client: MLClient, account, seller_id: str, started,
         shipping_id = (order.get("shipping") or {}).get("id")
         if shipping_id and order.get("status") not in ("cancelled", "invalid"):
             shipments[str(shipping_id)] = str(order.get("pack_id") or order.get("id"))
+        record_order_payments(db, order, str(order.get("pack_id") or order.get("id")))
         fee = order_fee_cents(order)
         for ref in order_refs(order):
             fees[ref] = fees.get(ref, 0) + fee if ref == str(order.get("pack_id")) else fee

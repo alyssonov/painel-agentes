@@ -18,10 +18,10 @@ ORDER = {"id": 2000009, "status": "paid", "order_items": [], "shipping": {},
 def test_diagnostico_de_recebimentos(db, ml_env, olist_env, capsys):
     connect_ml(db)
     connect_account(db)
-    ml_fake.install(respx.mock)
-    respx.get("https://api.mercadolibre.com/orders/search").mock(return_value=httpx.Response(
+    routes = ml_fake.install(respx.mock)
+    routes["orders"].mock(return_value=httpx.Response(
         200, json={"results": [ORDER], "paging": {"total": 1}}))
-    mp = respx.get("https://api.mercadopago.com/v1/payments/777").mock(return_value=httpx.Response(200, json={
+    mp = routes["mp_payment"].mock(return_value=httpx.Response(200, json={
         "status": "approved", "money_release_date": "2026-11-24T10:00:00.000-04:00",
         "money_release_status": "pending", "transaction_amount": 100.0,
         "transaction_details": {"net_received_amount": 82.5}, "payer": {"email": "nao-mostrar@exemplo.com"}}))

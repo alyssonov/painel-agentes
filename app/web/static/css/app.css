@@ -436,3 +436,4 @@ a.brand { text-decoration: none; }
 .abc-A { background: var(--ok-soft); color: var(--ok); }
 .abc-B { background: var(--info-soft); color: var(--info); }
 .abc-C { background: var(--neutral-soft); color: var(--muted); }
+.toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }

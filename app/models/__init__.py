@@ -11,6 +11,7 @@ from app.models.integration import IntegrationAccount
 from app.models.invoice import Invoice
 from app.models.listing import Listing
 from app.models.order import Order, OrderItem
+from app.models.payment import Payment
 from app.models.postsale import Claim, Conversation, ConversationMessage
 from app.models.question import Question
 from app.models.report import Report
@@ -36,6 +37,7 @@ __all__ = [
     "Listing",
     "Order",
     "OrderItem",
+    "Payment",
     "Product",
     "Question",
     "Report",
