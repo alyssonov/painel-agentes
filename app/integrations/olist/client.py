@@ -66,12 +66,17 @@ class OlistClient(ReadOnlyApiClient):
         """GET /estoque — saldo, reservado e disponível de cada produto."""
         return self._paginate("/estoque", {"dataAlteracao": to_olist_datetime(changed_since)})
 
-    def iter_orders(self, *, updated_since: datetime | None = None,
-                    created_since: datetime | None = None) -> Iterator[dict]:
-        """GET /pedidos — pedidos atualizados (ou criados) desde a data (UTC)."""
+    def iter_orders(self, *, updated_since: datetime | None = None, created_since: datetime | None = None,
+                    created_until: datetime | None = None) -> Iterator[dict]:
+        """GET /pedidos — pedidos atualizados (ou criados) desde a data (UTC).
+
+        created_until (dataFinal, consultado no swagger em 11/11/2026) limita a data
+        de criação — usado para importar o histórico antigo aos poucos.
+        """
         return self._paginate("/pedidos", {
             "dataAtualizacao": to_olist_datetime(updated_since),
             "dataInicial": to_olist_datetime(created_since, date_only=True),
+            "dataFinal": to_olist_datetime(created_until, date_only=True),
             "orderBy": "asc",
         })
 

@@ -17,6 +17,7 @@ from app.models import Agent
 from app.models.user import User
 from app.core.money import format_brl
 from app.services.margin_report import margin_report
+from app.services.idle import IDLE_LABELS, idle_products
 from app.services.purchase import URGENCY_LABELS, purchase_suggestions
 from app.services.stock import stock_rows
 from app.services.store_settings import get_setting
@@ -51,7 +52,11 @@ def stock_page(request: Request, filtro: str = "atencao", db: Session = Depends(
     shown = rows if filtro == "todos" else [r for r in rows if r.status in ("esgotado", "baixo") or r.diverges]
     lead, coverage = _purchase_rules(rules)
     purchase = purchase_suggestions(db, rows, lead_days=lead, coverage_days=coverage)
+    idle_days, excess_days = int(rules.get("dias_sem_venda", 60)), int(rules.get("excesso_dias", 180))
+    idle = idle_products(db, rows, idle_days=idle_days, excess_days=excess_days, demo=not has_real_data(db))
     return render(request, "stock.html", {
+        "idle": idle, "idle_labels": IDLE_LABELS, "idle_history_note": has_real_data(db) and not idle.history_complete, "idle_days": idle_days, "excess_days": excess_days,
+        "idle_since": to_local(idle.history_since).strftime("%d/%m/%Y") if idle.history_since else None,
         "rows": shown, "total": len(rows), "counts": counts, "filtro": filtro, "status_labels": STATUS_LABELS,
         "window": int(rules.get("janela_vendas_dias", 30)), "alert_days": int(rules.get("dias_alerta", 7)),
         "purchase": purchase, "purchase_total": sum(i.total_cost_cents for i in purchase),

@@ -25,6 +25,8 @@ RULES: dict[str, list[Rule]] = {
         Rule("tolerancia_divergencia", "Diferença aceita entre Olist e anúncio", 0, 0, 50, "unidades"),
         Rule("prazo_fornecedor_dias", "Sugestão de compra: o fornecedor leva para entregar", 10, 1, 90, "dias"),
         Rule("cobertura_dias", "Sugestão de compra: comprar o suficiente para vender por", 30, 7, 180, "dias"),
+        Rule("dias_sem_venda", "Produto parado: sem vender há mais de", 60, 15, 365, "dias"),
+        Rule("excesso_dias", "Estoque demais: quando dura mais de", 180, 60, 720, "dias"),
     ],
     "nfe": [
         Rule("horas_sem_nota", "Avisar pedido parado sem nota há mais de", 24, 1, 120, "horas"),

@@ -524,3 +524,17 @@ separador `;` e BOM para abrir certo no Excel).
   (`prazo_fornecedor_dias`, padrão 10; `cobertura_dias`, padrão 30).
 - Custo estimado = custo do produto no Olist. Pedidos de compra já feitos ao
   fornecedor não entram na conta (o Olist é só lido).
+
+## 19. Produtos parados e histórico de vendas (extra)
+
+- **Histórico** (`sync_history` em `app/sync/olist_sync.py`): depois da 1ª
+  leitura, cada rodada do Olist importa uma semana de pedidos antigos
+  (`GET /pedidos?dataInicial=..&dataFinal=..`, filtros do swagger oficial),
+  no máximo 150 detalhes por rodada, até `OLIST_HISTORY_DAYS` (padrão 120).
+  Pedidos já guardados são pulados. Cursor `historico_ate` na conta.
+  Falha aqui não derruba a leitura normal.
+- **Produtos parados** (`app/services/idle.py`, sem IA): com estoque e sem
+  venda há `dias_sem_venda` (padrão 60) → "Parado"; vende, mas o estoque dura
+  mais de `excesso_dias` (padrão 180) → "Estoque demais". Dinheiro empatado =
+  disponível × custo do Olist. Enquanto o histórico não cobre o período, a
+  página avisa que um produto pode aparecer como parado sem estar.

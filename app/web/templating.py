@@ -10,12 +10,15 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.core.money import format_brl, format_pct
 from app.core.security import get_or_create_csrf_token
+from app.core.timeutil import to_local
 from app.services.dashboard import integrations
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.filters["brl"] = format_brl
 templates.env.filters["pct"] = format_pct
+# Data (UTC no banco) → dia no fuso da loja, ex.: 03/11/2026
+templates.env.filters["localdate"] = lambda dt: to_local(dt).strftime("%d/%m/%Y") if dt else ""
 
 
 def reputation_tone(label: str | None) -> str:

@@ -75,7 +75,8 @@ def test_proximas_vezes_busca_so_o_que_mudou_e_nao_duplica(db, olist_env):
     routes = olist_fake.install(respx.mock)
     sync()
     sync()
-    last = routes["pedidos"].calls[-1].request.url.params
+    regular = [c.request.url.params for c in routes["pedidos"].calls if "dataFinal" not in c.request.url.params]
+    last = regular[-1]
     assert "dataAtualizacao" in last and "dataInicial" not in last
     assert "dataAlteracao" in routes["produtos"].calls[-1].request.url.params
     assert db.query(Order).count() == 4
@@ -117,3 +118,37 @@ def test_execucao_travada_antiga_nao_bloqueia(db, olist_env):
     db.commit()
     olist_fake.install(respx.mock)
     assert sync().status == SyncStatus.OK
+
+
+@respx.mock
+def test_historico_antigo_e_importado_aos_poucos(db, olist_env, monkeypatch):
+    """Depois da 1ª leitura, uma semana de vendas antigas por rodada, sem repetir pedido."""
+    from datetime import datetime
+
+    from app.sync import olist_sync
+    from app.sync.common import get_cursor
+    connect_account(db)
+    routes = olist_fake.install(respx.mock)
+    sync()  # 1ª leitura: sem histórico ainda
+    assert not [c for c in routes["pedidos"].calls if "dataFinal" in c.request.url.params]
+    details_before = routes["pedido"].call_count
+    sync()
+    history = [c.request.url.params for c in routes["pedidos"].calls if "dataFinal" in c.request.url.params]
+    assert len(history) == 1
+    start = datetime.fromisoformat(history[0]["dataInicial"])
+    end = datetime.fromisoformat(history[0]["dataFinal"])
+    assert (end - start).days == olist_sync.HISTORY_CHUNK_DAYS
+    # Os pedidos da listagem falsa já estavam no banco: nenhum detalhe novo foi consultado por causa do histórico.
+    assert routes["pedido"].call_count - details_before <= len(olist_fake.ORDERS)
+    account = db.scalar(select(IntegrationAccount))
+    db.refresh(account)
+    assert get_cursor(account, "historico_ate").date() == start.date()
+    assert db.query(Order).count() == 4
+    # Quando chega ao limite configurado, para de buscar.
+    monkeypatch.setenv("OLIST_HISTORY_DAYS", "1")
+    from app.config import get_settings
+    get_settings.cache_clear()
+    calls = routes["pedidos"].call_count
+    sync()
+    get_settings.cache_clear()
+    assert not [c for c in routes["pedidos"].calls[calls:] if "dataFinal" in c.request.url.params]

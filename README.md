@@ -217,6 +217,15 @@ planilha** para mandar ao fornecedor. Em **Agentes → Vigia de estoque** você
 ajusta quantos dias o fornecedor leva para entregar e para quantos dias de
 vendas quer comprar.
 
+## Produtos parados
+
+Também em **Estoque e preços**: produtos com estoque que não vendem há mais de
+60 dias, ou com estoque para mais de 180 dias, e quanto dinheiro está
+empatado neles (estoque × custo do Olist). Para isso o painel importa, aos
+poucos e em segundo plano, até 120 dias de vendas antigas do Olist
+(`OLIST_HISTORY_DAYS`). Os dois limites se ajustam em **Agentes → Vigia de
+estoque**.
+
 ## Pós-venda (Fase 6)
 
 Com o Mercado Livre conectado, o painel lê as **mensagens dos compradores** e

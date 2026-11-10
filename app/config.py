@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     olist_sync_minutes: int = 10
     # Na primeira conexão, quantos dias de pedidos e notas para trás importar.
     olist_initial_days: int = 15
+    olist_history_days: int = 120
 
     # Mercado Livre (API oficial). Chaves do aplicativo criado no DevCenter.
     ml_client_id: str = Field(default="", repr=False)

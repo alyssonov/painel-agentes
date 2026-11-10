@@ -57,6 +57,42 @@
   {% endif %}
 </section>
 
+<section class="card" aria-labelledby="parados-title">
+  <div class="card-head">
+    <h2 id="parados-title" class="card-title">Produtos parados <span class="count">{{ idle.items|length }}</span></h2>
+    {% if idle.items %}<p class="t-strong">{{ idle.tied_cents|brl }} empatados</p>{% endif %}
+  </div>
+  <p class="muted small">Com estoque e sem vender há mais de {{ idle_days }} dias, ou com estoque para mais de {{ excess_days }} dias no ritmo atual.
+    Dinheiro empatado = disponível × custo do Olist. Ajuste em Agentes → Vigia de estoque.</p>
+  {% if idle_history_note %}
+  <p class="qcard-reason">O painel ainda está buscando o histórico de vendas no Olist{% if idle_since %} (por enquanto desde {{ idle_since }}){% endif %}.
+    Até completar {{ idle_days }} dias, um produto pode aparecer como parado sem estar.</p>
+  {% endif %}
+  {% if idle.items %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Produto</th><th class="num">Disponível</th><th class="num">Dinheiro empatado</th>
+        <th>Última venda</th><th>Situação</th></tr></thead>
+      <tbody>
+      {% for i in idle.items[:50] %}
+        {% set label, tone = idle_labels[i.kind] %}
+        <tr>
+          <td><span class="t-strong">{{ i.name }}</span><br><span class="muted small">{{ i.sku }}</span></td>
+          <td class="num">{{ i.available }}</td>
+          <td class="num">{{ i.tied_cents|brl if i.unit_cost_cents else 'sem custo no Olist' }}</td>
+          <td>{% if i.last_sale %}{{ i.last_sale|localdate }}{% else %}<span class="muted">nenhuma no histórico</span>{% endif %}</td>
+          <td><span class="badge badge-{{ tone }}">{{ label }}</span>{% if i.kind == 'excesso' and i.days_left %} <span class="muted small">dura {{ '%.0f'|format(i.days_left) }} dias</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if idle.items|length > 50 %}<p class="muted small">Mostrando os 50 com mais dinheiro empatado.</p>{% endif %}
+  {% else %}
+  <p class="muted">Nenhum produto parado. ✓</p>
+  {% endif %}
+</section>
+
 <section class="card">
   <div class="card-head">
     <h2 class="card-title">Produtos</h2>

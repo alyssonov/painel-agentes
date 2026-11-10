@@ -11,7 +11,7 @@ import logging
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
@@ -82,6 +82,16 @@ def run_olist_sync(session_factory: sessionmaker[Session],
             counts["estoque"] = sync_stock(db, client, account, started)
             counts["pedidos"] = sync_orders(db, client, account, started)
             counts["notas"] = sync_invoices(db, client, first_sync=first_sync)
+            if not first_sync:
+                try:
+                    counts["historico"] = sync_history(db, client, account, started)
+                except NotConnected:
+                    raise
+                except IntegrationError as exc:
+                    # Histórico é complementar: falhou, tenta de novo na próxima rodada.
+                    db.rollback()
+                    account = get_olist_account(db)
+                    logger.warning("Histórico de pedidos do Olist ficou para depois: %s", exc)
             mark_ok(db, account)
             db.commit()
         status, error = SyncStatus.OK, None
@@ -173,6 +183,47 @@ def sync_orders(db: Session, client: OlistClient, account, started: datetime) ->
     _set_cursor(account, "cursor_pedidos", started)
     db.commit()
     return count
+
+
+HISTORY_CHUNK_DAYS = 7
+MAX_HISTORY_ORDERS_PER_RUN = 150  # ~1 consulta por pedido: não disputa o limite com a leitura normal
+
+
+def sync_history(db: Session, client: OlistClient, account, started: datetime) -> int:
+    """Importa vendas antigas, uma semana por vez, voltando até OLIST_HISTORY_DAYS.
+
+    Só leitura. Serve para "produtos parados", curva ABC e gráficos. Pedidos que já
+    estão no banco são pulados sem consultar o detalhe.
+    """
+    target = started - timedelta(days=get_settings().olist_history_days)
+    boundary = _cursor(account, "historico_ate")
+    if boundary is None:
+        oldest = db.scalar(select(func.min(Order.ordered_at)).where(Order.is_demo.is_(False)))
+        boundary = oldest or started - timedelta(days=get_settings().olist_initial_days)
+    if boundary <= target:
+        return 0
+    chunk_start = max(boundary - timedelta(days=HISTORY_CHUNK_DAYS), target)
+    known = set(db.scalars(select(Order.olist_id).where(Order.olist_id.is_not(None))))
+    products = dict(db.execute(select(Product.olist_id, Product.id).where(Product.olist_id.is_not(None))).all())
+    imported, finished = 0, True
+    for summary in client.iter_orders(created_since=chunk_start, created_until=boundary):
+        order_id = summary.get("id")
+        if not order_id or str(order_id) in known:
+            continue
+        if imported >= MAX_HISTORY_ORDERS_PER_RUN:
+            finished = False  # continua desta mesma semana na próxima rodada
+            break
+        detail = client.get_order(order_id)
+        if not detail:
+            continue
+        upsert_order(db, summary, detail, products)
+        known.add(str(order_id))
+        imported += 1
+        db.commit()
+    if finished:
+        _set_cursor(account, "historico_ate", chunk_start)
+    db.commit()
+    return imported
 
 
 def upsert_order(db: Session, summary: dict, detail: dict, products: dict[str, int]) -> Order:
