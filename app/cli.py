@@ -244,8 +244,8 @@ def cmd_diag_recebimentos(_args) -> int:
                 print(f"  {len(rows)} conta(s), total {format_brl(round(total * 100))}")
                 if dues:
                     print(f"  vencimentos de {dues[0]} até {dues[-1]}")
-        except IntegrationError as exc:
-            print(f"  ERRO: {exc}")
+        except Exception as exc:  # noqa: BLE001 - diagnóstico: mostra e segue
+            print(f"  ERRO {type(exc).__name__}: {str(exc)[:200]}")
     return 0
 
 
@@ -274,41 +274,52 @@ def cmd_diag_precos(_args) -> int:
         except IntegrationError as exc:
             print(f"  ERRO: {exc}")
             items = []
+        except Exception as exc:  # noqa: BLE001
+            print(f"  ERRO {type(exc).__name__}: {str(exc)[:200]}")
+            items = []
         print(f"  {len(items)} anúncio(s) com referência de preço")
         statuses: dict[str, int] = {}
         samples = []
-        for item_id in items[:40]:
+        for n, item_id in enumerate(items[:40], 1):
             try:
                 data = client.get_price_suggestion(item_id) or {}
-            except IntegrationError as exc:
-                print(f"  {item_id}: ERRO {exc}")
+            except Exception as exc:  # noqa: BLE001 - diagnóstico: mostra e segue
+                print(f"  {item_id}: ERRO {type(exc).__name__}: {str(exc)[:200]}")
                 continue
+            if not isinstance(data, dict):
+                print(f"  {item_id}: resposta em formato inesperado ({type(data).__name__}): {str(data)[:200]}")
+                continue
+            if n % 10 == 0:
+                print(f"  ... {n} lidos")
             statuses[data.get("status") or "?"] = statuses.get(data.get("status") or "?", 0) + 1
             if len(samples) < 4:
                 samples.append((item_id, data))
         print(f"  situações (dos primeiros 40): {statuses}")
         with sm() as db:
             for item_id, d in samples:
-                listing = db.scalar(select(Listing).where(Listing.item_id == item_id))
-                product = db.get(Product, listing.product_id) if listing and listing.product_id else None
-                def amt(key):
-                    return (d.get(key) or {}).get("amount")
-                print(f"\n  Anúncio {item_id}: situação={d.get('status')} aplicável={d.get('applicable_suggestion')}")
-                print(f"    preço atual={amt('current_price')} sugerido={amt('suggested_price')} "
-                      f"menor={amt('lowest_price')} interno={amt('internal_price')} diferença={d.get('percent_difference')}%")
-                print(f"    custos informados pelo ML: {d.get('costs')} · comparou {((d.get('metadata') or {}).get('compared_values'))} anúncio(s)")
-                print(f"    no painel: preço {format_brl(listing.price_cents) if listing else '—'} · "
-                      f"custo Olist {format_brl(product.cost_cents) if product else 'produto não vinculado'}"
-                      f"{' · tem variações' if listing and listing.variation_label else ''}")
-                if d.get("promotion_detail"):
-                    print(f"    promoção sugerida: {d.get('promotion_detail', {}).get('campaign_name')}")
+                try:
+                    listing = db.scalar(select(Listing).where(Listing.item_id == item_id))
+                    product = db.get(Product, listing.product_id) if listing and listing.product_id else None
+                    def amt(key):
+                        return (d.get(key) or {}).get("amount")
+                    print(f"\n  Anúncio {item_id}: situação={d.get('status')} aplicável={d.get('applicable_suggestion')}")
+                    print(f"    preço atual={amt('current_price')} sugerido={amt('suggested_price')} "
+                          f"menor={amt('lowest_price')} interno={amt('internal_price')} diferença={d.get('percent_difference')}%")
+                    print(f"    custos informados pelo ML: {d.get('costs')} · comparou {((d.get('metadata') or {}).get('compared_values'))} anúncio(s)")
+                    print(f"    no painel: preço {format_brl(listing.price_cents) if listing else '—'} · "
+                          f"custo Olist {format_brl(product.cost_cents) if product else 'produto não vinculado'}"
+                          f"{' · tem variações' if listing and listing.variation_label else ''}")
+                    if d.get("promotion_detail"):
+                        print(f"    promoção sugerida: {d.get('promotion_detail', {}).get('campaign_name')}")
+                except Exception as exc:  # noqa: BLE001 - diagnóstico: mostra e segue
+                    print(f"  {item_id}: não consegui mostrar ({type(exc).__name__}: {str(exc)[:200]})")
         print("\n== Automatização de preços do Mercado Livre ==")
         try:
             automated = list(client.iter_automated_price_items(seller))
             print(f"  {len(automated)} anúncio(s) com automatização (o painel não muda o preço desses)")
             if automated:
                 print(f"  exemplo de campos: {sorted(automated[0].keys()) if isinstance(automated[0], dict) else automated[0]}")
-        except IntegrationError as exc:
+        except Exception as exc:  # noqa: BLE001 - diagnóstico: mostra e segue
             print(f"  ERRO: {exc}")
     return 0
 

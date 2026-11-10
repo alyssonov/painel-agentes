@@ -29,3 +29,18 @@ def test_diagnostico_de_precos(db, ml_env, capsys):
     assert "sugerido=89.9" in out and "'selling_fees': 12.5" in out and "comparou 7" in out
     assert "1 anúncio(s) com automatização" in out
     assert all(c.request.method == "GET" for c in auto.calls)
+
+
+@respx.mock
+def test_diagnostico_segue_mesmo_com_resposta_estranha(db, ml_env, capsys):
+    connect_ml(db)
+    ml_fake.install(respx.mock)
+    base = "https://api.mercadolibre.com"
+    respx.get(f"{base}/suggestions/user/123456/items").mock(return_value=httpx.Response(
+        200, json={"total": 2, "items": ["MLB1", "MLB2"]}))
+    respx.get(f"{base}/suggestions/items/MLB1/details").mock(return_value=httpx.Response(200, json=["?"]))
+    respx.get(f"{base}/suggestions/items/MLB2/details").mock(return_value=httpx.Response(403, json={}))
+    respx.get(f"{base}/pricing-automation/users/123456/items").mock(return_value=httpx.Response(200, json={}))
+    assert cmd_diag_precos(None) == 0
+    out = capsys.readouterr().out
+    assert "formato inesperado" in out and "MLB2: ERRO" in out and "Automatização" in out
