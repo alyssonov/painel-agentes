@@ -230,12 +230,14 @@ def test_regras_dos_agentes(logged_client, db):
     assert "Avisar quando o estoque durar menos de" in html
     token = csrf_from(html)
     r = logged_client.post("/agentes/estoque/config", data={"csrf_token": token, "dias_alerta": "10",
-                                                            "janela_vendas_dias": "14", "tolerancia_divergencia": "1"})
+                                                            "janela_vendas_dias": "14", "tolerancia_divergencia": "1",
+                                                            "prazo_fornecedor_dias": "10", "cobertura_dias": "30"})
     assert "regras salvas" in r.text
     db.expire_all()
     assert db.scalar(select(Agent).where(Agent.slug == "estoque")).config["dias_alerta"] == 10
     r = logged_client.post("/agentes/estoque/config", data={"csrf_token": token, "dias_alerta": "999",
-                                                            "janela_vendas_dias": "14", "tolerancia_divergencia": "1"})
+                                                            "janela_vendas_dias": "14", "tolerancia_divergencia": "1",
+                                                            "prazo_fornecedor_dias": "10", "cobertura_dias": "30"})
     assert "fora do permitido" in r.text
 
 
