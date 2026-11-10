@@ -3,10 +3,13 @@
 {% block page_title %}Margem real{% endblock %}
 {% block page_subtitle %}<p class="muted">Preço − taxa do marketplace − frete − custo (Olist) − impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}%).</p>{% endblock %}
 {% block content %}
-<div class="segmented segmented-light" role="group" aria-label="Período">
-  {% for value, label in periods %}
-  <a class="seg{% if periodo == value %} is-active{% endif %}" href="?periodo={{ value }}">{{ label }}</a>
-  {% endfor %}
+<div class="toolbar">
+  <div class="segmented segmented-light" role="group" aria-label="Período">
+    {% for value, label in periods %}
+    <a class="seg{% if periodo == value %} is-active{% endif %}" href="?periodo={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <a class="btn btn-secondary" href="/margem/curva-abc">Curva ABC dos produtos →</a>
 </div>
 
 {% set t = r.totals %}

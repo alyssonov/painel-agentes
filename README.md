@@ -226,6 +226,13 @@ poucos e em segundo plano, até 120 dias de vendas antigas do Olist
 (`OLIST_HISTORY_DAYS`). Os dois limites se ajustam em **Agentes → Vigia de
 estoque**.
 
+## Curva ABC
+
+Em **Margem real → Curva ABC dos produtos**: os produtos do que mais vende
+para o que menos vende, separados em **A** (os poucos que fazem 80% do
+faturamento), **B** (os próximos 15%) e **C** (o resto). Dá para ver por
+faturamento ou por lucro real, em 30, 90 ou 120 dias, e baixar a planilha.
+
 ## Pós-venda (Fase 6)
 
 Com o Mercado Livre conectado, o painel lê as **mensagens dos compradores** e

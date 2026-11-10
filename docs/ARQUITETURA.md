@@ -538,3 +538,13 @@ separador `;` e BOM para abrir certo no Excel).
   mais de `excesso_dias` (padrão 180) → "Estoque demais". Dinheiro empatado =
   disponível × custo do Olist. Enquanto o histórico não cobre o período, a
   página avisa que um produto pode aparecer como parado sem estar.
+
+## 20. Curva ABC (extra)
+
+`app/services/abc.py`, sem IA. Página `/margem/curva-abc` (botão na Margem
+real) e planilha `/margem/curva-abc.csv`. Usa o cálculo por produto da Margem
+real (`margin_report`). Períodos 30/90/120 dias; critério faturamento ou lucro
+real. Classe A = produtos que somam os primeiros 80%, B = até 95%, C = o resto
+(no critério lucro, quem deu prejuízo fica em C). Enquanto o histórico do Olist
+não cobre o período, a página avisa. Barra do acumulado com `<progress>`
+(sem estilo inline, por causa da CSP).

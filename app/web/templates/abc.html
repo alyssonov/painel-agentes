@@ -1,0 +1,67 @@
+{% extends "app_layout.html" %}
+{% block title %}Curva ABC{% endblock %}
+{% block page_title %}Curva ABC{% endblock %}
+{% block page_subtitle %}<p class="muted">Quais poucos produtos trazem a maior parte do {{ 'faturamento' if criterio == 'faturamento' else 'lucro real' }}. <a class="link-light" href="/margem">← Voltar para Margem real</a></p>{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <div class="segmented segmented-light" role="group" aria-label="Período">
+    {% for value, label in periods %}
+    <a class="seg{% if periodo == value %} is-active{% endif %}" href="?periodo={{ value }}&criterio={{ criterio }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <div class="segmented segmented-light" role="group" aria-label="Critério">
+    {% for value, label in criteria %}
+    <a class="seg{% if criterio == value %} is-active{% endif %}" href="?periodo={{ periodo }}&criterio={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if partial %}
+<p class="card qcard-reason">O painel ainda está buscando o histórico de vendas no Olist{% if oldest %} (por enquanto desde {{ oldest }}){% endif %}. A curva usa só o que já chegou.</p>
+{% endif %}
+
+<section class="stats" aria-label="Resumo das classes">
+  {% for s in summary %}
+  {% set info, tone = class_info[s.cls] %}
+  <article class="card stat tone-{{ 'ok' if s.cls == 'A' else 'info' }}">
+    <p class="stat-label"><span class="abc-letter abc-{{ s.cls }}">{{ s.cls }}</span> Classe {{ s.cls }}</p>
+    <p class="stat-value">{{ s.products }} <span class="stat-value-sm muted">produto(s)</span></p>
+    <p class="stat-foot muted">{{ '%.0f'|format(s.share_products) }}% dos produtos = {{ '%.0f'|format(s.share_value) }}% do {{ 'faturamento' if criterio == 'faturamento' else 'lucro' }}. {{ info }}</p>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2 class="card-title">Produtos do maior para o menor</h2>
+    {% if rows %}<a class="btn btn-secondary" href="/margem/curva-abc.csv?periodo={{ periodo }}&criterio={{ criterio }}">Baixar planilha</a>{% endif %}
+  </div>
+  {% if missing_cost and criterio == 'lucro' %}<p class="muted small">{{ missing_cost }} produto(s) sem custo no Olist: o lucro deles aparece maior do que é.</p>{% endif %}
+  {% if rows %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>#</th><th>Classe</th><th>Produto</th><th class="num">Unidades</th><th class="num">Faturamento</th>
+        <th class="num">Lucro real</th><th class="num">% do total</th><th>Acumulado</th></tr></thead>
+      <tbody>
+      {% for r in rows[:200] %}{% set p = r.product %}
+        <tr>
+          <td class="muted">{{ loop.index }}</td>
+          <td><span class="abc-letter abc-{{ r.cls }}" aria-label="Classe {{ r.cls }}">{{ r.cls }}</span></td>
+          <td><span class="t-strong">{{ p.name }}</span><br><span class="muted small">{{ p.sku }}</span></td>
+          <td class="num">{{ p.units }}</td>
+          <td class="num">{{ p.revenue|brl }}</td>
+          <td class="num {{ 'text-danger' if p.profit < 0 }}">{{ p.profit|brl }}</td>
+          <td class="num">{{ ('%.1f'|format(r.share))|replace('.', ',') }}%</td>
+          <td><progress class="abc-bar" max="100" value="{{ '%.0f'|format(r.cumulative) }}">{{ '%.0f'|format(r.cumulative) }}%</progress>
+            <span class="muted small">{{ '%.0f'|format(r.cumulative) }}%</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if rows|length > 200 %}<p class="muted small">Mostrando os 200 primeiros. A planilha tem todos.</p>{% endif %}
+  {% else %}
+  <p class="muted">Nenhuma venda no período.</p>
+  {% endif %}
+</section>
+{% endblock %}

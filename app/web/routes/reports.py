@@ -7,16 +7,18 @@ import io
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.agents.config import agent_rules, has_real_data
 from app.core.db import get_db, utcnow
 from app.core.timeutil import local_day_bounds_utc, local_today, to_local
-from app.models import Agent
+from app.models import Agent, Order
+from app.models.enums import KanbanStatus
 from app.models.user import User
 from app.core.money import format_brl
 from app.services.margin_report import margin_report
+from app.services.abc import CLASS_INFO, abc_curve
 from app.services.idle import IDLE_LABELS, idle_products
 from app.services.purchase import URGENCY_LABELS, purchase_suggestions
 from app.services.stock import stock_rows
@@ -107,3 +109,53 @@ def margin_page(request: Request, periodo: str = "7", db: Session = Depends(get_
         "r": report, "periodo": periodo, "periods": PERIODS, "tax_rate": tax, "min_margin": min_margin,
         "loss_orders": [{"o": o, "when": to_local(o.ordered_at).strftime("%d/%m %H:%M")} for o in report.loss_orders[:30]],
     }, db=db)
+
+
+ABC_PERIODS = [("30", "30 dias"), ("90", "90 dias"), ("120", "120 dias")]
+ABC_CRITERIA = [("faturamento", "Por faturamento"), ("lucro", "Por lucro real")]
+
+
+def _abc(db: Session, periodo: str, criterio: str):
+    end = utcnow()
+    start = end - timedelta(days=int(periodo))
+    demo = not has_real_data(db)
+    report = margin_report(db, start, end, float(get_setting(db, "tax_rate_pct") or 0), demo=demo)
+    rows, summary = abc_curve(report.products, criterio)
+    oldest = db.scalar(select(func.min(Order.ordered_at)).where(
+        Order.is_demo.is_(demo), Order.kanban_status != KanbanStatus.CANCELLED))
+    partial = not demo and (oldest is None or oldest > start + timedelta(days=1))
+    return rows, summary, report, oldest, partial
+
+
+@router.get("/margem/curva-abc")
+def abc_page(request: Request, periodo: str = "90", criterio: str = "faturamento", db: Session = Depends(get_db),
+             user: User = Depends(current_user)):
+    periodo = periodo if periodo in dict(ABC_PERIODS) else "90"
+    criterio = criterio if criterio in dict(ABC_CRITERIA) else "faturamento"
+    rows, summary, report, oldest, partial = _abc(db, periodo, criterio)
+    return render(request, "abc.html", {
+        "rows": rows, "summary": summary, "class_info": CLASS_INFO, "periodo": periodo, "criterio": criterio,
+        "periods": ABC_PERIODS, "criteria": ABC_CRITERIA, "partial": partial,
+        "oldest": to_local(oldest).strftime("%d/%m/%Y") if oldest else None,
+        "missing_cost": report.products_missing_cost,
+    }, db=db)
+
+
+@router.get("/margem/curva-abc.csv")
+def abc_csv(periodo: str = "90", criterio: str = "faturamento", db: Session = Depends(get_db),
+            user: User = Depends(current_user)):
+    """Planilha da curva ABC (separador ";" e acentos corretos para o Excel)."""
+    periodo = periodo if periodo in dict(ABC_PERIODS) else "90"
+    criterio = criterio if criterio in dict(ABC_CRITERIA) else "faturamento"
+    rows, *_ = _abc(db, periodo, criterio)
+    out = io.StringIO()
+    writer = csv.writer(out, delimiter=";")
+    writer.writerow(["Posição", "Classe", "SKU", "Produto", "Unidades", "Faturamento", "Lucro real",
+                     "% do total", "% acumulado"])
+    for position, row in enumerate(rows, 1):
+        p = row.product
+        writer.writerow([position, row.cls, p.sku, p.name, p.units, format_brl(p.revenue), format_brl(p.profit),
+                         f"{row.share:.1f}".replace(".", ","), f"{row.cumulative:.1f}".replace(".", ",")])
+    filename = f"curva-abc-{criterio}-{periodo}dias-{local_today():%Y-%m-%d}.csv"
+    return Response("\ufeff" + out.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
