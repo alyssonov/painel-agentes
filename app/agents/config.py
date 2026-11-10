@@ -40,6 +40,10 @@ RULES: dict[str, list[Rule]] = {
         Rule("limite_cancelamentos", "Limite do verde para cancelamentos", 1.5, 0.1, 20, "%"),
         Rule("aviso_pct", "Avisar ao chegar a esta parte do limite", 80, 30, 100, "% do limite"),
     ],
+    "precos": [
+        Rule("margem_minima_pct", "Nunca sugerir preço com lucro real abaixo de", 15, 0, 80, "%"),
+        Rule("variacao_maxima_pct", "No automático, mudar no máximo", 10, 1, 50, "% do preço por vez"),
+    ],
     "relatorio": [
         Rule("hora_envio", "Enviar o relatório diário a partir das", 19, 0, 23, "horas"),
     ],

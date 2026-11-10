@@ -18,7 +18,7 @@ from app.config import get_settings
 from app.core import audit
 from app.core.db import get_sessionmaker, utcnow
 from app.integrations.errors import IntegrationError
-from app.models import Action, Agent, Conversation, Question
+from app.models import Action, Agent, Conversation, Listing, PriceReference, Question
 from app.models.enums import ActionStatus, ActionType, AgentMode, Channel, ConversationStatus, QuestionStatus
 
 logger = logging.getLogger("acoes")
@@ -66,9 +66,26 @@ def _execute_send_message(db: Session, action: Action) -> str:
     return "Mensagem enviada ao comprador."
 
 
+def _execute_update_price(db: Session, action: Action) -> str:
+    ref = db.get(PriceReference, int(action.target_id))
+    if ref is None or ref.channel != Channel.ML:
+        raise IntegrationError("O anúncio não foi encontrado.")
+    if ref.automated:
+        raise IntegrationError("A automatização de preços do Mercado Livre está ligada neste anúncio.")
+    if ref.has_variations or ref.promoted:
+        raise IntegrationError("Anúncio com variações ou em promoção: ajuste o preço no Mercado Livre.")
+    from app.integrations.mercadolivre.auth import MLTokenProvider
+    from app.integrations.mercadolivre.writes import MLWriter
+
+    with MLWriter(MLTokenProvider(get_sessionmaker())) as writer:
+        writer.update_price(ref.item_id, int(action.payload["price_cents"]))
+    return "Preço alterado no Mercado Livre."
+
+
 EXECUTORS: dict[str, Callable[[Session, Action], str]] = {
     ActionType.ANSWER_QUESTION: _execute_answer_question,
     ActionType.SEND_MESSAGE: _execute_send_message,
+    ActionType.UPDATE_PRICE: _execute_update_price,
 }
 
 
@@ -93,9 +110,23 @@ def _after_message(db: Session, action: Action) -> None:
         conversation.last_from_buyer = False
 
 
+def _after_price(db: Session, action: Action) -> None:
+    ref = db.get(PriceReference, int(action.target_id))
+    if ref is None:
+        return
+    if action.status == ActionStatus.SIMULATED:
+        ref.verdict = "simulado"
+        return
+    new = int(action.payload["price_cents"])
+    ref.verdict, ref.current_cents, ref.listed_cents = "aplicado", new, new
+    for listing in db.scalars(select(Listing).where(Listing.channel == ref.channel, Listing.item_id == ref.item_id)):
+        listing.price_cents = new
+
+
 AFTER_SUCCESS: dict[str, Callable[[Session, Action], None]] = {
     ActionType.ANSWER_QUESTION: _after_answer,
     ActionType.SEND_MESSAGE: _after_message,
+    ActionType.UPDATE_PRICE: _after_price,
 }
 
 

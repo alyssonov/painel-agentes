@@ -33,6 +33,7 @@ from app.models import (
     Order,
     OrderItem,
     Payment,
+    PriceReference,
     Product,
     Question,
     StockSnapshot,
@@ -128,6 +129,10 @@ def clear_demo(db: Session, *, pause_agents: bool = False) -> None:
         db.execute(delete(Conversation).where(Conversation.id.in_(demo_conversation_ids)))
     db.execute(delete(Claim).where(Claim.is_demo.is_(True)))
     db.execute(delete(Payment).where(Payment.is_demo.is_(True)))
+    demo_price_ids = [str(i) for i in db.scalars(select(PriceReference.id).where(PriceReference.is_demo.is_(True)))]
+    if demo_price_ids:
+        db.execute(delete(Action).where(Action.target_type == "anuncio", Action.target_id.in_(demo_price_ids)))
+    db.execute(delete(PriceReference).where(PriceReference.is_demo.is_(True)))
     demo_order_ids = select(Order.id).where(Order.is_demo.is_(True))
     db.execute(delete(OrderItem).where(OrderItem.order_id.in_(demo_order_ids)))
     db.execute(delete(Order).where(Order.is_demo.is_(True)))
@@ -306,6 +311,31 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
                            status="approved", amount_cents=amount, net_cents=round(amount * 0.74),
                            approved_at=sold, release_date=release,
                            release_status="released" if release < now else "pending", checked_at=now, is_demo=True))
+
+    # --- Preços: referências do Mercado Livre e análise do agente ---------------
+    demo_prices = [
+        # (produto, preço atual, sugerido, taxa, frete, situação, veredito, preço proposto, lucro no sugerido, nota)
+        (products[0], 6800, 6162, 739, 915, "with_benchmark_highest", "baixar", 6162, 894,
+         "A concorrência vende a R$ 61,62. Nesse preço o lucro fica em R$ 8,94 (15%)."),
+        (products[1], 11000, 9780, 1663, 3245, "with_benchmark_high", "abaixo_do_custo", None, -906,
+         "A concorrência vende a R$ 97,80: nesse preço você teria prejuízo de R$ 9,06 por venda."),
+        (products[2], 5500, 6200, 744, 900, "no_benchmark_lowest", "subir", 6200, 1650,
+         "Você está abaixo da concorrência (R$ 62,00). Subindo, ganha cerca de R$ 5,70 a mais por venda."),
+    ]
+    for i, (prod, current, sug, fee, ship, status, verdict, proposed, profit, note) in enumerate(demo_prices):
+        ref = PriceReference(channel=Channel.ML, item_id=f"MLB-DEMO-{i}", title=prod.name, product_id=prod.id,
+                             status=status, applicable=True, current_cents=current, listed_cents=current,
+                             suggested_cents=sug, lowest_cents=sug, selling_fee_cents=fee, shipping_fee_cents=ship,
+                             compared=5, verdict=verdict, note=note, profit_at_suggested_cents=profit,
+                             checked_at=now, is_demo=True)
+        db.add(ref)
+        db.flush()
+        if proposed:
+            db.add(Action(agent_slug="precos", type=ActionType.UPDATE_PRICE, channel=Channel.ML, target_type="anuncio",
+                          target_id=str(ref.id), payload={"price_cents": proposed, "old_cents": current,
+                                                          "item_id": ref.item_id},
+                          original_payload={"price_cents": proposed}, confidence="alta", topic=verdict,
+                          reason=note, dry_run=True))
 
     # --- Pós-venda: conversas e uma reclamação --------------------------------
     demo_conversations = [

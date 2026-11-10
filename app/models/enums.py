@@ -92,6 +92,7 @@ class SyncStatus(StrEnum):
 class ActionType(StrEnum):
     ANSWER_QUESTION = "responder_pergunta"
     SEND_MESSAGE = "enviar_mensagem"  # mensagem pós-venda para o comprador
+    UPDATE_PRICE = "mudar_preco"  # novo preço de um anúncio
 
 
 class ConversationStatus(StrEnum):

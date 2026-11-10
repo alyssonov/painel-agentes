@@ -209,6 +209,17 @@ vendidos, perguntas, o que pede atenção e o que cada agente fez. Se o
 computador estiver desligado no horário, sai assim que o painel ligar (até o
 fim do dia), e nunca duas vezes. Falha no envio vira alerta. Sem custo de IA.
 
+## Preços (Fase 7 — agente Monitor de preços)
+
+O agente compara cada anúncio com as **referências de preço oficiais do Mercado
+Livre** e calcula o lucro no preço novo com o custo do Olist. Ele só sugere
+baixar se o lucro continuar acima da **margem mínima** (padrão 15%, em
+**Agentes → Monitor de preços**) e sugere subir quando você está abaixo da
+concorrência. As sugestões aparecem em **Estoque e preços → Sugestões de
+preço**: aprove (pode editar o valor) ou descarte. Anúncios em promoção, com
+variações ou com a automatização de preços do Mercado Livre ficam de fora.
+Nada muda no modo simulação.
+
 ## Sugestão de compra
 
 Em **Estoque e preços**, o quadro **Sugestão de compra** mostra o que repor,

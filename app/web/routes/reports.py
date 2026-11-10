@@ -5,7 +5,7 @@ from datetime import timedelta
 import csv
 import io
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -13,8 +13,10 @@ from sqlalchemy.orm import Session
 from app.agents.config import agent_rules, has_real_data
 from app.core.db import get_db, utcnow
 from app.core.timeutil import local_day_bounds_utc, local_today, to_local
-from app.models import Agent, Order, Payment
-from app.models.enums import CHANNEL_LABELS, Channel, KanbanStatus
+from app.agents.prices import VERDICT_LABELS
+from app.core import actions
+from app.models import Action, Agent, Order, Payment, PriceReference
+from app.models.enums import CHANNEL_LABELS, ActionStatus, ActionType, Channel, KanbanStatus
 from app.services.dashboard import money_confirmed, order_margin
 from app.models.user import User
 from app.core.money import format_brl
@@ -26,8 +28,8 @@ from app.services.receivables import forecast
 from app.services.purchase import URGENCY_LABELS, purchase_suggestions
 from app.services.stock import stock_rows
 from app.services.store_settings import get_setting
-from app.web.auth import current_user
-from app.web.templating import render
+from app.web.auth import current_user, verify_csrf
+from app.web.templating import flash, render
 
 router = APIRouter()
 
@@ -59,7 +61,9 @@ def stock_page(request: Request, filtro: str = "atencao", db: Session = Depends(
     purchase = purchase_suggestions(db, rows, lead_days=lead, coverage_days=coverage)
     idle_days, excess_days = int(rules.get("dias_sem_venda", 60)), int(rules.get("excesso_dias", 180))
     idle = idle_products(db, rows, idle_days=idle_days, excess_days=excess_days, demo=not has_real_data(db))
+    price_queue, price_watch = _price_view(db)
     return render(request, "stock.html", {
+        "price_queue": price_queue, "price_watch": price_watch, "verdict_labels": VERDICT_LABELS,
         "idle": idle, "idle_labels": IDLE_LABELS, "idle_history_note": has_real_data(db) and not idle.history_complete, "idle_days": idle_days, "excess_days": excess_days,
         "idle_since": to_local(idle.history_since).strftime("%d/%m/%Y") if idle.history_since else None,
         "rows": shown, "total": len(rows), "counts": counts, "filtro": filtro, "status_labels": STATUS_LABELS,
@@ -245,3 +249,69 @@ def sale_detail(request: Request, order_id: int, db: Session = Depends(get_db), 
         "confirmed": money_confirmed(order), "channel_label": CHANNEL_LABELS.get(Channel(order.channel), order.channel),
         "when": to_local(order.ordered_at).strftime("%d/%m/%Y às %H:%M"), "numero": "", "recent": [],
     }, db=db)
+
+
+
+def _price_view(db: Session):
+    """Fila de preços para aprovar + anúncios em que baixar não compensa (só informação)."""
+    queue = []
+    for action in db.scalars(select(Action).where(
+            Action.type == ActionType.UPDATE_PRICE,
+            Action.status.in_([ActionStatus.PENDING, ActionStatus.FAILED])).order_by(Action.created_at)):
+        ref = db.get(PriceReference, int(action.target_id))
+        if ref is not None:
+            queue.append({"a": action, "ref": ref, "new": action.payload["price_cents"],
+                          "old": action.payload.get("old_cents", ref.current_cents)})
+    watch = list(db.scalars(select(PriceReference).where(
+        PriceReference.verdict.in_(["abaixo_do_custo", "nao_compensa", "promocao"]))
+        .order_by(PriceReference.profit_at_suggested_cents).limit(50)))
+    return queue, watch
+
+
+def _parse_price(text: str) -> int | None:
+    """ "61,62" ou "1.234,50" → centavos."""
+    clean = (text or "").strip().replace("R$", "").replace(" ", "")
+    if "," in clean:
+        clean = clean.replace(".", "").replace(",", ".")
+    try:
+        value = round(float(clean) * 100)
+    except ValueError:
+        return None
+    return value if value >= 100 else None
+
+
+@router.post("/estoque-precos/preco/{action_id}/aprovar", dependencies=[Depends(verify_csrf)])
+def approve_price(request: Request, action_id: int, preco: str = Form(""), db: Session = Depends(get_db),
+                  user: User = Depends(current_user)):
+    action = db.get(Action, action_id)
+    price = _parse_price(preco)
+    if action is None or action.type != ActionType.UPDATE_PRICE:
+        flash(request, "Sugestão não encontrada.", "erro")
+    elif price is None:
+        flash(request, "Informe um preço válido (ex.: 61,90).", "erro")
+    else:
+        try:
+            actions.approve(db, action, actor=f"user:{user.id}", edited_payload={**action.payload, "price_cents": price})
+            db.commit()
+            if action.status == ActionStatus.SIMULATED:
+                flash(request, f"Preço {format_brl(price)} aprovado. Modo simulação: nada foi alterado no Mercado Livre.")
+            elif action.status == ActionStatus.EXECUTED:
+                flash(request, f"Preço alterado para {format_brl(price)} no Mercado Livre.")
+            else:
+                flash(request, f"O preço não foi alterado: {action.result}", "erro")
+        except actions.ActionNotAllowed as exc:
+            flash(request, str(exc), "erro")
+    return RedirectResponse("/estoque-precos#precos", status_code=303)
+
+
+@router.post("/estoque-precos/preco/{action_id}/descartar", dependencies=[Depends(verify_csrf)])
+def reject_price(request: Request, action_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    action = db.get(Action, action_id)
+    if action is not None and action.type == ActionType.UPDATE_PRICE:
+        try:
+            actions.reject(db, action, actor=f"user:{user.id}", reason="Descartada no painel")
+            db.commit()
+            flash(request, "Sugestão descartada. O preço não mudou.")
+        except actions.ActionNotAllowed as exc:
+            flash(request, str(exc), "erro")
+    return RedirectResponse("/estoque-precos#precos", status_code=303)

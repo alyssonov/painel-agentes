@@ -280,7 +280,7 @@ Agentes 3, 7 e 9 **não usam IA** (são cálculos) — custo zero de tokens.
 | 4 | Agentes 3, 9 e 7 ✅ |
 | 5 | Agente 8 (WhatsApp/e-mail) — e-mail ✅; WhatsApp e PDFs a seguir |
 | 6 | Agente 5 (Pós-venda) ✅ |
-| 7 | Agentes 2, 4 e 6 |
+| 7 | Agentes 2, 4 e 6 — Preços (4) em teste |
 | 8 | Revisão de segurança, testes, Docker, guia do VPS |
 
 ---
@@ -590,3 +590,26 @@ em taxa (comissão `sale_fee`) e "frete e tarifas" (o resto). Sem o valor
 recebido, a venda conta como "taxa e frete ainda não conferidos" na Margem
 real (antes o frete vinha do campo informativo `valorFretePagoEmpresa` do
 Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
+
+## 24. Fase 7 — Agente 4 (Preços)
+
+- **Leitura** (`app/sync/ml_prices.py`, a cada 12 h dentro da sincronização do
+  ML): `GET /suggestions/user/{id}/items`, `GET /suggestions/items/{id}/details`
+  e `GET /pricing-automation/users/{id}/items` (documentação oficial consultada
+  em 11/11/2026). Diagnóstico real (`python tarefas.py diagnostico-precos`):
+  76 anúncios com referência; `costs` (selling_fees, shipping_fees)
+  correspondem ao PREÇO SUGERIDO (ex.: 7,39 = 12% de 61,62); `current_price`
+  é o preço de venda (com promoção) e pode diferir do cadastrado. Tabela
+  `price_references` (migração 0012).
+- **Agente** (`app/agents/prices.py`, de hora em hora, sem IA): lucro num preço
+  p = p − p×(taxa/sugerido) − frete − custo do Olist − imposto(p). Acima da
+  concorrência → baixar para a referência se a margem ≥ mínima (padrão 15%);
+  senão, o menor preço que mantém a margem; senão, só informa ("concorrência
+  abaixo do seu custo"). Abaixo da concorrência → sugere subir. Ficam de fora:
+  automatização do ML, anúncios com variações e em promoção.
+- **Escrita**: Ação `mudar_preco` → `MLWriter.update_price` (`PUT /items/{id}`
+  com `price`), só pelo ActionGateway. Aviso (`warnings`) ou preço diferente na
+  resposta = falha. No automático, só aprova sozinho mudanças ≤
+  `variacao_maxima_pct` (padrão 10%).
+- **Painel**: "Estoque e preços" → Sugestões de preço (Aprovar com preço
+  editável / Descartar) e a lista "Anúncios em que baixar o preço não compensa".

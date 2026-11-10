@@ -304,5 +304,5 @@ def test_pagina_de_agentes_liga_e_muda_modo(logged_client, db):
     agent = db.scalar(select(Agent).where(Agent.slug == "perguntas"))
     assert agent.enabled and agent.mode == AgentMode.AUTO
     # Agentes de fases futuras não podem ser ligados.
-    r = logged_client.post("/agentes/precos/ativo", data={"csrf_token": token, "enabled": "0"})
+    r = logged_client.post("/agentes/anuncios/ativo", data={"csrf_token": token, "enabled": "0"})
     assert "ainda não está disponível" in r.text

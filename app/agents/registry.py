@@ -30,7 +30,8 @@ AGENTS: list[AgentDef] = [
     AgentDef("estoque", "Vigia de estoque",
              "Lê o estoque do Olist, prevê quando cada produto acaba e avisa divergências com os anúncios.", 4),
     AgentDef("precos", "Monitor de preços",
-             "Compara preços por meios permitidos e sugere ajustes sem passar da margem mínima.", 7),
+             "Compara com as referências de preço oficiais do Mercado Livre e sugere ajustes sem passar "
+             "da margem mínima. Nunca muda preço sem aprovação.", 7),
     AgentDef("posvenda", "Pós-venda",
              "Responde dúvidas simples de pedidos (rastreio, prazo, nota) e avisa reclamações abertas.", 6),
     AgentDef("avaliacoes", "Avaliações e devoluções",

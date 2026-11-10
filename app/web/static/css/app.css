@@ -461,3 +461,4 @@ details > summary { cursor: pointer; }
 .sale-calc .indent { padding-left: 24px; color: var(--muted); }
 .sale-sub td { font-weight: 700; border-top: 1px solid var(--line); }
 .sale-total td { font-weight: 800; font-size: 16px; border-top: 2px solid var(--ink); }
+.price-watch { margin-top: 16px; }

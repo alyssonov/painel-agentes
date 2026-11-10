@@ -21,6 +21,7 @@ from app.agents.margin import run_margin_agent
 from app.agents.nfe_check import run_nfe_check
 from app.agents.dispatch import run_dispatch_alerts
 from app.agents.postsale import run_postsale_agent
+from app.agents.prices import run_prices_agent
 from app.agents.questions import run_questions_agent
 from app.agents.reputation import run_reputation_check
 from app.agents.stock_watch import run_stock_watch
@@ -86,8 +87,9 @@ def job_checks() -> None:
 
 
 def job_margin() -> None:
-    """Fase 4: Calculadora de margem real + Termômetro da reputação (de hora em hora)."""
-    for name, runner in (("Margem real", run_margin_agent), ("Termômetro da reputação", run_reputation_check)):
+    """De hora em hora: Margem real, Termômetro da reputação e Preços (Fase 7)."""
+    for name, runner in (("Margem real", run_margin_agent), ("Termômetro da reputação", run_reputation_check),
+                         ("Preços", run_prices_agent)):
         run = runner(get_sessionmaker())
         if run is not None:
             logger.info("%s: %s — %s", name, run.status, run.summary)

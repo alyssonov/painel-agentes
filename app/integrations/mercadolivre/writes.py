@@ -15,6 +15,12 @@ https://developers.mercadolivre.com.br/pt_br/mensagens-post-venda
   Desde 02/02/2026, no Brasil o "to" é o ID do Agente de Mensageria do ML (não o
   comprador); até 350 caracteres; sem CRLF nem caracteres de controle; o vendedor
   nunca inicia a conversa. Resposta 202 = mensagem em revisão (pending_review).
+
+Preço (documentação oficial consultada em 11/11/2026):
+https://developers.mercadolivre.com.br/pt_br/api-de-precos
+  PUT /items/{id} {"price": ...} — o endpoint novo de preços "ainda não está
+  disponível". Com automatização de preços ligada, o ML recusa (400) ou ignora o
+  preço com um aviso (warning) — tratamos os dois como falha.
 """
 
 import httpx
@@ -26,6 +32,7 @@ import re
 
 ANSWERS_URL = "https://api.mercadolibre.com/answers"
 MESSAGES_URL = "https://api.mercadolibre.com/messages/packs/{pack}/sellers/{seller}"
+ITEM_URL = "https://api.mercadolibre.com/items/{item}"
 MAX_ANSWER_CHARS = 2000
 MAX_MESSAGE_CHARS = 350
 MLB_MESSAGING_AGENT_ID = "3037675074"  # tabela "IDs dos Agentes por país" da documentação
@@ -96,6 +103,36 @@ class MLWriter:
         if response.status_code >= 500:
             raise TemporaryError(f"O Mercado Livre está instável (erro {response.status_code}). Tente de novo.")
         raise IntegrationError(f"O Mercado Livre recusou a mensagem: {_error_text(response)}")
+
+    def update_price(self, item_id: str, price_cents: int) -> dict:
+        """Muda o preço do anúncio. Não tenta de novo sozinho."""
+        if price_cents < 100:
+            raise IntegrationError("Preço inválido.")
+        url = ITEM_URL.format(item=item_id)
+        body = {"price": round(price_cents / 100, 2)}
+        try:
+            response = self._put(url, body, self._tokens.get_token())
+            if response.status_code == 401:
+                response = self._put(url, body, self._tokens.get_token(force_refresh=True))
+        except httpx.HTTPError as exc:
+            raise TemporaryError("Sem conexão com o Mercado Livre. O preço NÃO foi alterado.") from exc
+        if response.status_code == 401:
+            raise AuthExpired("O Mercado Livre recusou o acesso. Conecte de novo e tente outra vez.")
+        if response.status_code >= 500:
+            raise TemporaryError(f"O Mercado Livre está instável (erro {response.status_code}). Tente de novo.")
+        if response.status_code != 200:
+            raise IntegrationError(f"O Mercado Livre recusou o novo preço: {_error_text(response)}")
+        data = response.json() if response.content else {}
+        warnings = data.get("warnings") if isinstance(data, dict) else None
+        if warnings:
+            raise IntegrationError(f"O Mercado Livre não aplicou o preço: {str(warnings)[:200]}")
+        if isinstance(data, dict) and data.get("price") is not None and round(float(data["price"]) * 100) != price_cents:
+            raise IntegrationError("O Mercado Livre respondeu com outro preço; confira o anúncio.")
+        return data
+
+    def _put(self, url: str, body: dict, token: str) -> httpx.Response:
+        return self._http.put(url, json=body, headers={
+            "Authorization": f"Bearer {token}", "Content-Type": "application/json", "Accept": "application/json"})
 
     def _send(self, body: dict, token: str, url: str = ANSWERS_URL) -> httpx.Response:
         params = {"tag": "post_sale"} if url != ANSWERS_URL else None

@@ -16,12 +16,10 @@ DETAIL = {"item_id": "MLB1", "status": "with_benchmark_high", "current_price": {
 @respx.mock
 def test_diagnostico_de_precos(db, ml_env, capsys):
     connect_ml(db)
-    ml_fake.install(respx.mock)
-    base = "https://api.mercadolibre.com"
-    respx.get(f"{base}/suggestions/user/123456/items").mock(return_value=httpx.Response(
-        200, json={"total": 1, "items": ["MLB1"]}))
-    respx.get(f"{base}/suggestions/items/MLB1/details").mock(return_value=httpx.Response(200, json=DETAIL))
-    auto = respx.get(f"{base}/pricing-automation/users/123456/items").mock(return_value=httpx.Response(
+    routes = ml_fake.install(respx.mock)
+    routes["price_items"].mock(return_value=httpx.Response(200, json={"total": 1, "items": ["MLB1"]}))
+    routes["price_detail"].mock(return_value=httpx.Response(200, json=DETAIL))
+    auto = routes["price_automation"].mock(return_value=httpx.Response(
         200, json={"items": [{"item_id": "MLB9", "status": "ACTIVE"}], "paging": {"total": 1}}))
     assert cmd_diag_precos(None) == 0
     out = capsys.readouterr().out
@@ -34,13 +32,11 @@ def test_diagnostico_de_precos(db, ml_env, capsys):
 @respx.mock
 def test_diagnostico_segue_mesmo_com_resposta_estranha(db, ml_env, capsys):
     connect_ml(db)
-    ml_fake.install(respx.mock)
-    base = "https://api.mercadolibre.com"
-    respx.get(f"{base}/suggestions/user/123456/items").mock(return_value=httpx.Response(
-        200, json={"total": 2, "items": ["MLB1", "MLB2"]}))
-    respx.get(f"{base}/suggestions/items/MLB1/details").mock(return_value=httpx.Response(200, json=["?"]))
-    respx.get(f"{base}/suggestions/items/MLB2/details").mock(return_value=httpx.Response(403, json={}))
-    respx.get(f"{base}/pricing-automation/users/123456/items").mock(return_value=httpx.Response(200, json={}))
+    routes = ml_fake.install(respx.mock)
+    routes["price_items"].mock(return_value=httpx.Response(200, json={"total": 2, "items": ["MLB1", "MLB2"]}))
+    routes["price_detail"].mock(side_effect=lambda r, iid: httpx.Response(200, json=["?"]) if iid == "MLB1"
+                                else httpx.Response(403, json={}))
+    routes["price_automation"].mock(return_value=httpx.Response(200, json={}))
     assert cmd_diag_precos(None) == 0
     out = capsys.readouterr().out
     assert "formato inesperado" in out and "MLB2: ERRO" in out and "Automatização" in out

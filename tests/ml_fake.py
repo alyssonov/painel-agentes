@@ -106,6 +106,15 @@ CLAIM_DETAIL = {"due_date": "2026-11-12T10:00:00.000-03:00", "action_responsible
                 "problem": "O comprador diz que o produto não chegou"}
 
 
+# Referências de preço (formato real de 11/11/2026). MLB1 tem SKU CAN-01 nos anúncios falsos.
+PRICE_ITEMS = {"total": 1, "items": ["MLB1"]}
+PRICE_DETAILS = {
+    "MLB1": {"item_id": "MLB1", "status": "with_benchmark_highest", "current_price": {"amount": 69.9},
+             "suggested_price": {"amount": 61.62}, "lowest_price": {"amount": 61.62},
+             "internal_price": {"amount": 61.62}, "costs": {"selling_fees": 7.39, "shipping_fees": 9.15},
+             "applicable_suggestion": True, "percent_difference": 9, "metadata": {"compared_values": 5}},
+}
+
 # Mercado Pago: data de liberação e valor líquido (formato confirmado com dados reais em 11/11/2026).
 MP_PAYMENTS = {
     "8000001": {"status": "approved", "money_release_date": "2026-12-08T17:59:16.000-04:00",
@@ -140,6 +149,12 @@ def install(router: respx.Router) -> dict[str, respx.Route]:
             return_value=httpx.Response(200, json={"affects_reputation": "affected", "has_incentive": True})),
         "mp_payment": router.get(url__regex=r"https://api\.mercadopago\.com/v1/payments/(?P<pid>\d+)$").mock(
             side_effect=lambda r, pid: httpx.Response(200, json=MP_PAYMENTS.get(pid, {"status": "approved"}))),
+        "price_items": router.get(url__regex=re.escape(BASE_URL) + r"/suggestions/user/\d+/items$").mock(
+            return_value=httpx.Response(200, json=PRICE_ITEMS)),
+        "price_detail": router.get(url__regex=re.escape(BASE_URL) + r"/suggestions/items/(?P<iid>\w+)/details$").mock(
+            side_effect=lambda r, iid: httpx.Response(200, json=PRICE_DETAILS.get(iid, {}))),
+        "price_automation": router.get(url__regex=re.escape(BASE_URL) + r"/pricing-automation/users/\d+/items").mock(
+            return_value=httpx.Response(200, json={"items": [], "paging": {"total": 0}})),
         "orders": router.get(f"{BASE_URL}/orders/search").mock(return_value=httpx.Response(200, json={
             "results": ORDERS, "paging": {"total": len(ORDERS), "offset": 0, "limit": 50}})),
     }
