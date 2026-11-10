@@ -47,7 +47,7 @@ logger = logging.getLogger("sync.ml")
 FIRST_QUESTIONS_DAYS = 7
 FIRST_FEES_DAYS = 15
 # Taxas: relê sempre esta janela (o pedido pode chegar no Olist depois).
-FEES_WINDOW_DAYS = 3
+FEES_WINDOW_DAYS = 5  # cobre os pedidos de dias anteriores que ainda vão ser despachados
 CURSOR_OVERLAP = timedelta(minutes=10)
 
 ClientFactory = Callable[[], MLClient]

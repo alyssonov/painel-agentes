@@ -2,7 +2,7 @@
 {% block title %}Visão geral{% endblock %}
 {% block page_title %}Visão geral{% endblock %}
 {% block page_subtitle %}
-<p class="muted">{{ ov.orders_today }} pedidos hoje · Gasto com IA hoje: {{ ov.ai_cost_today_cents|brl }} de {{ ov.ai_budget_cents|brl }}</p>
+<p class="muted">{{ ov.orders_today }} vendas hoje{% if ov.dispatch %} · {{ ov.dispatch.to_ship }} para enviar hoje{% if ov.dispatch.late %} · {{ ov.dispatch.late }} atrasado(s){% endif %}{% endif %} · Gasto com IA hoje: {{ ov.ai_cost_today_cents|brl }} de {{ ov.ai_budget_cents|brl }}</p>
 {% endblock %}
 {% block content %}
 
@@ -78,7 +78,8 @@
 <div class="overview-grid">
   <section class="card" aria-labelledby="orders-title">
     <div class="card-head">
-      <h2 id="orders-title" class="card-title">Pedidos de hoje</h2>
+      <h2 id="orders-title" class="card-title">{{ 'Envios de hoje' if ov.dispatch else 'Pedidos de hoje' }}</h2>
+      {% if ov.dispatch %}<span class="muted small">pelo prazo de despacho do Mercado Livre</span>{% endif %}
     </div>
     {% include "partials/kanban.html" %}
   </section>

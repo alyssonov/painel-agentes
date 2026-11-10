@@ -162,6 +162,10 @@ automáticas, nada manual).
   variáveis em `:root` no `app/web/static/css/app.css`.
 - Visão geral: 4 cards (faturamento hoje, margem média real, perguntas
   respondidas, reputação, com faixa lateral na cor da situação); faixa "O que pede atenção" (um pouco mais clara que o fundo, alertas com borda na cor da gravidade); lista
-  "Agentes agora"; kanban "Pedidos de hoje" (A separar, Embalado, Enviado,
-  Com problema) com filtro Todos / Mercado Livre / Shopee.
+  "Agentes agora"; kanban **"Envios de hoje"** (A separar, Embalado, Enviado,
+  Com problema) com filtro Todos / Mercado Livre / Shopee. Regra do dono:
+  **"Faturamento hoje" = o que foi VENDIDO hoje**; o quadro = o que **precisa
+  ser DESPACHADO hoje** (prazo de despacho/SLA do marketplace, tabela
+  `shipments`) + atrasados; Full fica de fora. Sem conta real (simulação), o
+  quadro mostra os pedidos fictícios do dia.
 - Linguagem do painel: português simples, sem jargão técnico.

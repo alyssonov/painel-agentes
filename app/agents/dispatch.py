@@ -17,6 +17,7 @@ from app.core.timeutil import to_local
 from app.integrations.mercadolivre.mapping import WAITING_DISPATCH
 from app.models import Order, Shipment
 from app.models.enums import AlertSeverity, Channel
+from app.services.dashboard import dispatch_day
 
 SLUG = "despacho"
 MAX_ALERTS = 10
@@ -70,13 +71,10 @@ def run_dispatch_alerts(session_factory: sessionmaker[Session]):
             specs, late, soon = build_alerts(db, agent_rules(agent)["horas_aviso"])
             sync_alerts(db, SLUG, specs)
             db.commit()
-            if not late and not soon:
-                return 0, "Nenhum despacho pendente no prazo de aviso"
-            parts = []
-            if late:
-                parts.append(f"{late} atrasado(s)")
-            if soon:
-                parts.append(f"{soon} para despachar")
-            return late + soon, " · ".join(parts)
+            day = dispatch_day(db)
+            parts = [f"{day.to_ship} para enviar hoje", f"{day.shipped} já enviado(s)"]
+            if day.late:
+                parts.append(f"{day.late} atrasado(s)")
+            return day.to_ship + day.late, " · ".join(parts)
 
         return run_agent(db, SLUG, work)

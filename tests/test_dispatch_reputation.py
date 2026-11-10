@@ -77,7 +77,7 @@ def test_agente_de_despacho(db, ml_env):
     shipment(db, "9", utcnow() - timedelta(hours=2))
     db.commit()
     run = run_dispatch_alerts(get_sessionmaker())
-    assert run.summary == "1 atrasado(s)"
+    assert run.summary == "0 para enviar hoje · 0 já enviado(s) · 1 atrasado(s)"
     assert db.scalar(select(Alert).where(Alert.source == "despacho")).severity == "critico"
     # Despachou: o alerta some sozinho.
     db.scalar(select(Shipment)).status = "shipped"
@@ -119,3 +119,40 @@ def test_agentes_novos_aparecem_em_agentes(logged_client):
     html = logged_client.get("/agentes").text
     assert "Alerta de despacho" in html and "Termômetro da reputação" in html
     assert "Limite do verde para reclamações" in html
+
+
+# --- Quadro "Envios de hoje" (pelo prazo de despacho) ----------------------------------------
+
+def test_quadro_mostra_o_que_precisa_sair_hoje(db, ml_env):
+    from app.core.timeutil import local_day_bounds_utc, local_today
+    from app.services.dashboard import dispatch_day, kanban
+    connect_ml(db)  # conta real: o quadro passa a ser "Envios de hoje"
+    start, end = local_day_bounds_utc(local_today())
+    now = utcnow()
+    later_today = min(now + timedelta(hours=1), end - timedelta(minutes=1))
+    db.add(Order(channel=Channel.ML, external_id="P1", olist_id="o1", olist_number="5001",
+                 customer_short_name="Ana S.", ordered_at=now - timedelta(days=2), items_total_cents=5000))
+    shipment(db, "1", later_today, ref="P1")  # vendido há 2 dias, sai hoje → A separar
+    db.add(Shipment(channel=Channel.ML, shipment_id="2", order_ref="P2", status="ready_to_ship",
+                    substatus="printed", dispatch_deadline=later_today, checked_at=now))  # etiqueta impressa
+    shipment(db, "3", start + timedelta(minutes=1), status="shipped")  # já saiu hoje
+    shipment(db, "4", start - timedelta(hours=5))  # de ontem, ainda não saiu → atrasado
+    shipment(db, "5", end + timedelta(hours=10))  # só amanhã: fora do quadro
+    shipment(db, "6", later_today, logistic="fulfillment")  # Full: fora
+    db.commit()
+    cols = {c.status: c for c in kanban(db)}
+    assert [o.external_id for o in cols["a_separar"].orders] == ["P1"]
+    assert [o.external_id for o in cols["embalado"].orders] == ["P2"]
+    assert [o.external_id for o in cols["enviado"].orders] == ["P3"]
+    assert [o.external_id for o in cols["problema"].orders] == ["P4"]
+    assert cols["problema"].orders[0].problem.startswith("Prazo venceu")
+    assert cols["a_separar"].orders[0].time_label.startswith("até ")
+    day = dispatch_day(db)
+    assert (day.to_ship, day.shipped, day.late) == (2, 1, 1)
+    assert kanban(db, "shopee")[0].orders == []  # a Shopee ainda não informa prazo
+
+
+def test_visao_geral_mostra_envios_de_hoje(logged_client, db, ml_env):
+    connect_ml(db)
+    html = logged_client.get("/").text
+    assert "Envios de hoje" in html and "para enviar hoje" in html

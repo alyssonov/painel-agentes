@@ -6,12 +6,13 @@ Tudo aqui é leitura do banco local (que espelha Olist e marketplaces).
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.config import get_settings
 from app.core.timeutil import local_day_bounds_utc, local_today, to_local, utcnow
-from app.models import Agent, AgentRun, AiUsage, Alert, IntegrationAccount, Order, OrderItem, Question
+from app.agents.config import has_real_data
+from app.models import Agent, AgentRun, AiUsage, Alert, IntegrationAccount, Order, OrderItem, Question, Shipment
 from app.models.enums import (
     CHANNEL_LABELS,
     KANBAN_COLUMNS,
@@ -91,6 +92,7 @@ class Overview:
     # true quando há vendas de hoje cuja taxa do marketplace ainda não é conhecida
     fees_missing: bool = False
     tax_configured: bool = True
+    dispatch: "DispatchDay | None" = None  # envios do dia (só com conta real)
 
 
 def order_margin(order: Order, tax_rate_pct: float) -> MarginResult:
@@ -144,10 +146,88 @@ def integrations(db: Session) -> list[IntegrationView]:
     return views
 
 
+SHIPPED_STATUSES = {"shipped", "delivered"}
+WAITING_STATUSES = {"pending", "handling", "ready_to_ship"}
+
+
+@dataclass
+class DispatchDay:
+    """Resumo dos envios do dia (para o quadro e para o Alerta de despacho)."""
+
+    to_ship: int = 0  # prazo hoje e ainda não saiu
+    shipped: int = 0  # já despachado hoje
+    late: int = 0  # prazo vencido e ainda não saiu
+
+
+def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn], DispatchDay]:
+    """Quadro "Envios de hoje": pedidos com PRAZO DE DESPACHO hoje + atrasados.
+
+    O dia de envio vem do marketplace (SLA de cada envio), não da data da venda.
+    Envios Full ficam de fora (quem despacha é o Mercado Livre).
+    """
+    columns = {status: KanbanColumn(status, KANBAN_LABELS[status]) for status in KANBAN_COLUMNS}
+    day = DispatchDay()
+    if channel not in (None, Channel.ML):
+        return list(columns.values()), day  # por enquanto só o Mercado Livre informa o prazo
+    now = utcnow()
+    start, end = local_day_bounds_utc(local_today())
+    tax_rate = float(get_setting(db, "tax_rate_pct") or 0)
+    rows = db.scalars(select(Shipment).where(
+        Shipment.channel == Channel.ML,
+        or_(Shipment.logistic_type.is_(None), Shipment.logistic_type != "fulfillment"),
+        or_(
+            and_(Shipment.dispatch_deadline >= start, Shipment.dispatch_deadline < end),
+            and_(Shipment.status.in_(WAITING_STATUSES), Shipment.dispatch_deadline < start),
+            and_(Shipment.status.in_(SHIPPED_STATUSES), Shipment.dispatch_deadline.is_(None),
+                 Shipment.updated_at >= start),
+        )).order_by(Shipment.dispatch_deadline))
+    for row in rows:
+        order = db.scalar(select(Order).where(Order.channel == Channel.ML, Order.external_id == row.order_ref)
+                          .options(selectinload(Order.items).selectinload(OrderItem.product)))
+        deadline = to_local(row.dispatch_deadline) if row.dispatch_deadline else None
+        problem = order.problem_note if order else None
+        if row.status in SHIPPED_STATUSES:
+            status, label = KanbanStatus.SHIPPED, "enviado"
+            day.shipped += 1
+        elif row.dispatch_deadline and row.dispatch_deadline <= now:
+            status = KanbanStatus.PROBLEM
+            problem = f"Prazo venceu {deadline:%d/%m às %H:%M}" if deadline.date() != local_today() \
+                else f"Prazo venceu às {deadline:%H:%M}"
+            label = "atrasado"
+            day.late += 1
+        else:
+            packed = row.substatus == "printed" or (order and order.kanban_status == KanbanStatus.PACKED)
+            status = KanbanStatus.PROBLEM if problem else (KanbanStatus.PACKED if packed else KanbanStatus.TO_PICK)
+            label = f"até {deadline:%H:%M}" if deadline else "hoje"
+            day.to_ship += 1
+        if order and order.items:
+            first, extra = order.items[0].title, len(order.items) - 1
+            summary = first + (f" + {extra} item" + ("s" if extra > 1 else "") if extra > 0 else "")
+        else:
+            summary = "Pedido ainda não importado do Olist"
+        columns[status].orders.append(OrderCard(
+            id=order.id if order else 0, channel=Channel.ML, channel_label=CHANNEL_LABELS[Channel.ML],
+            external_id=row.order_ref, customer=order.customer_short_name if order else "—", summary=summary,
+            total_cents=order.items_total_cents if order else 0, time_label=label, problem=problem,
+            is_loss=order_margin(order, tax_rate).is_loss if order else False))
+    return list(columns.values()), day
+
+
+def dispatch_day(db: Session) -> DispatchDay:
+    """Quantos pedidos precisam sair hoje, quantos já saíram e quantos estão atrasados."""
+    return _shipment_cards(db, None)[1]
+
+
 def kanban(db: Session, channel: str | None = None) -> list[KanbanColumn]:
-    """Quadro 'Pedidos de hoje', com filtro opcional por marketplace."""
+    """Quadro da Visão geral, com filtro opcional por marketplace.
+
+    Com conta real conectada: "Envios de hoje" (pelo prazo de despacho do marketplace).
+    Na simulação: os pedidos fictícios do dia.
+    """
     if channel not in (None, Channel.ML, Channel.SHOPEE, Channel.OTHER):
         channel = None
+    if has_real_data(db):
+        return _shipment_cards(db, channel)[0]
     start, end = local_day_bounds_utc(local_today())
     tax_rate = float(get_setting(db, "tax_rate_pct") or 0)
     columns = {status: KanbanColumn(status, KANBAN_LABELS[status]) for status in KANBAN_COLUMNS}
@@ -259,4 +339,5 @@ def overview(db: Session) -> Overview:
         ai_budget_cents=round(get_settings().ai_daily_budget_brl * 100),
         fees_missing=any(not o.fees_known for o in orders_today),
         tax_configured=tax_rate > 0,
+        dispatch=dispatch_day(db) if has_real_data(db) else None,
     )
