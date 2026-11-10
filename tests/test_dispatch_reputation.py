@@ -305,3 +305,24 @@ def test_sincronizacao_reconhece_coleta(db, ml_env):
     row = db.scalar(select(Shipment).where(Shipment.shipment_id == "4100001"))
     assert row.substatus == "picked_up"
     assert row.shipped_at == datetime(2026, 11, 10, 13, 15)  # 10:15 Brasília
+
+
+def test_busca_vendas_mais_antigas_para_achar_envios(db, ml_env):
+    """Venda de 6+ dias atrás pode ter prazo hoje: a cada 15 min a busca volta 15 dias."""
+    from app.sync.common import set_cursor
+    from app.sync.ml_sync import sync_fees
+    account = connect_ml(db)
+    started = utcnow()
+    seen = []
+
+    class Client:
+        def iter_orders(self, seller_id, created_from):
+            seen.append((started - created_from).days)
+            return iter(())
+
+    set_cursor(account, "cursor_taxas", started)
+    set_cursor(account, "cursor_envios", started - timedelta(minutes=5))
+    sync_fees(db, Client(), account, "1", started, {})
+    set_cursor(account, "cursor_envios", started - timedelta(minutes=20))
+    sync_fees(db, Client(), account, "1", started, {})
+    assert seen == [5, 15]

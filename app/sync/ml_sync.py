@@ -49,7 +49,11 @@ logger = logging.getLogger("sync.ml")
 FIRST_QUESTIONS_DAYS = 7
 FIRST_FEES_DAYS = 15
 # Taxas: relê sempre esta janela (o pedido pode chegar no Olist depois).
-FEES_WINDOW_DAYS = 5  # cobre os pedidos de dias anteriores que ainda vão ser despachados
+FEES_WINDOW_DAYS = 5
+# Envios: a cada 15 min a busca de vendas volta mais dias, porque uma venda pode
+# ter prazo de despacho vários dias depois (visto em 10/11/2026: vendas de 6+ dias
+# atrás despachadas hoje ficavam de fora do quadro).
+SHIPMENTS_WINDOW_DAYS = 15
 CURSOR_OVERLAP = timedelta(minutes=10)
 
 ClientFactory = Callable[[], MLClient]
@@ -208,7 +212,10 @@ def sync_fees(db: Session, client: MLClient, account, seller_id: str, started,
               shipments: dict[str, str] | None = None) -> int:
     """Taxas das vendas. Se `shipments` for passado, também anota os envios vistos (id → pedido)."""
     first = get_cursor(account, "cursor_taxas") is None
-    created_from = started - timedelta(days=FIRST_FEES_DAYS if first else FEES_WINDOW_DAYS)
+    days = FIRST_FEES_DAYS if first else FEES_WINDOW_DAYS
+    if shipments is not None and _shipments_due(account, started):
+        days = max(days, SHIPMENTS_WINDOW_DAYS)
+    created_from = started - timedelta(days=days)
     # Soma por pacote: no Olist, um pacote com vários pedidos costuma virar um pedido só.
     fees: dict[str, int] = {}
     shipments = shipments if shipments is not None else {}
@@ -241,6 +248,12 @@ SHIPMENTS_EVERY = timedelta(minutes=15)
 MAX_SHIPMENTS_PER_RUN = 150
 
 
+def _shipments_due(account, started) -> bool:
+    """Hora de reconferir os envios (e de buscar vendas mais antigas)? A cada 15 minutos."""
+    last = get_cursor(account, "cursor_envios")
+    return not last or started - last >= SHIPMENTS_EVERY
+
+
 def _left_store_at(data: dict):
     """Quando o pacote saiu da loja: data de envio, ou da coleta/entrega na agência no histórico do detalhe."""
     history = data.get("status_history") or {}
@@ -263,8 +276,7 @@ def sync_shipments(db: Session, client: MLClient, account, started, new: dict[st
       que já foi lido — o resto fica para a próxima rodada;
     - um envio com erro não trava os outros.
     """
-    last = get_cursor(account, "cursor_envios")
-    recheck_pending = not last or started - last >= SHIPMENTS_EVERY
+    recheck_pending = _shipments_due(account, started)
     known = set(db.scalars(select(Shipment.shipment_id).where(Shipment.channel == Channel.ML)))
     to_check: dict[str, str] = {sid: ref for sid, ref in new.items() if sid not in known}
     if recheck_pending:
