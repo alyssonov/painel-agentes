@@ -16,6 +16,7 @@ from app.models.price import PriceReference
 from app.models.postsale import Claim, Conversation, ConversationMessage
 from app.models.question import Question
 from app.models.report import Report
+from app.models.review import ClaimReason, ItemRating, ProductInsight, ProductReview
 from app.models.settings import StoreSetting
 from app.models.shipment import Shipment
 from app.models.sync import SyncRun
@@ -30,9 +31,11 @@ __all__ = [
     "Alert",
     "AuditLog",
     "Claim",
+    "ClaimReason",
     "Conversation",
     "ConversationMessage",
     "IntegrationAccount",
+    "ItemRating",
     "MarketplaceFee",
     "Invoice",
     "Listing",
@@ -41,6 +44,8 @@ __all__ = [
     "Payment",
     "PriceReference",
     "Product",
+    "ProductInsight",
+    "ProductReview",
     "Question",
     "Report",
     "StockSnapshot",

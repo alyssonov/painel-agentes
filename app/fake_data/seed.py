@@ -35,6 +35,8 @@ from app.models import (
     Payment,
     PriceReference,
     Product,
+    ProductInsight,
+    ProductReview,
     Question,
     StockSnapshot,
 )
@@ -133,6 +135,8 @@ def clear_demo(db: Session, *, pause_agents: bool = False) -> None:
     if demo_price_ids:
         db.execute(delete(Action).where(Action.target_type == "anuncio", Action.target_id.in_(demo_price_ids)))
     db.execute(delete(PriceReference).where(PriceReference.is_demo.is_(True)))
+    db.execute(delete(ProductReview).where(ProductReview.is_demo.is_(True)))
+    db.execute(delete(ProductInsight).where(ProductInsight.is_demo.is_(True)))
     demo_order_ids = select(Order.id).where(Order.is_demo.is_(True))
     db.execute(delete(OrderItem).where(OrderItem.order_id.in_(demo_order_ids)))
     db.execute(delete(Order).where(Order.is_demo.is_(True)))
@@ -336,6 +340,23 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
                                                           "item_id": ref.item_id},
                           original_payload={"price_cents": proposed}, confidence="alta", topic=verdict,
                           reason=note, dry_run=True))
+
+    # --- Avaliações: queixas que se repetem num produto + análise da IA ---------
+    caneca = products[0]
+    for i, (rate, title, text) in enumerate([
+            (2, "Tampa vaza", "A tampa não veda direito, vazou café na bolsa."),
+            (1, "Vazou", "Vaza pela tampa quando deita a caneca."),
+            (3, "Esperava mais", "Mantém quente, mas a tampa deixa escapar um pouco."),
+    ]):
+        db.add(ProductReview(channel=Channel.ML, review_id=f"demo-r-{i}", item_id="MLB-DEMO-0", product_id=caneca.id,
+                             rate=rate, title=title, content=text, created_at=now - timedelta(days=3 + i * 5),
+                             is_demo=True))
+    db.add(ProductInsight(product_id=caneca.id, summary="A tampa vaza: é a queixa que mais se repete.",
+                          problems=[{"problema": "Tampa não veda", "evidencia": "3 avaliações: \"vaza pela tampa\""}],
+                          suggestions=["Testar a vedação de algumas unidades do lote atual",
+                                       "Avisar o fornecedor e pedir troca do lote com defeito",
+                                       "Explicar no anúncio como fechar a tampa corretamente"],
+                          inputs_hash="demo", generated_at=now, is_demo=True))
 
     # --- Pós-venda: conversas e uma reclamação --------------------------------
     demo_conversations = [

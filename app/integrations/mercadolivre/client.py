@@ -41,6 +41,8 @@ ITEMS_PAGE = 100
 MESSAGES_PAGE = 20
 MAX_MESSAGES = 100  # conversas pós-venda são curtas; o agente só usa as últimas
 CLAIMS_PAGE = 30
+MAX_CLAIMS_HISTORY = 3000
+REVIEWS_PAGE = 50
 _UTC = ZoneInfo("UTC")
 
 
@@ -260,3 +262,32 @@ class MLClient(ReadOnlyApiClient):
             total = (data.get("paging") or {}).get("total") or data.get("total")
             if not results or len(results) < 100 or (total is not None and offset >= int(total)):
                 return
+
+    # --- Avaliações e devoluções (Fase 7) -----------------------------------------------
+    # Documentação oficial consultada em 11/11/2026:
+    #   https://developers.mercadolivre.com.br/pt_br/opinioes-sobre-um-produto
+    #   https://developers.mercadolivre.com.br/pt_br/gerenciar-reclamacoes (busca com range, motivos)
+
+    def get_item_reviews(self, item_id: str, limit: int = REVIEWS_PAGE) -> dict:
+        """GET /reviews/item/{id} — média, estrelas e as avaliações do anúncio."""
+        return self._get(f"/reviews/item/{item_id}", {"limit": limit, "offset": 0}) or {}
+
+    def iter_claims_since(self, seller_id: int | str, created_after: datetime) -> Iterator[dict]:
+        """GET /post-purchase/v1/claims/search — reclamações (abertas e encerradas) criadas desde a data."""
+        stamp = created_after.replace(tzinfo=_UTC).strftime("%Y-%m-%dT%H:%M:%S.000+00:00")
+        offset = 0
+        while offset < MAX_CLAIMS_HISTORY:
+            data = self._get("/post-purchase/v1/claims/search", {
+                "players.user_id": seller_id, "players.role": "respondent",
+                "range": f"date_created:after:{stamp}", "limit": CLAIMS_PAGE, "offset": offset,
+            }) or {}
+            results = data.get("data") or []
+            yield from results
+            offset += len(results)
+            total = (data.get("paging") or {}).get("total")
+            if not results or len(results) < CLAIMS_PAGE or (total is not None and offset >= int(total)):
+                return
+
+    def get_claim_reason(self, reason_id: str) -> dict:
+        """GET /post-purchase/v1/claims/reasons/{id} — explicação do motivo da reclamação."""
+        return self._get(f"/post-purchase/v1/claims/reasons/{reason_id}") or {}

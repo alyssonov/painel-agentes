@@ -35,7 +35,8 @@ AGENTS: list[AgentDef] = [
     AgentDef("posvenda", "Pós-venda",
              "Responde dúvidas simples de pedidos (rastreio, prazo, nota) e avisa reclamações abertas.", 6),
     AgentDef("avaliacoes", "Avaliações e devoluções",
-             "Encontra problemas que se repetem nas avaliações e devoluções e sugere correções.", 7),
+             "Junta avaliações negativas e reclamações por produto, mostra a taxa de problema e resume com IA "
+             "o que se repete (uma vez por semana). Só lê e avisa.", 7),
     AgentDef("margem", "Calculadora de margem real",
              "Calcula o lucro de cada venda (taxas, frete, custo e impostos) e destaca prejuízos.", 4),
     AgentDef("relatorio", "Relatório diário",

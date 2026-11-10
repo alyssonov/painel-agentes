@@ -164,3 +164,18 @@ def answer_myself(request: Request, conversation_id: int, text: str = Form(""), 
         db.commit()
         _result_flash(request, action)
     return RedirectResponse("/pos-venda", status_code=303)
+
+
+
+@router.get("/avaliacoes")
+def reviews_page(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Avaliações e devoluções por produto (90 dias) — só leitura."""
+    from app.agents.config import has_real_data
+    from app.services.quality import product_quality
+
+    rows = product_quality(db, demo=not has_real_data(db))
+    claims = sum(q.claims for q in rows)
+    return render(request, "reviews.html", {
+        "rows": rows[:60], "claims": claims, "low_reviews": sum(len(q.low_reviews) for q in rows),
+        "with_insight": sum(1 for q in rows if q.insight), "products": len(rows),
+    }, db=db)

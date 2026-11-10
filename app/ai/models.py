@@ -30,6 +30,7 @@ TASKS = {
     "responder_mensagem": (HAIKU, "low"),
     "gerar_anuncio": (SONNET, "medium"),
     "analise_semanal": (SONNET, "medium"),
+    "analise_avaliacoes": (SONNET, "low"),  # semanal, poucos produtos por vez
 }
 
 

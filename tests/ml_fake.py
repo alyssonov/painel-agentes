@@ -115,6 +115,19 @@ PRICE_DETAILS = {
              "applicable_suggestion": True, "percent_difference": 9, "metadata": {"compared_values": 5}},
 }
 
+# Avaliações (formato da documentação de 11/11/2026).
+REVIEWS = {
+    "MLB1": {"paging": {"total": 20, "limit": 50, "offset": 0}, "rating_average": 4.1,
+             "rating_levels": {"one_star": 2, "two_star": 1, "three_star": 1, "four_star": 4, "five_star": 12},
+             "reviews": [
+                 {"id": 9001, "date_created": "2026-11-01T10:00:00Z", "status": "published", "rate": 2,
+                  "title": "Tampa ruim", "content": "A tampa vaza água.", "attributes_variation": []},
+                 {"id": 9002, "date_created": "2026-11-02T10:00:00Z", "status": "published", "rate": 5,
+                  "title": "Ótima", "content": "Gostei muito."},
+             ]},
+}
+CLAIM_REASON = {"id": "PDD9549", "name": "defective_product", "detail": "O produto veio com defeito"}
+
 # Mercado Pago: data de liberação e valor líquido (formato confirmado com dados reais em 11/11/2026).
 MP_PAYMENTS = {
     "8000001": {"status": "approved", "money_release_date": "2026-12-08T17:59:16.000-04:00",
@@ -155,6 +168,10 @@ def install(router: respx.Router) -> dict[str, respx.Route]:
             side_effect=lambda r, iid: httpx.Response(200, json=PRICE_DETAILS.get(iid, {}))),
         "price_automation": router.get(url__regex=re.escape(BASE_URL) + r"/pricing-automation/users/\d+/items").mock(
             return_value=httpx.Response(200, json={"items": [], "paging": {"total": 0}})),
+        "reviews": router.get(url__regex=re.escape(BASE_URL) + r"/reviews/item/(?P<iid>\w+)(\?.*)?$").mock(
+            side_effect=lambda r, iid: httpx.Response(200, json=REVIEWS.get(iid, {"reviews": []}))),
+        "claim_reason": router.get(url__regex=re.escape(BASE_URL) + r"/post-purchase/v1/claims/reasons/\w+$").mock(
+            return_value=httpx.Response(200, json=CLAIM_REASON)),
         "orders": router.get(f"{BASE_URL}/orders/search").mock(return_value=httpx.Response(200, json={
             "results": ORDERS, "paging": {"total": len(ORDERS), "offset": 0, "limit": 50}})),
     }

@@ -267,6 +267,15 @@ para o que menos vende, separados em **A** (os poucos que fazem 80% do
 faturamento), **B** (os próximos 15%) e **C** (o resto). Dá para ver por
 faturamento ou por lucro real, em 30, 90 ou 120 dias, e baixar a planilha.
 
+## Avaliações e devoluções (Fase 7)
+
+Em **Pós-venda → Avaliações e devoluções por produto**: para cada produto,
+nota das avaliações, avaliações negativas (com o texto), reclamações e
+devoluções por motivo e a taxa de problema (reclamações ÷ vendidos), nos
+últimos 90 dias. Quando um produto acumula queixas, a IA resume uma vez por
+semana o que se repete e sugere o que corrigir. Ative o agente **Avaliações e
+devoluções** em **Agentes**. Ele só lê e avisa.
+
 ## Pós-venda (Fase 6)
 
 Com o Mercado Livre conectado, o painel lê as **mensagens dos compradores** e

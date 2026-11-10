@@ -462,3 +462,5 @@ details > summary { cursor: pointer; }
 .sale-sub td { font-weight: 700; border-top: 1px solid var(--line); }
 .sale-total td { font-weight: 800; font-size: 16px; border-top: 2px solid var(--ink); }
 .price-watch { margin-top: 16px; }
+.insight { background: var(--info-soft); border-radius: var(--radius-sm); padding: 10px 14px; }
+.insight ul { margin: 4px 0 6px 18px; padding: 0; }

@@ -280,7 +280,7 @@ Agentes 3, 7 e 9 **não usam IA** (são cálculos) — custo zero de tokens.
 | 4 | Agentes 3, 9 e 7 ✅ |
 | 5 | Agente 8 (WhatsApp/e-mail) — e-mail ✅; WhatsApp e PDFs a seguir |
 | 6 | Agente 5 (Pós-venda) ✅ |
-| 7 | Agentes 2, 4 e 6 — Preços (4) em teste |
+| 7 | Agentes 2, 4 e 6 — Preços (4) e Avaliações (6) em teste; Anúncios (2) a seguir |
 | 8 | Revisão de segurança, testes, Docker, guia do VPS |
 
 ---
@@ -613,3 +613,24 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   `variacao_maxima_pct` (padrão 10%).
 - **Painel**: "Estoque e preços" → Sugestões de preço (Aprovar com preço
   editável / Descartar) e a lista "Anúncios em que baixar o preço não compensa".
+
+## 25. Fase 7 — Agente 6 (Avaliações e devoluções)
+
+- **Leitura** (`app/sync/ml_reviews.py`, a cada 24 h): `GET /reviews/item/{id}`
+  (média, estrelas; guarda só as avaliações de 1–3 estrelas dos últimos 180
+  dias, sem nome de quem escreveu) e o histórico de reclamações de 90 dias
+  (`claims/search` com `range=date_created:after:<data com milissegundos>`)
+  + explicação de cada motivo (`/claims/reasons/{id}`, cache em
+  `claim_reasons`). Tabelas `item_ratings`, `product_reviews`,
+  `claim_reasons`, `product_insights` (migração 0013).
+- **Cálculo** (`app/services/quality.py`, sem IA): por produto — unidades,
+  reclamações por grupo (PDD = defeito/diferente, PNR = não recebido; cancelamentos
+  não contam), taxa = reclamações ÷ unidades, nota média ponderada.
+  Limitação: em vendas de carrinho o Olist guarda o número do pacote e a
+  reclamação aponta a venda — essas podem ficar sem produto.
+- **Agente** (`app/agents/reviews.py`, de hora em hora, só avisa): alertas de
+  taxa ≥ 5% (com ≥ 2 reclamações) ou nota < 4,0 (≥ 5 avaliações). Para quem
+  acumula ≥ 2 avaliações negativas ou ≥ 2 reclamações de defeito, a IA
+  (tarefa `analise_avaliacoes`, até 5 produtos por rodada, no máximo 1 vez por
+  semana por produto, cache por conteúdo) resume o que se repete e sugere ações.
+- **Painel**: Pós-venda → "Avaliações e devoluções por produto".

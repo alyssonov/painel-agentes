@@ -1,0 +1,71 @@
+{% extends "app_layout.html" %}
+{% block title %}Avaliações e devoluções{% endblock %}
+{% block page_title %}Avaliações e devoluções{% endblock %}
+{% block page_subtitle %}<p class="muted">Últimos 90 dias, por produto: nota das avaliações, avaliações negativas e reclamações/devoluções no Mercado Livre. <a class="link-light" href="/pos-venda">← Voltar para Pós-venda</a></p>{% endblock %}
+{% block content %}
+<section class="stats" aria-label="Resumo">
+  <article class="card stat {{ 'tone-warn' if claims else 'tone-ok' }}">
+    <p class="stat-label">Reclamações e devoluções</p><p class="stat-value">{{ claims }}</p>
+    <p class="stat-foot muted">Ligadas a produtos, em 90 dias</p>
+  </article>
+  <article class="card stat {{ 'tone-warn' if low_reviews else 'tone-ok' }}">
+    <p class="stat-label">Avaliações negativas</p><p class="stat-value">{{ low_reviews }}</p>
+    <p class="stat-foot muted">1 a 3 estrelas, em 90 dias</p>
+  </article>
+  <article class="card stat tone-info">
+    <p class="stat-label">Produtos com atenção</p><p class="stat-value">{{ products }}</p>
+    <p class="stat-foot muted">Com queixas ou nota abaixo de 4,5</p>
+  </article>
+  <article class="card stat tone-info">
+    <p class="stat-label">Análises da IA</p><p class="stat-value">{{ with_insight }}</p>
+    <p class="stat-foot muted">Resumo do que se repete (semanal)</p>
+  </article>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Produtos que pedem atenção</h2></div>
+  {% if rows %}
+  <div class="qlist">
+  {% for q in rows %}
+    <article class="qcard">
+      <div class="qcard-top">
+        <span class="t-strong">{{ q.product.name }}</span>
+        <span class="muted small">{{ q.product.sku }}</span>
+        {% if q.claim_rate is not none and q.claims >= 2 and q.claim_rate >= 5 %}<span class="badge badge-erro">{{ '%.0f'|format(q.claim_rate) }}% com reclamação</span>
+        {% elif q.rating_average is not none and q.rating_average < 4 %}<span class="badge badge-atencao">Nota {{ ('%.1f'|format(q.rating_average))|replace('.', ',') }}</span>{% endif %}
+      </div>
+      <p class="small">
+        {% if q.rating_average is not none %}Nota <strong>{{ ('%.1f'|format(q.rating_average))|replace('.', ',') }}</strong> ({{ q.rating_total }} avaliações) · {% endif %}
+        {{ q.units }} vendido(s) · {{ q.claims }} reclamação(ões){% if q.claim_rate is not none and q.claims %} ({{ ('%.1f'|format(q.claim_rate))|replace('.', ',') }}%){% endif %} · {{ q.low_reviews|length }} avaliação(ões) negativa(s)
+      </p>
+      {% if q.reasons %}
+      <p class="small muted">Motivos: {% for label, count in q.reasons.items() %}{{ label }} ({{ count }}){% if not loop.last %} · {% endif %}{% endfor %}</p>
+      {% endif %}
+      {% if q.insight %}
+      <div class="insight">
+        <p class="t-strong">{{ q.insight.summary }}</p>
+        {% if q.insight.problems %}<ul>{% for p in q.insight.problems %}<li><strong>{{ p.problema }}</strong> — <span class="muted">{{ p.evidencia }}</span></li>{% endfor %}</ul>{% endif %}
+        {% if q.insight.suggestions %}<p class="small t-strong">O que fazer:</p><ul>{% for s in q.insight.suggestions %}<li>{{ s }}</li>{% endfor %}</ul>{% endif %}
+        <p class="muted small">Análise da IA de {{ q.insight.generated_at|localdate }}. Confira antes de agir.</p>
+      </div>
+      {% endif %}
+      {% if q.low_reviews %}
+      <details>
+        <summary class="small t-strong">Ver avaliações negativas ({{ q.low_reviews|length }})</summary>
+        <ul class="answered">
+          {% for r in q.low_reviews[:10] %}
+          <li><p class="answered-q">{{ '★' * r.rate }}{{ '☆' * (5 - r.rate) }} <span class="sr-only">{{ r.rate }} de 5 estrelas</span> {% if r.title %}<strong>{{ r.title }}</strong>{% endif %}{% if r.variation %} <span class="muted small">({{ r.variation }})</span>{% endif %}</p>
+            <p class="answered-a">{{ r.content or '' }}</p><p class="muted small">{{ r.created_at|localdate }}</p></li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+    </article>
+  {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Nenhum produto com reclamações ou avaliações negativas nos últimos 90 dias. ✓</p>
+  {% endif %}
+  <p class="muted small">Ative o agente "Avaliações e devoluções" em Agentes. Ele lê as avaliações e o histórico de reclamações uma vez por dia e só avisa: nada é alterado no Mercado Livre.</p>
+</section>
+{% endblock %}
