@@ -97,7 +97,7 @@ def cmd_diag_envios(_args) -> int:
     from sqlalchemy import select
 
     from app.core.db import get_sessionmaker, utcnow
-    from app.core.timeutil import to_local
+    from app.core.timeutil import local_day_bounds_utc, local_today, to_local
     from app.integrations.errors import IntegrationError
     from app.integrations.mercadolivre.mapping import left_the_store
     from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
@@ -129,7 +129,25 @@ def cmd_diag_envios(_args) -> int:
         print(f"\nAguardando despacho com prazo vencido: {len(late)}")
         if late:
             print(f"  conferido há mais tempo: {when(late[0].checked_at)} · mais recente: {when(late[-1].checked_at)}")
-        sample = late[:3]
+        # Quadro de hoje: de onde vem cada número (para comparar com o que a loja despachou).
+        from app.services.dashboard import dispatch_day
+        start, end = local_day_bounds_utc(local_today())
+        day = dispatch_day(db)
+        print(f"\n== Quadro de hoje: enviados {day.shipped} · a enviar {day.to_ship} · atrasados {day.late} ==")
+        today_out = [r for r in rows if r.shipped_at and start <= r.shipped_at < end]
+        print(f"  saíram hoje (pela data de saída): {len(today_out)}")
+        for key, count in Counter(f"{r.status}/{r.substatus} {r.logistic_type}" for r in today_out).most_common():
+            print(f"    {key:45} {count}")
+        due = [r for r in rows if r.dispatch_deadline and start <= r.dispatch_deadline < end]
+        print(f"  prazo de despacho hoje: {len(due)}")
+        for key, count in Counter(f"{r.status}/{r.substatus} {r.logistic_type} saída={when(r.shipped_at) if r.shipped_at else '-'}"[:70]
+                                  for r in due).most_common(15):
+            print(f"    {key:70} {count}")
+        no_deadline = [r for r in rows if r.dispatch_deadline is None and r.logistic_type != "fulfillment"]
+        print(f"  sem prazo conhecido (fora do quadro): {len(no_deadline)}")
+        for key, count in Counter(f"{r.status}/{r.substatus} {r.logistic_type}" for r in no_deadline).most_common(8):
+            print(f"    {key:45} {count}")
+        sample = late[:3] or [r for r in due if left_the_store(r.status, r.substatus)][:2]
         if not sample:
             return 0
         print("\n== Amostra (o que o Mercado Livre responde AGORA) ==")
@@ -150,6 +168,11 @@ def cmd_diag_envios(_args) -> int:
                 print(f"  campos recebidos: {', '.join(sorted(k for k in data.keys()))[:400]}")
                 dates = {k: v for k, v in history.items() if v} if isinstance(history, dict) else history
                 print(f"  status_history: {dates}")
+                # Só datas (nada de dados do comprador): procuramos onde o ML informa a coleta.
+                print(f"  datas: { {k: v for k, v in data.items() if ('date' in k or 'updated' in k) and isinstance(v, str)} }")
+                sub = data.get("substatus_history")
+                if sub:
+                    print(f"  substatus_history: {sub}"[:600])
     return 0
 
 
