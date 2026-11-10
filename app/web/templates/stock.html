@@ -1,7 +1,7 @@
 {% extends "app_layout.html" %}
 {% block title %}Estoque e preços{% endblock %}
 {% block page_title %}Estoque e preços{% endblock %}
-{% block page_subtitle %}<p class="muted">Estoque do Olist (somente leitura) e ritmo de vendas dos últimos {{ window }} dias. Sugestões de preço chegam na fase 7.</p>{% endblock %}
+{% block page_subtitle %}<p class="muted">Estoque do Olist (somente leitura) e ritmo de vendas dos últimos {{ window }} dias. </p>{% endblock %}
 {% block content %}
 <section class="stats" aria-label="Resumo do estoque">
   <article class="card stat {{ 'tone-bad' if counts.esgotado else 'tone-ok' }}">
@@ -20,6 +20,41 @@
     <p class="stat-label">Em dia</p><p class="stat-value">{{ counts.ok }}</p>
     <p class="stat-foot muted">de {{ total }} produtos ativos</p>
   </article>
+</section>
+
+<section class="card" aria-labelledby="compra-title">
+  <div class="card-head">
+    <h2 id="compra-title" class="card-title">Sugestão de compra <span class="count">{{ purchase|length }}</span></h2>
+    {% if purchase %}<a class="btn btn-secondary" href="/estoque-precos/sugestao-de-compra.csv">Baixar planilha</a>{% endif %}
+  </div>
+  <p class="muted small">O fornecedor leva {{ lead }} dias para entregar; a sugestão compra o suficiente para {{ coverage }} dias de vendas depois que chegar.
+    Ajuste em Agentes → Vigia de estoque. Pedidos de compra já feitos ao fornecedor não entram na conta.</p>
+  {% if purchase %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Produto</th><th class="num">Disponível</th><th class="num">Vendas/dia</th><th class="num">Dura</th>
+        <th class="num">Comprar</th><th class="num">Custo estimado</th><th>Quando</th></tr></thead>
+      <tbody>
+      {% for i in purchase %}
+        {% set label, tone = urgency_labels[i.urgency] %}
+        <tr>
+          <td><span class="t-strong">{{ i.name }}</span><br><span class="muted small">{{ i.sku }}</span></td>
+          <td class="num">{{ i.available }}</td>
+          <td class="num">{{ ('%.1f'|format(i.avg_daily))|replace('.', ',') }}</td>
+          <td class="num">{{ '%.0f'|format(i.days_left) }} dias</td>
+          <td class="num t-strong">{{ i.quantity }} un.</td>
+          <td class="num">{{ i.total_cost_cents|brl if i.unit_cost_cents else '—' }}</td>
+          <td><span class="badge badge-{{ tone }}">{{ label }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><td colspan="5" class="t-strong">Total estimado</td><td class="num t-strong">{{ purchase_total|brl }}</td><td></td></tr></tfoot>
+    </table>
+  </div>
+  {% if missing_cost %}<p class="muted small">{{ missing_cost }} produto(s) sem custo cadastrado no Olist ficaram fora do total.</p>{% endif %}
+  {% else %}
+  <p class="muted">Nada para comprar agora: nenhum produto acaba antes de {{ lead + 7 }} dias.</p>
+  {% endif %}
 </section>
 
 <section class="card">

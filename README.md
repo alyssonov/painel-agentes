@@ -209,6 +209,14 @@ vendidos, perguntas, o que pede atenção e o que cada agente fez. Se o
 computador estiver desligado no horário, sai assim que o painel ligar (até o
 fim do dia), e nunca duas vezes. Falha no envio vira alerta. Sem custo de IA.
 
+## Sugestão de compra
+
+Em **Estoque e preços**, o quadro **Sugestão de compra** mostra o que repor,
+quantas unidades e o custo estimado (custo do Olist), com o botão **Baixar
+planilha** para mandar ao fornecedor. Em **Agentes → Vigia de estoque** você
+ajusta quantos dias o fornecedor leva para entregar e para quantos dias de
+vendas quer comprar.
+
 ## Pós-venda (Fase 6)
 
 Com o Mercado Livre conectado, o painel lê as **mensagens dos compradores** e

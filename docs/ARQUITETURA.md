@@ -279,7 +279,7 @@ Agentes 3, 7 e 9 **não usam IA** (são cálculos) — custo zero de tokens.
 | 3 | ML + Shopee + Agente 1 com aprovação manual |
 | 4 | Agentes 3, 9 e 7 ✅ |
 | 5 | Agente 8 (WhatsApp/e-mail) — e-mail ✅; WhatsApp e PDFs a seguir |
-| 6 | Agente 5 (Pós-venda) — em teste |
+| 6 | Agente 5 (Pós-venda) ✅ |
 | 7 | Agentes 2, 4 e 6 |
 | 8 | Revisão de segurança, testes, Docker, guia do VPS |
 
@@ -509,3 +509,18 @@ mensagens-pendentes, mensagens-bloqueadas e gerenciar-reclamacoes
 Agente de Mensageria do Brasil (3037675074, regra do ML desde 02/02/2026),
 até 350 caracteres, sem CRLF. 202 = em revisão pelo ML. Conversa bloqueada
 (mediação, prazo, cancelada...) não envia. DRY_RUN → "simulada".
+
+---
+
+## 18. Sugestão de compra (extra, depois da Fase 6)
+
+`app/services/purchase.py`, sem IA (custo zero), mostrada em "Estoque e
+preços" e baixada como planilha (`/estoque-precos/sugestao-de-compra.csv`,
+separador `;` e BOM para abrir certo no Excel).
+
+- comprar = vendas/dia × (prazo do fornecedor + dias de cobertura) − disponível.
+- "Comprar já" se o estoque acaba antes de a compra chegar; "esta semana" se
+  acaba até 7 dias depois disso. Regras editáveis no Vigia de estoque
+  (`prazo_fornecedor_dias`, padrão 10; `cobertura_dias`, padrão 30).
+- Custo estimado = custo do produto no Olist. Pedidos de compra já feitos ao
+  fornecedor não entram na conta (o Olist é só lido).

@@ -23,6 +23,8 @@ RULES: dict[str, list[Rule]] = {
         Rule("dias_alerta", "Avisar quando o estoque durar menos de", 7, 1, 60, "dias"),
         Rule("janela_vendas_dias", "Calcular a média de vendas dos últimos", 30, 7, 90, "dias"),
         Rule("tolerancia_divergencia", "Diferença aceita entre Olist e anúncio", 0, 0, 50, "unidades"),
+        Rule("prazo_fornecedor_dias", "Sugestão de compra: o fornecedor leva para entregar", 10, 1, 90, "dias"),
+        Rule("cobertura_dias", "Sugestão de compra: comprar o suficiente para vender por", 30, 7, 180, "dias"),
     ],
     "nfe": [
         Rule("horas_sem_nota", "Avisar pedido parado sem nota há mais de", 24, 1, 120, "horas"),
