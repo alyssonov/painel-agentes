@@ -279,7 +279,7 @@ Agentes 3, 7 e 9 **não usam IA** (são cálculos) — custo zero de tokens.
 | 3 | ML + Shopee + Agente 1 com aprovação manual |
 | 4 | Agentes 3, 9 e 7 ✅ |
 | 5 | Agente 8 (WhatsApp/e-mail) — e-mail ✅; WhatsApp e PDFs a seguir |
-| 6 | Agente 5 |
+| 6 | Agente 5 (Pós-venda) — em teste |
 | 7 | Agentes 2, 4 e 6 |
 | 8 | Revisão de segurança, testes, Docker, guia do VPS |
 
@@ -464,3 +464,48 @@ Sem IA. Os três só leem e criam/resolvem alertas.
   Olist (Enviado/Entregue) — `services.dashboard.is_shipped`.
 - `shipments.shipped_at` guarda quando o pacote saiu (`status_history.date_shipped`);
   a coluna "Enviado" mostra tudo que saiu hoje, mesmo com prazo em outro dia.
+- Coleta (`cross_docking`): depois de coletado o envio continua `ready_to_ship`;
+  só o substatus muda (`picked_up`, `in_hub`, `in_packing_list`...). Esses
+  substatus contam como "saiu da loja" (`mapping.left_the_store`), e a hora vem
+  do `substatus_history` (diagnóstico real de 10/11/2026).
+- Vendas podem ter prazo de despacho 5+ dias depois da compra: a cada 15 min a
+  busca de vendas volta 15 dias (`SHIPMENTS_WINDOW_DAYS`) para achar os envios.
+
+---
+
+## 17. Fase 6 — Agente 5 (Pós-venda)
+
+Documentação oficial consultada em 10/11/2026: mensagens-post-venda,
+mensagens-pendentes, mensagens-bloqueadas e gerenciar-reclamacoes
+(developers.mercadolivre.com.br/pt_br/...).
+
+**Leitura** (`app/sync/ml_postsale.py`, dentro da sincronização do ML):
+- `GET /messages/unread?role=seller&tag=post_sale` a cada 5 min; cada pacote
+  com novidade é lido em `GET /messages/packs/{pack}/sellers/{seller}` **sempre
+  com `mark_as_read=false`** (sem isso o ML marcaria como lidas).
+- A cada 15 min reconfere as conversas que esperam resposta (para saber se
+  alguém respondeu direto no Mercado Livre — aí a sugestão sai da fila).
+- Reclamações: `GET /post-purchase/v1/claims/search` (players.user_id +
+  role=respondent + status=opened), `/detail` e `/affects-reputation` só quando
+  a reclamação muda. As que somem da busca viram "closed".
+- Tabelas: `conversations`, `conversation_messages`, `claims` (migração 0009).
+  Os textos ficam só no banco, nunca nos logs.
+
+**Agente 5** (`app/agents/postsale.py`, a cada 5 min no worker):
+- Conversa com a última mensagem do comprador → sugestão de resposta (Haiku,
+  esforço baixo, até 300 caracteres; contexto: itens do pedido, situação do
+  envio, nota emitida ou não, regras da loja e só as últimas 6 mensagens — sem
+  nome, endereço ou documento do comprador).
+- Vai direto para uma pessoa, sem gastar IA: reclamação aberta no pedido ou
+  mensagem que fala de troca, devolução, defeito, cancelamento, reembolso.
+- Depois da IA, vai para uma pessoa: confiança baixa, assunto delicado, dado
+  de contato na resposta.
+- Reclamações: só alertas na faixa "O que pede atenção" (vermelho se a loja
+  precisa agir e o prazo é < 24 h ou afeta a reputação). Resolver reclamação
+  continua no Mercado Livre — o painel não envia nada nelas.
+
+**Envio** (`ActionGateway` → `MLWriter.send_message`): `POST
+/messages/packs/{pack}/sellers/{seller}?tag=post_sale` com `to.user_id` = ID do
+Agente de Mensageria do Brasil (3037675074, regra do ML desde 02/02/2026),
+até 350 caracteres, sem CRLF. 202 = em revisão pelo ML. Conversa bloqueada
+(mediação, prazo, cancelada...) não envia. DRY_RUN → "simulada".

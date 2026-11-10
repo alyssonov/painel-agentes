@@ -1,0 +1,21 @@
+{# Cabeçalho de uma conversa pós-venda: pedido, envio e últimas mensagens. #}
+<div class="qcard-top">
+  <span class="chip chip-{{ c.channel }}">{{ item.channel_label }}</span>
+  <span class="muted small">{{ item.order_label }} · última mensagem {{ item.last_at }}</span>
+  {% if item.blocked %}<span class="badge badge-erro">Bloqueada</span>
+  {% elif item.action is defined and item.action.status == 'falhou' %}<span class="badge badge-erro">Não foi enviada</span>
+  {% elif item.action is defined and item.action.needs_human %}<span class="badge badge-atencao">Precisa de você</span>
+  {% elif item.action is defined %}<span class="badge conf-{{ item.action.confidence }}">Confiança {{ item.action.confidence }}</span>
+  {% else %}<span class="badge badge-info">Sem sugestão ainda</span>{% endif %}
+</div>
+{% if item.products %}<p class="qcard-product">{{ item.products }}</p>{% endif %}
+{% if item.shipment %}<p class="muted small">Envio: {{ item.shipment }}</p>{% endif %}
+{% if item.blocked %}<p class="qcard-reason">O Mercado Livre não deixa responder: {{ item.blocked }}.</p>{% endif %}
+<ol class="thread" aria-label="Últimas mensagens">
+  {% for m in item.messages %}
+  <li class="msg {{ 'msg-loja' if m.seller else 'msg-comprador' }}">
+    <span class="msg-who">{{ 'Loja' if m.seller else 'Comprador' }} · {{ m.at }}</span>
+    <span class="msg-text">{{ m.text }}</span>
+  </li>
+  {% endfor %}
+</ol>

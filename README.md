@@ -209,6 +209,23 @@ vendidos, perguntas, o que pede atenção e o que cada agente fez. Se o
 computador estiver desligado no horário, sai assim que o painel ligar (até o
 fim do dia), e nunca duas vezes. Falha no envio vira alerta. Sem custo de IA.
 
+## Pós-venda (Fase 6)
+
+Com o Mercado Livre conectado, o painel lê as **mensagens dos compradores** e
+as **reclamações abertas** (sem marcar nada como lido no Mercado Livre).
+
+1. Em **Agentes**, ative o **Pós-venda** (padrão: manual).
+2. Em **Pós-venda** aparecem:
+   - **Reclamações abertas**: o problema, se é a sua vez de agir, até quando e
+     se afeta a reputação. Elas são resolvidas no próprio Mercado Livre.
+   - **Mensagens aguardando você**: a conversa, o pedido, a situação do envio
+     e a resposta sugerida. **Aprovar**, **Editar**, **Responder eu mesmo** ou
+     **Tirar da fila**. Limite de 350 caracteres (regra do Mercado Livre).
+3. Troca, devolução, defeito, cancelamento e pedidos com reclamação sempre vão
+   para você, sem sugestão automática.
+
+No modo simulação nada é enviado ao comprador.
+
 ## Modo simulação (`DRY_RUN`)
 
 - Ligado por padrão (`DRY_RUN=true` no `.env`).

@@ -74,6 +74,36 @@ SHIPMENTS = {
 SLA = {"4100001": {"status": "on_time", "expected_date": "2026-11-10T15:00:00.000-03:00"}}
 
 
+# Pós-venda: uma conversa com pergunta do comprador e uma reclamação aberta.
+AGENT_ID = 3037675074  # na nova mensageria, as mensagens do comprador chegam "de" um agente do ML
+UNREAD = {"user_id": 123456, "results": [{"resource": "/packs/3000001/sellers/123456", "count": 1}]}
+PACK_MESSAGES = {
+    "3000001": {
+        "paging": {"limit": 20, "offset": 0, "total": 2},
+        "conversation_status": {"status": "active", "substatus": None, "claim_id": None},
+        "messages": [
+            {"id": "m1", "from": {"user_id": 123456}, "to": {"user_id": AGENT_ID}, "status": "available",
+             "text": "Olá! Obrigado pela compra.", "message_date": {"created": "2026-11-09T12:00:00.000Z"}},
+            {"id": "m2", "from": {"user_id": AGENT_ID}, "to": {"user_id": 123456}, "status": "available",
+             "text": "Quando chega meu pedido?", "message_date": {"created": "2026-11-10T13:00:00.000Z"}},
+        ],
+        "seller_max_message_length": 350,
+    },
+}
+CLAIMS = [{
+    "id": 5300001, "resource_id": 2000001, "status": "opened", "type": "mediations", "stage": "claim",
+    "resource": "order", "reason_id": "PNR9501", "date_created": "2026-11-09T10:00:00.000-03:00",
+    "last_updated": "2026-11-10T09:00:00.000-03:00",
+    "players": [{"role": "complainant", "type": "buyer", "user_id": 99, "available_actions": []},
+                {"role": "respondent", "type": "seller", "user_id": 123456, "available_actions": [
+                    {"action": "send_message_to_complainant", "mandatory": True,
+                     "due_date": "2026-11-12T10:00:00.000-03:00"}]}],
+}]
+CLAIM_DETAIL = {"due_date": "2026-11-12T10:00:00.000-03:00", "action_responsible": "seller",
+                "title": "Responda o comprador", "description": "Você tem até 12/11 para responder.",
+                "problem": "O comprador diz que o produto não chegou"}
+
+
 def install(router: respx.Router) -> dict[str, respx.Route]:
     return {
         "token": router.post(TOKEN_URL).mock(return_value=httpx.Response(200, json={
@@ -88,6 +118,16 @@ def install(router: respx.Router) -> dict[str, respx.Route]:
             side_effect=lambda r, sid: httpx.Response(200, json=SHIPMENTS.get(sid, {"status": "shipped"}))),
         "sla": router.get(url__regex=re.escape(BASE_URL) + r"/shipments/(?P<sid>\d+)/sla$").mock(
             side_effect=lambda r, sid: httpx.Response(200, json=SLA.get(sid, {}))),
+        "unread": router.get(f"{BASE_URL}/messages/unread").mock(return_value=httpx.Response(200, json=UNREAD)),
+        "pack_messages": router.get(url__regex=re.escape(BASE_URL) + r"/messages/packs/(?P<pack>\d+)/sellers/\d+").mock(
+            side_effect=lambda r, pack: httpx.Response(200, json=PACK_MESSAGES.get(pack, {"messages": []}))),
+        "claims": router.get(f"{BASE_URL}/post-purchase/v1/claims/search").mock(return_value=httpx.Response(
+            200, json={"paging": {"total": len(CLAIMS), "offset": 0, "limit": 30}, "data": CLAIMS})),
+        "claim_detail": router.get(url__regex=re.escape(BASE_URL) + r"/post-purchase/v1/claims/\d+/detail$").mock(
+            return_value=httpx.Response(200, json=CLAIM_DETAIL)),
+        "claim_reputation": router.get(
+            url__regex=re.escape(BASE_URL) + r"/post-purchase/v1/claims/\d+/affects-reputation$").mock(
+            return_value=httpx.Response(200, json={"affects_reputation": "affected", "has_incentive": True})),
         "orders": router.get(f"{BASE_URL}/orders/search").mock(return_value=httpx.Response(200, json={
             "results": ORDERS, "paging": {"total": len(ORDERS), "offset": 0, "limit": 50}})),
     }

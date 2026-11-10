@@ -19,6 +19,8 @@ Endpoints usados (todos GET):
   /users/{id}/items/search          ids de todos os anúncios da loja (modo scan acima de 1000)
   /shipments/{id}                   situação do envio (pendente, pronto para enviar, enviado...)
   /shipments/{id}/sla               prazo limite de despacho (expected_date)
+  /messages/unread, /messages/packs/{pack}/sellers/{seller}   pós-venda (sempre mark_as_read=false)
+  /post-purchase/v1/claims/...      reclamações (busca, detalhe, se afeta a reputação)
     https://developers.mercadolivre.com.br/pt-br/gerenciamento-de-envios
     https://developers.mercadolivre.com.br/pt-br/mercado-envios-agora (consultado em 10/11/2026)
     https://developers.mercadolivre.com.br/itens-e-buscas
@@ -36,6 +38,9 @@ QUESTIONS_PAGE = 50
 ORDERS_PAGE = 50
 ITEMS_BATCH = 20
 ITEMS_PAGE = 100
+MESSAGES_PAGE = 20
+MAX_MESSAGES = 100  # conversas pós-venda são curtas; o agente só usa as últimas
+CLAIMS_PAGE = 30
 _UTC = ZoneInfo("UTC")
 
 
@@ -170,3 +175,61 @@ class MLClient(ReadOnlyApiClient):
             total = (data.get("paging") or {}).get("total")
             if not results or len(results) < ORDERS_PAGE or (total is not None and offset >= int(total)):
                 return
+
+    # --- Pós-venda (Fase 6) -------------------------------------------------------------
+    # Documentação oficial consultada em 10/11/2026:
+    #   https://developers.mercadolivre.com.br/pt_br/mensagens-post-venda
+    #   https://developers.mercadolivre.com.br/pt_br/mensagens-pendentes
+    #   https://developers.mercadolivre.com.br/pt_br/mensagens-bloqueadas
+    #   https://developers.mercadolivre.com.br/pt_br/gerenciar-reclamacoes
+
+    def get_unread_conversations(self) -> list[dict]:
+        """GET /messages/unread?role=seller — pacotes com mensagens do comprador ainda não lidas."""
+        data = self._get("/messages/unread", {"role": "seller", "tag": "post_sale"}) or {}
+        return data.get("results") or []
+
+    def get_pack_messages(self, pack_id: str, seller_id: int | str) -> dict:
+        """GET /messages/packs/{pack}/sellers/{seller} — conversa do pacote.
+
+        IMPORTANTE: sem mark_as_read=false o Mercado Livre marca as mensagens como
+        lidas. O painel só lê: quem decide quando ler é a pessoa, no marketplace.
+        """
+        path = f"/messages/packs/{pack_id}/sellers/{seller_id}"
+        params = {"tag": "post_sale", "mark_as_read": "false", "limit": MESSAGES_PAGE, "offset": 0}
+        data = self._get(path, params) or {}
+        messages = list(data.get("messages") or [])
+        total = int((data.get("paging") or {}).get("total") or 0)
+        while len(messages) < min(total, MAX_MESSAGES):
+            page = self._get(path, {**params, "offset": len(messages)}) or {}
+            more = page.get("messages") or []
+            if not more:
+                break
+            messages += more
+        return {**data, "messages": messages}
+
+    def iter_open_claims(self, seller_id: int | str) -> Iterator[dict]:
+        """GET /post-purchase/v1/claims/search — reclamações abertas contra a loja."""
+        offset = 0
+        while True:
+            data = self._get("/post-purchase/v1/claims/search", {
+                "players.user_id": seller_id, "players.role": "respondent", "status": "opened",
+                "limit": CLAIMS_PAGE, "offset": offset,
+            }) or {}
+            results = data.get("data") or []
+            yield from results
+            offset += len(results)
+            total = (data.get("paging") or {}).get("total")
+            if not results or len(results) < CLAIMS_PAGE or (total is not None and offset >= int(total)):
+                return
+
+    def get_claim(self, claim_id: str) -> dict | None:
+        """GET /post-purchase/v1/claims/{id} — situação atual da reclamação."""
+        return self._get(f"/post-purchase/v1/claims/{claim_id}")
+
+    def get_claim_detail(self, claim_id: str) -> dict:
+        """GET /post-purchase/v1/claims/{id}/detail — título, problema, responsável e prazo."""
+        return self._get(f"/post-purchase/v1/claims/{claim_id}/detail") or {}
+
+    def get_claim_reputation(self, claim_id: str) -> dict:
+        """GET /post-purchase/v1/claims/{id}/affects-reputation — se afeta a reputação."""
+        return self._get(f"/post-purchase/v1/claims/{claim_id}/affects-reputation") or {}

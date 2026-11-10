@@ -27,6 +27,7 @@ PRICES = {
 # Sonnet fica para gerar anúncios e análises semanais (fases seguintes).
 TASKS = {
     "responder_pergunta": (HAIKU, "low"),
+    "responder_mensagem": (HAIKU, "low"),
     "gerar_anuncio": (SONNET, "medium"),
     "analise_semanal": (SONNET, "medium"),
 }

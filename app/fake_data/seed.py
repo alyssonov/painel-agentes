@@ -26,6 +26,9 @@ from app.models import (
     AgentRun,
     AiUsage,
     Alert,
+    Claim,
+    Conversation,
+    ConversationMessage,
     IntegrationAccount,
     Order,
     OrderItem,
@@ -35,6 +38,7 @@ from app.models import (
 )
 from app.models.enums import (
     ActionType,
+    ConversationStatus,
     AlertSeverity,
     Channel,
     IntegrationStatus,
@@ -115,6 +119,13 @@ def clear_demo(db: Session, *, pause_agents: bool = False) -> None:
     demo_question_ids = [str(i) for i in db.scalars(select(Question.id).where(Question.is_demo.is_(True)))]
     if demo_question_ids:
         db.execute(delete(Action).where(Action.target_type == "pergunta", Action.target_id.in_(demo_question_ids)))
+    demo_conversation_ids = list(db.scalars(select(Conversation.id).where(Conversation.is_demo.is_(True))))
+    if demo_conversation_ids:
+        db.execute(delete(Action).where(Action.target_type == "conversa",
+                                        Action.target_id.in_([str(i) for i in demo_conversation_ids])))
+        db.execute(delete(ConversationMessage).where(ConversationMessage.conversation_id.in_(demo_conversation_ids)))
+        db.execute(delete(Conversation).where(Conversation.id.in_(demo_conversation_ids)))
+    db.execute(delete(Claim).where(Claim.is_demo.is_(True)))
     demo_order_ids = select(Order.id).where(Order.is_demo.is_(True))
     db.execute(delete(OrderItem).where(OrderItem.order_id.in_(demo_order_ids)))
     db.execute(delete(Order).where(Order.is_demo.is_(True)))
@@ -273,6 +284,48 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
                       reason="Pedido de desconto ou negociação: precisa de uma pessoa." if human else
                       "A resposta está na ficha do produto.", needs_human=human, dry_run=True))
 
+    # --- Pós-venda: conversas e uma reclamação --------------------------------
+    demo_conversations = [
+        # (pacote, status, mensagens [(é da loja?, texto, minutos atrás)], sugestão, precisa de pessoa?, motivo)
+        ("demo-p-1", ConversationStatus.PROPOSED,
+         [(True, "Olá! Obrigado pela compra. Seu pedido já está sendo preparado.", 600),
+          (False, "Oi, quando meu pedido vai ser enviado?", 40)],
+         "Olá! Seu pedido está em preparação e será despachado até amanhã. Assim que sair, o rastreio "
+         "aparece na sua compra. Obrigado!", False, "O prazo de despacho está nos dados do envio."),
+        ("demo-p-2", ConversationStatus.HUMAN,
+         [(False, "Um dos itens chegou quebrado, quero trocar.", 25)],
+         "", True, "Fala de problema, troca, devolução ou cancelamento: precisa de uma pessoa."),
+        ("demo-p-3", ConversationStatus.NEW,
+         [(False, "Vocês enviam a nota fiscal junto com o produto?", 8)], None, False, None),
+    ]
+    # Liga as conversas a pedidos fictícios do Mercado Livre (para mostrar produto e envio).
+    demo_ml_orders = list(db.scalars(select(Order.external_id).where(
+        Order.is_demo.is_(True), Order.channel == Channel.ML).order_by(Order.ordered_at.desc()).limit(4)))
+    for i, (pack, status, messages, suggestion, human, reason) in enumerate(demo_conversations):
+        pack = demo_ml_orders[i] if i < len(demo_ml_orders) else pack
+        conversation = Conversation(channel=Channel.ML, pack_ref=pack, status=status, remote_status="active",
+                                    last_from_buyer=not messages[-1][0], checked_at=now, is_demo=True,
+                                    last_message_at=now - timedelta(minutes=messages[-1][2]))
+        for j, (from_seller, text, minutes) in enumerate(messages):
+            conversation.messages.append(ConversationMessage(
+                external_id=f"demo-m-{i}-{j}", from_seller=from_seller, text=text,
+                sent_at=now - timedelta(minutes=minutes)))
+        db.add(conversation)
+        db.flush()
+        if suggestion is not None:
+            db.add(Action(agent_slug="posvenda", type=ActionType.SEND_MESSAGE, channel=Channel.ML,
+                          target_type="conversa", target_id=str(conversation.id), payload={"text": suggestion},
+                          original_payload={"text": suggestion}, confidence="baixa" if human else "alta",
+                          topic="troca_devolucao" if human else "prazo_entrega", reason=reason,
+                          needs_human=human, dry_run=True))
+    db.add(Claim(channel=Channel.ML, external_id="demo-c-1",
+                 order_ref=demo_ml_orders[3] if len(demo_ml_orders) > 3 else "demo-p-4", status="opened",
+                 type="mediations", stage="claim", reason_id="PDD9549", title="Responda o comprador",
+                 problem="O produto chegou amassado", description="Ofereça uma solução antes do prazo.",
+                 action_responsible="seller", due_date=now + timedelta(hours=20), affects_reputation="affected",
+                 seller_actions=[{"action": "send_message_to_complainant", "mandatory": True, "due_date": None}],
+                 opened_at=now - timedelta(hours=28), checked_at=now, is_demo=True))
+
     # --- Alertas do dia -----------------------------------------------------
     db.add_all([
         Alert(source="nfe", severity=AlertSeverity.CRITICAL, is_demo=True,
@@ -300,7 +353,7 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
         "anuncios": "3 sugestões de melhoria nesta semana",
         "estoque": "2 produtos com estoque baixo",
         "precos": "4 sugestões de preço aguardando",
-        "posvenda": "9 mensagens respondidas · 1 reclamação",
+        "posvenda": "1 respondida(s) hoje · 3 aguardando você · 1 reclamação(ões) aberta(s)",
         "avaliacoes": "2 problemas recorrentes encontrados",
         "margem": f"{today_count} vendas calculadas · 1 produto no prejuízo",
         "relatorio": "Próximo envio hoje às 19h",

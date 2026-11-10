@@ -91,6 +91,19 @@ class SyncStatus(StrEnum):
 
 class ActionType(StrEnum):
     ANSWER_QUESTION = "responder_pergunta"
+    SEND_MESSAGE = "enviar_mensagem"  # mensagem pós-venda para o comprador
+
+
+class ConversationStatus(StrEnum):
+    """Situação de uma conversa pós-venda no painel."""
+
+    NEW = "nova"  # última mensagem é do comprador e o agente ainda não viu
+    PROPOSED = "proposta"  # resposta sugerida aguardando aprovação
+    HUMAN = "humano"  # precisa de uma pessoa
+    ANSWERED = "respondida"  # a última palavra é da loja
+    SIMULATED = "respondida_simulacao"  # aprovada no modo simulação: nada foi enviado
+    BLOCKED = "bloqueada"  # o marketplace não deixa responder (mediação, prazo, cancelada...)
+    CLOSED = "encerrada"  # tirada da fila no painel
 
 
 class ActionStatus(StrEnum):

@@ -33,6 +33,7 @@ from app.integrations.mercadolivre.mapping import (
 from app.integrations.olist.dates import parse_olist_datetime as parse_datetime
 from app.models import Action, Listing, MarketplaceFee, Order, Product, Question, Shipment, SyncRun
 from app.models.enums import ActionStatus, ActionType, Channel, Provider, QuestionStatus, SyncStatus
+from app.sync.ml_postsale import sync_claims, sync_messages
 from app.sync.common import (
     SyncAlreadyRunning,
     describe_unexpected,
@@ -97,6 +98,17 @@ def run_ml_sync(session_factory: sessionmaker[Session],
                 account = get_ml_account(db)
                 logger.warning("Não foi possível ler os anúncios do Mercado Livre: %s", exc)
                 counts["anuncios_erro"] = 1
+            # Pós-venda (Fase 6): cada parte isolada, uma falha não para as outras.
+            for key, step in (("mensagens", sync_messages), ("reclamacoes", sync_claims)):
+                try:
+                    counts[key] = step(db, client, account, seller_id, started)
+                except AuthExpired:
+                    raise
+                except IntegrationError as exc:
+                    db.rollback()
+                    account = get_ml_account(db)
+                    logger.warning("Não foi possível ler %s do Mercado Livre: %s", key, exc)
+                    counts[f"{key}_erro"] = 1
             mark_ok(db, account)
             db.commit()
         status, error = SyncStatus.OK, None

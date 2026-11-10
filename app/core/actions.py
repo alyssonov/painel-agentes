@@ -18,8 +18,8 @@ from app.config import get_settings
 from app.core import audit
 from app.core.db import get_sessionmaker, utcnow
 from app.integrations.errors import IntegrationError
-from app.models import Action, Agent, Question
-from app.models.enums import ActionStatus, ActionType, AgentMode, Channel, QuestionStatus
+from app.models import Action, Agent, Conversation, Question
+from app.models.enums import ActionStatus, ActionType, AgentMode, Channel, ConversationStatus, QuestionStatus
 
 logger = logging.getLogger("acoes")
 
@@ -44,8 +44,31 @@ def _execute_answer_question(db: Session, action: Action) -> str:
     return "Resposta publicada no Mercado Livre."
 
 
+def _execute_send_message(db: Session, action: Action) -> str:
+    conversation = db.get(Conversation, int(action.target_id))
+    if conversation is None:
+        raise IntegrationError("A conversa não existe mais.")
+    if conversation.channel != Channel.ML:
+        raise IntegrationError("Mensagens da Shopee ainda não estão disponíveis.")
+    if conversation.remote_status == "blocked":
+        raise IntegrationError("O Mercado Livre bloqueou esta conversa. Veja o pedido no Mercado Livre.")
+    from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
+    from app.integrations.mercadolivre.writes import MLWriter
+
+    account = get_ml_account(db)
+    if account is None or not account.external_id:
+        raise IntegrationError("O Mercado Livre não está conectado.")
+    with MLWriter(MLTokenProvider(get_sessionmaker())) as writer:
+        result = writer.send_message(conversation.pack_ref, account.external_id, action.payload["text"],
+                                     conversation.max_chars)
+    if str(result.get("status") or "").lower() == "pending_review":
+        return "Mensagem enviada. O Mercado Livre está revisando antes de entregar ao comprador."
+    return "Mensagem enviada ao comprador."
+
+
 EXECUTORS: dict[str, Callable[[Session, Action], str]] = {
     ActionType.ANSWER_QUESTION: _execute_answer_question,
+    ActionType.SEND_MESSAGE: _execute_send_message,
 }
 
 
@@ -59,8 +82,20 @@ def _after_answer(db: Session, action: Action) -> None:
     question.status = QuestionStatus.SIMULATED if action.status == ActionStatus.SIMULATED else QuestionStatus.ANSWERED
 
 
+def _after_message(db: Session, action: Action) -> None:
+    """Conversa sai da fila depois que a mensagem saiu (ou foi simulada)."""
+    conversation = db.get(Conversation, int(action.target_id))
+    if conversation is None:
+        return
+    simulated = action.status == ActionStatus.SIMULATED
+    conversation.status = ConversationStatus.SIMULATED if simulated else ConversationStatus.ANSWERED
+    if not simulated:
+        conversation.last_from_buyer = False
+
+
 AFTER_SUCCESS: dict[str, Callable[[Session, Action], None]] = {
     ActionType.ANSWER_QUESTION: _after_answer,
+    ActionType.SEND_MESSAGE: _after_message,
 }
 
 

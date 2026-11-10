@@ -1,0 +1,115 @@
+{% extends "app_layout.html" %}
+{% block title %}Pós-venda{% endblock %}
+{% block page_title %}Pós-venda{% endblock %}
+{% block page_subtitle %}<p class="muted">Mensagens dos compradores e reclamações. O agente sugere as respostas; nada é enviado sem a sua aprovação.</p>{% endblock %}
+{% block content %}
+
+<section class="card" aria-labelledby="recl-title">
+  <div class="card-head">
+    <h2 id="recl-title" class="card-title">Reclamações abertas <span class="count">{{ claims|length }}</span></h2>
+  </div>
+  {% if claims %}
+  <p class="muted small">Reclamações são resolvidas no Mercado Livre (Vendas → Reclamações). Aqui você vê o que pede atenção e até quando.</p>
+  <div class="qlist">
+    {% for item in claims %}{% set cl = item.claim %}
+    <article class="qcard claim{% if item.urgent %} qcard-human{% endif %}">
+      <div class="qcard-top">
+        <span class="chip chip-{{ cl.channel }}">Mercado Livre</span>
+        <span class="muted small">{{ item.stage }} · pedido {{ cl.order_ref or cl.external_id }}{% if item.opened %} · aberta em {{ item.opened }}{% endif %}</span>
+        {% if item.urgent %}<span class="badge badge-erro">Prazo perto do fim</span>
+        {% elif item.mine %}<span class="badge badge-atencao">Sua vez de agir</span>
+        {% else %}<span class="badge badge-info">Aguardando o comprador ou o Mercado Livre</span>{% endif %}
+      </div>
+      {% if item.reason %}<p class="qcard-product">{{ item.reason }}</p>{% endif %}
+      {% if cl.problem %}<p class="qcard-question">“{{ cl.problem }}”</p>{% endif %}
+      {% if cl.title or cl.description %}<p class="small">{% if cl.title %}<strong>{{ cl.title }}.</strong> {% endif %}{{ cl.description or '' }}</p>{% endif %}
+      <p class="small">
+        {% if item.mine and item.due %}Responder até <strong>{{ item.due }}</strong>.{% endif %}
+        {% if cl.affects_reputation == 'affected' %}<span class="badge badge-erro">Afeta a reputação</span>
+        {% elif cl.affects_reputation == 'not_affected' %}<span class="badge badge-ok">Não afeta a reputação</span>{% endif %}
+      </p>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Nenhuma reclamação aberta. ✓</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="msg-title">
+  <div class="card-head">
+    <h2 id="msg-title" class="card-title">Mensagens aguardando você <span class="count">{{ queue|length + unhandled|length }}</span></h2>
+  </div>
+  {% if not queue and not unhandled %}
+    <p class="muted">Nenhuma mensagem esperando resposta.</p>
+  {% endif %}
+
+  <div class="qlist">
+  {% for item in queue %}
+    {% set a = item.action %}{% set c = item.c %}
+    <article class="qcard{% if a.needs_human %} qcard-human{% endif %}" data-card>
+      {% include "partials/conversation_head.html" %}
+      {% if a.status == 'falhou' %}<p class="form-error">Não foi enviada: {{ a.result }}</p>{% endif %}
+      {% if a.reason %}<p class="{{ 'qcard-reason' if a.needs_human else 'muted small' }}">{{ a.reason }}</p>{% endif %}
+      {% if not item.blocked %}
+      <form method="post" action="/pos-venda/acao/{{ a.id }}/enviar" class="qcard-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="sr-only" for="msg-{{ a.id }}">Mensagem para o comprador</label>
+        <textarea id="msg-{{ a.id }}" name="text" rows="3" maxlength="{{ c.max_chars }}"
+          {% if a.payload.get('text') %}readonly{% endif %}
+          placeholder="Escreva a mensagem para o comprador">{{ a.payload.get('text', '') }}</textarea>
+        <div class="qcard-actions">
+          <button class="btn btn-primary" type="submit" data-enviar>{{ 'Aprovar' if a.payload.get('text') else 'Enviar mensagem' }}</button>
+          {% if a.payload.get('text') %}
+          <button class="btn btn-secondary" type="button" data-acao="editar">Editar</button>
+          {% endif %}
+          <button class="btn btn-secondary" type="button" data-acao="eu-mesmo">Responder eu mesmo</button>
+          <span class="muted small" data-contador>{{ a.payload.get('text', '')|length }} / {{ c.max_chars }}</span>
+        </div>
+      </form>
+      {% endif %}
+      <form method="post" action="/pos-venda/acao/{{ a.id }}/ignorar" class="qcard-ignore">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost small" type="submit">Tirar da fila (vou responder no Mercado Livre)</button>
+      </form>
+    </article>
+  {% endfor %}
+
+  {% for item in unhandled %}
+    {% set c = item.c %}
+    <article class="qcard" data-card>
+      {% include "partials/conversation_head.html" %}
+      {% if not item.blocked %}
+      <form method="post" action="/pos-venda/{{ c.id }}/responder" class="qcard-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="sr-only" for="conv-{{ c.id }}">Mensagem para o comprador</label>
+        <textarea id="conv-{{ c.id }}" name="text" rows="3" maxlength="{{ c.max_chars }}"
+          placeholder="Escreva a mensagem, ou aguarde a sugestão do agente"></textarea>
+        <div class="qcard-actions">
+          <button class="btn btn-primary" type="submit">Enviar mensagem</button>
+          <span class="muted small" data-contador>0 / {{ c.max_chars }}</span>
+        </div>
+      </form>
+      {% endif %}
+    </article>
+  {% endfor %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="hoje-title">
+  <div class="card-head"><h2 id="hoje-title" class="card-title">Respondidas hoje</h2></div>
+  {% if answered %}
+  <ul class="answered">
+    {% for item in answered %}
+    <li>
+      <p class="answered-q">{{ item.order_label }}</p>
+      <p class="answered-a">{{ item.text }}</p>
+      <p class="muted small">às {{ item.at }}{% if item.simulated %} · simulação (não enviada){% endif %}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">Nenhuma ainda hoje.</p>
+  {% endif %}
+</section>
+{% endblock %}

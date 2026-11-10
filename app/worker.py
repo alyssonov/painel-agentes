@@ -20,6 +20,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from app.agents.margin import run_margin_agent
 from app.agents.nfe_check import run_nfe_check
 from app.agents.dispatch import run_dispatch_alerts
+from app.agents.postsale import run_postsale_agent
 from app.agents.questions import run_questions_agent
 from app.agents.reputation import run_reputation_check
 from app.agents.stock_watch import run_stock_watch
@@ -67,6 +68,14 @@ def job_agent_questions() -> None:
         logger.info("Respondedor de perguntas: %s — %s", run.status, run.summary)
 
 
+def job_agent_postsale() -> None:
+    """Agente 5 — Pós-venda: sugere respostas às mensagens dos compradores e avisa reclamações."""
+    try:
+        run_postsale_agent(get_sessionmaker())
+    except Exception:  # noqa: BLE001 - o worker nunca pode cair
+        logger.exception("Erro no agente de pós-venda")
+
+
 def job_checks() -> None:
     """Fase 4: Vigia de estoque e Conferência de NF-e (sem IA, só leitura e alertas)."""
     for name, runner in (("Vigia de estoque", run_stock_watch), ("Conferência de NF-e", run_nfe_check),
@@ -105,6 +114,8 @@ def main() -> None:
                       max_instances=1, coalesce=True)
     scheduler.add_job(job_agent_questions, "interval", minutes=settings.agent_questions_minutes,
                       id="agent_questions", max_instances=1, coalesce=True)
+    scheduler.add_job(job_agent_postsale, "interval", minutes=5, id="agent_postsale",
+                      max_instances=1, coalesce=True)
     scheduler.add_job(job_checks, "interval", minutes=15, id="checks", max_instances=1, coalesce=True)
     scheduler.add_job(job_margin, "interval", minutes=60, id="margin", max_instances=1, coalesce=True)
     scheduler.add_job(job_daily_report, "interval", minutes=10, id="daily_report", max_instances=1, coalesce=True)

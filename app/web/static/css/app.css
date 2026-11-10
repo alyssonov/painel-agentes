@@ -413,3 +413,11 @@ a.brand { text-decoration: none; }
 .brand-sub { font-weight: 600; opacity: .75; }
 .login-badge { width: 168px; height: 168px; filter: drop-shadow(0 12px 28px rgba(0,0,0,.35)); }
 @media (max-width: 520px) { .login-badge { width: 132px; height: 132px; } }
+
+/* --- Pós-venda: conversa com o comprador --------------------------------------- */
+.thread { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.msg { display: flex; flex-direction: column; gap: 2px; max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 14px; }
+.msg-comprador { align-self: flex-start; background: #F1F4F7; }
+.msg-loja { align-self: flex-end; background: var(--brand-soft); }
+.msg-who { font-size: 11px; font-weight: 700; color: var(--muted); }
+.msg-text { white-space: pre-wrap; overflow-wrap: anywhere; }

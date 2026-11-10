@@ -83,7 +83,7 @@ def test_escrita_no_ml_so_pelo_gateway():
                 names = [a.name for a in node.names]
             if any("mercadolivre.writes" in n for n in names):
                 importers.append(str(path))
-    assert importers == ["app/core/actions.py"]
+    assert set(importers) == {"app/core/actions.py"}
 
 
 # --- Agente ---------------------------------------------------------------------
@@ -294,7 +294,7 @@ def test_resposta_vazia_e_recusada(logged_client, db):
 
 def test_pagina_de_agentes_liga_e_muda_modo(logged_client, db):
     html = logged_client.get("/agentes").text
-    assert "Respondedor de perguntas" in html and "Chega na fase 6" in html
+    assert "Respondedor de perguntas" in html and "Chega na fase 7" in html
     token = csrf_from(html)
     logged_client.post("/agentes/perguntas/ativo", data={"csrf_token": token, "enabled": "1"})
     logged_client.post("/agentes/perguntas/modo", data={"csrf_token": token, "mode": "automatico"})
@@ -304,5 +304,5 @@ def test_pagina_de_agentes_liga_e_muda_modo(logged_client, db):
     agent = db.scalar(select(Agent).where(Agent.slug == "perguntas"))
     assert agent.enabled and agent.mode == AgentMode.AUTO
     # Agentes de fases futuras não podem ser ligados.
-    r = logged_client.post("/agentes/posvenda/ativo", data={"csrf_token": token, "enabled": "0"})
+    r = logged_client.post("/agentes/precos/ativo", data={"csrf_token": token, "enabled": "0"})
     assert "ainda não está disponível" in r.text
