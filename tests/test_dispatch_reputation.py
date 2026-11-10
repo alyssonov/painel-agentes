@@ -250,3 +250,58 @@ def test_diagnostico_de_envios(db, ml_env, capsys):
     out = capsys.readouterr().out
     assert "Aguardando despacho com prazo vencido: 1" in out
     assert "Envio 4100001" in out and "status=ready_to_ship" in out
+
+
+# --- Regressão: coleta (cross_docking) continua "ready_to_ship" depois de coletada ---------
+
+def test_coletado_conta_como_enviado_e_nao_como_atrasado(db, ml_env):
+    """Formato real visto no diagnóstico: ready_to_ship + picked_up/in_hub, Olist "Faturado"."""
+    from app.services.dashboard import dispatch_day, kanban
+    connect_ml(db)
+    now = utcnow()
+    for sid, sub in (("1", "picked_up"), ("2", "in_hub"), ("3", "in_packing_list")):
+        db.add(Shipment(channel=Channel.ML, shipment_id=sid, order_ref=f"P{sid}", status="ready_to_ship",
+                        substatus=sub, logistic_type="cross_docking", dispatch_deadline=now - timedelta(hours=1),
+                        shipped_at=now - timedelta(minutes=30), checked_at=now))
+    shipment(db, "4", now - timedelta(hours=1), logistic="cross_docking")  # este não foi coletado
+    db.commit()
+    cols = {c.status: c for c in kanban(db)}
+    assert sorted(o.external_id for o in cols["enviado"].orders) == ["P1", "P2", "P3"]
+    assert [o.external_id for o in cols["problema"].orders] == ["P4"]
+    day = dispatch_day(db)
+    assert (day.shipped, day.late) == (3, 1)
+    _, late, _ = dispatch_alerts(db, warn_hours=24)
+    assert late == 1
+
+
+def test_coletado_ontem_nao_entra_no_quadro_de_hoje(db, ml_env):
+    from app.services.dashboard import dispatch_day
+    connect_ml(db)
+    now = utcnow()
+    db.add(Shipment(channel=Channel.ML, shipment_id="1", order_ref="P1", status="ready_to_ship",
+                    substatus="in_hub", logistic_type="cross_docking", dispatch_deadline=now - timedelta(days=2),
+                    shipped_at=now - timedelta(days=2), checked_at=now))
+    db.commit()
+    day = dispatch_day(db)
+    assert (day.shipped, day.late, day.to_ship) == (0, 0, 0)
+
+
+@respx.mock
+def test_sincronizacao_reconhece_coleta(db, ml_env):
+    """Envio esperando coleta passa a "picked_up": vira enviado, com a hora da coleta."""
+    import httpx
+    connect_ml(db)
+    db.add(Shipment(channel=Channel.ML, shipment_id="4100001", order_ref="P1", status="ready_to_ship",
+                    substatus="ready_for_pickup", logistic_type="cross_docking",
+                    dispatch_deadline=utcnow(), checked_at=utcnow()))
+    db.commit()
+    routes = ml_fake.install(respx.mock)
+    routes["shipment"].mock(return_value=httpx.Response(200, json={
+        "id": 4100001, "status": "ready_to_ship", "substatus": "picked_up", "logistic_type": "cross_docking",
+        "status_history": {"date_ready_to_ship": "2026-11-09T14:51:18.000-04:00"},
+        "substatus_history": [{"substatus": "picked_up", "date": "2026-11-10T10:15:00.000-03:00"}]}))
+    run = sync()
+    assert run.status == "ok", run.error
+    row = db.scalar(select(Shipment).where(Shipment.shipment_id == "4100001"))
+    assert row.substatus == "picked_up"
+    assert row.shipped_at == datetime(2026, 11, 10, 13, 15)  # 10:15 Brasília

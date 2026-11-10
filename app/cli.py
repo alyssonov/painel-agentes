@@ -99,6 +99,7 @@ def cmd_diag_envios(_args) -> int:
     from app.core.db import get_sessionmaker, utcnow
     from app.core.timeutil import to_local
     from app.integrations.errors import IntegrationError
+    from app.integrations.mercadolivre.mapping import left_the_store
     from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
     from app.integrations.mercadolivre.client import MLClient
     from app.models import Order, Shipment, SyncRun
@@ -119,8 +120,11 @@ def cmd_diag_envios(_args) -> int:
         print(f"\n== Envios guardados: {len(rows)} ==")
         for status, count in Counter(r.status for r in rows).most_common():
             print(f"  {status:16} {count}")
+        out = sum(1 for r in rows if r.status == "ready_to_ship" and left_the_store(r.status, r.substatus))
+        print(f"  (dos ready_to_ship, {out} já foram coletados / estão no centro do Mercado Livre)")
         now = utcnow()
         late = sorted((r for r in rows if r.status in ("pending", "handling", "ready_to_ship")
+                       and not left_the_store(r.status, r.substatus)
                        and r.dispatch_deadline and r.dispatch_deadline <= now), key=lambda r: r.checked_at)
         print(f"\nAguardando despacho com prazo vencido: {len(late)}")
         if late:

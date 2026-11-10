@@ -12,7 +12,7 @@ import logging
 from collections.abc import Callable
 from datetime import timedelta
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.db import utcnow
@@ -20,7 +20,9 @@ from app.integrations.errors import AuthExpired, IntegrationError, NotConnected,
 from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
 from app.integrations.mercadolivre.client import MLClient
 from app.integrations.mercadolivre.mapping import (
+    DISPATCHED_SUBSTATUSES,
     WAITING_DISPATCH,
+    left_the_store,
     listing_rows,
     order_fee_cents,
     order_refs,
@@ -239,6 +241,18 @@ SHIPMENTS_EVERY = timedelta(minutes=15)
 MAX_SHIPMENTS_PER_RUN = 150
 
 
+def _left_store_at(data: dict):
+    """Quando o pacote saiu da loja: data de envio, ou da coleta/entrega na agência no histórico do detalhe."""
+    history = data.get("status_history") or {}
+    shipped = parse_datetime(history.get("date_shipped")) or parse_datetime(data.get("date_shipped"))
+    if shipped:
+        return shipped
+    for entry in data.get("substatus_history") or []:
+        if isinstance(entry, dict) and entry.get("substatus") in DISPATCHED_SUBSTATUSES:
+            return parse_datetime(entry.get("date"))
+    return None
+
+
 def sync_shipments(db: Session, client: MLClient, account, started, new: dict[str, str]) -> int:
     """Situação e prazo de despacho dos envios que ainda não saíram.
 
@@ -255,7 +269,10 @@ def sync_shipments(db: Session, client: MLClient, account, started, new: dict[st
     to_check: dict[str, str] = {sid: ref for sid, ref in new.items() if sid not in known}
     if recheck_pending:
         for row in db.scalars(select(Shipment).where(
-                Shipment.channel == Channel.ML, Shipment.status.in_(WAITING_DISPATCH))
+                Shipment.channel == Channel.ML, Shipment.status.in_(WAITING_DISPATCH),
+                # já coletado: só relê uma vez, para descobrir quando saiu da loja
+                or_(Shipment.substatus.is_(None), Shipment.substatus.not_in(DISPATCHED_SUBSTATUSES),
+                    Shipment.shipped_at.is_(None)))
                 .order_by(Shipment.checked_at)):
             to_check.setdefault(row.shipment_id, row.order_ref)
     if not to_check:
@@ -287,15 +304,17 @@ def sync_shipments(db: Session, client: MLClient, account, started, new: dict[st
             row = Shipment(channel=Channel.ML, shipment_id=shipment_id, order_ref=order_ref,
                            status=status or "desconhecido", checked_at=started)
             db.add(row)
+        was_out = row.shipped_at is None and left_the_store(row.status, row.substatus)
         row.status = status or row.status
         row.substatus = data.get("substatus")
         row.logistic_type = logistic or row.logistic_type
         if sla:
             row.dispatch_deadline = parse_datetime(sla.get("expected_date")) or row.dispatch_deadline
-        if row.status in SHIPPED and row.shipped_at is None:
-            history = data.get("status_history") or {}
-            row.shipped_at = (parse_datetime(history.get("date_shipped"))
-                              or parse_datetime(data.get("date_shipped")) or started)
+        if left_the_store(row.status, row.substatus) and row.shipped_at is None:
+            # Sem data no Mercado Livre: se acabou de sair, é "agora"; se já tinha saído
+            # antes (envios gravados por versões antigas), usa o prazo como aproximação.
+            fallback = min(row.dispatch_deadline, started) if was_out and row.dispatch_deadline else started
+            row.shipped_at = _left_store_at(data) or fallback
         row.checked_at = utcnow()
         checked += 1
         if checked % 10 == 0:

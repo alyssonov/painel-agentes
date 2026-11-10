@@ -91,6 +91,19 @@ def listing_rows(item: dict) -> list[dict]:
 # Situações do envio que ainda esperam a loja despachar.
 WAITING_DISPATCH = {"pending", "handling", "ready_to_ship"}
 
+# Detalhes (substatus) em que o pacote JÁ SAIU das mãos da loja, mesmo com a situação
+# principal ainda "ready_to_ship" — comum na coleta (cross_docking): a transportadora
+# coleta ("picked_up"), o pacote chega no centro do Mercado Livre ("in_hub",
+# "in_packing_list") e só bem depois a situação vira "shipped".
+# Confirmado no diagnóstico com envios reais da loja em 10/11/2026.
+DISPATCHED_SUBSTATUSES = {"picked_up", "dropped_off", "in_hub", "in_packing_list", "in_warehouse",
+                          "authorized_by_carrier"}
+
+
+def left_the_store(status: str | None, substatus: str | None) -> bool:
+    """O pacote já saiu da loja? (enviado/entregue, ou coletado/no centro do Mercado Livre)."""
+    return status in ("shipped", "delivered") or (status == "ready_to_ship" and substatus in DISPATCHED_SUBSTATUSES)
+
 
 def reputation_metrics(user: dict) -> dict:
     """Taxas (%) de reclamações, atrasos e cancelamentos e o período considerado.

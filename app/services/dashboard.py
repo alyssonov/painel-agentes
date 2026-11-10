@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.config import get_settings
 from app.core.timeutil import local_day_bounds_utc, local_today, to_local, utcnow
 from app.agents.config import has_real_data
+from app.integrations.mercadolivre.mapping import DISPATCHED_SUBSTATUSES, left_the_store
 from app.models import Agent, AgentRun, AiUsage, Alert, IntegrationAccount, Order, OrderItem, Question, Shipment
 from app.models.enums import (
     CHANNEL_LABELS,
@@ -177,11 +178,13 @@ def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn
         or_(Shipment.logistic_type.is_(None), Shipment.logistic_type != "fulfillment"),
         or_(
             # ainda não saiu e o prazo é hoje (ou já venceu)
-            and_(Shipment.status.in_(WAITING_STATUSES), Shipment.dispatch_deadline < end),
+            and_(Shipment.status.in_(WAITING_STATUSES), Shipment.dispatch_deadline < end,
+                 or_(Shipment.substatus.is_(None), Shipment.substatus.not_in(DISPATCHED_SUBSTATUSES))),
             # saiu hoje (mesmo que o prazo fosse outro dia)
             and_(Shipment.shipped_at >= start, Shipment.shipped_at < end),
-            # saiu, sem data de envio conhecida, e o prazo era hoje
-            and_(Shipment.status.in_(SHIPPED_STATUSES), Shipment.shipped_at.is_(None),
+            # saiu (enviado, ou coletado/no centro), sem data de saída conhecida, e o prazo era hoje
+            and_(or_(Shipment.status.in_(SHIPPED_STATUSES), Shipment.substatus.in_(DISPATCHED_SUBSTATUSES)),
+                 Shipment.shipped_at.is_(None),
                  Shipment.dispatch_deadline >= start, Shipment.dispatch_deadline < end),
         )).order_by(Shipment.dispatch_deadline))
     for row in rows:
@@ -217,8 +220,8 @@ def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn
 
 
 def is_shipped(row: Shipment, order: Order | None) -> bool:
-    """Saiu? Vale o Mercado Livre OU a situação do pedido no Olist ("Enviado"/"Entregue")."""
-    return row.status in SHIPPED_STATUSES or bool(order and order.kanban_status == KanbanStatus.SHIPPED)
+    """Saiu da loja? Vale o Mercado Livre (enviado, ou coletado/no centro) OU o Olist ("Enviado"/"Entregue")."""
+    return left_the_store(row.status, row.substatus) or bool(order and order.kanban_status == KanbanStatus.SHIPPED)
 
 
 def dispatch_day(db: Session) -> DispatchDay:
