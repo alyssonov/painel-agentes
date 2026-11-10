@@ -1,7 +1,7 @@
 {% extends "app_layout.html" %}
 {% block title %}Margem real{% endblock %}
 {% block page_title %}Margem real{% endblock %}
-{% block page_subtitle %}<p class="muted">Preço − taxa do marketplace − frete − custo (Olist) − impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}%).</p>{% endblock %}
+{% block page_subtitle %}<p class="muted">Mercado Livre: valor que você recebe pela venda (o mesmo do "detalhe da venda": já sem taxa, frete e tarifas) − custo do Olist − impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}%). Outros canais: preço − taxa − frete − custo − impostos.</p>{% endblock %}
 {% block content %}
 <div class="toolbar">
   <div class="segmented segmented-light" role="group" aria-label="Período">
@@ -41,7 +41,7 @@
   <h2 class="card-title">Para a margem ficar exata</h2>
   <ul>
     {% if r.products_missing_cost %}<li><span class="badge badge-atencao">Atenção</span> {{ r.products_missing_cost }} produto(s) vendido(s) sem custo cadastrado no Olist — o lucro deles aparece maior que o real.</li>{% endif %}
-    {% if r.orders_missing_fees %}<li><span class="badge badge-info">Aviso</span> {{ r.orders_missing_fees }} pedido(s) ainda sem a taxa do marketplace (Shopee e outros canais chegam depois).</li>{% endif %}
+    {% if r.orders_missing_fees %}<li><span class="badge badge-info">Aviso</span> {{ r.orders_missing_fees }} pedido(s) com taxa e frete ainda não conferidos (no Mercado Livre o painel lê o valor recebido no Mercado Pago em alguns minutos; Shopee chega depois). O lucro deles pode estar maior do que o real.</li>{% endif %}
     {% if not tax_rate %}<li><span class="badge badge-atencao">Atenção</span> Alíquota de impostos não informada — <a class="link" href="/integracoes#imposto">informar agora</a>.</li>{% endif %}
   </ul>
 </section>

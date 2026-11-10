@@ -289,9 +289,11 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
     # --- Recebimentos: o Mercado Pago libera ~28 dias depois da venda ----------
     for order in db.scalars(select(Order).where(Order.is_demo.is_(True), Order.channel == Channel.ML)):
         release = order.ordered_at + timedelta(days=28)
+        # Valor recebido = preço − taxa − frete (como no "detalhe da venda" do Mercado Livre).
+        order.net_received_cents = order.items_total_cents - order.marketplace_fee_cents - order.shipping_cost_cents
         db.add(Payment(channel=Channel.ML, payment_id=f"demo-pay-{order.id}", order_ref=order.external_id,
                        status="approved", amount_cents=order.items_total_cents,
-                       net_cents=round(order.items_total_cents * 0.74), approved_at=order.ordered_at,
+                       net_cents=order.net_received_cents, approved_at=order.ordered_at,
                        release_date=release, release_status="released" if release < now else "pending",
                        checked_at=now, is_demo=True))
     # Vendas mais antigas (sem pedido fictício) para a previsão mostrar as próximas semanas.

@@ -73,3 +73,27 @@ def test_pagina_de_recebimentos(logged_client, db):
     html = logged_client.get("/margem/recebimentos").text  # simulação: dados fictícios
     assert "Previsão de recebimentos" in html and "Próximos 7 dias" in html and "style=" not in html
     assert "Previsão de recebimentos" in logged_client.get("/margem").text
+
+
+def test_valor_recebido_vai_para_a_venda(db):
+    """Venda só fica "conferida" quando todos os pagamentos aprovados têm o valor líquido."""
+    from app.models import Order
+    from app.models.enums import KanbanStatus
+    from app.sync.ml_payments import link_net_received
+    now = utcnow()
+    order = Order(channel=Channel.ML, external_id="PACK1", olist_id="o1", customer_short_name="A",
+                  ordered_at=now, kanban_status=KanbanStatus.TO_PICK, items_total_cents=12490)
+    db.add(order)
+    db.add(Payment(channel=Channel.ML, payment_id="a", order_ref="PACK1", status="approved", amount_cents=9490,
+                   net_cents=6876, approved_at=now))
+    second = Payment(channel=Channel.ML, payment_id="b", order_ref="PACK1", status="approved", amount_cents=3000,
+                     net_cents=None, approved_at=now)
+    db.add(second)
+    db.add(Payment(channel=Channel.ML, payment_id="c", order_ref="PACK1", status="refunded", amount_cents=500,
+                   net_cents=400, approved_at=now))  # estornado: não conta
+    db.commit()
+    link_net_received(db)
+    assert order.net_received_cents is None  # falta o 2º pagamento
+    second.net_cents = 1345
+    link_net_received(db)
+    assert order.net_received_cents == 6876 + 1345

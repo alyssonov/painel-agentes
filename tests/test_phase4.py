@@ -186,8 +186,8 @@ def test_relatorio_de_margem_por_produto(db):
     bom = product(db, "BOM", cost=2000, price=10000)
     ruim = product(db, "RUIM", cost=4000, price=4500)
     sem_custo = product(db, "SC", cost=0, price=3000)
-    sale(db, bom, qty=2, fee=2800, shipping=0)
-    sale(db, ruim, qty=1, fee=900, shipping=0)
+    sale(db, bom, qty=2, fee=2800, shipping=0).net_received_cents = 20000 - 2800
+    sale(db, ruim, qty=1, fee=900, shipping=0).net_received_cents = 4500 - 900
     sale(db, sem_custo, qty=1, fees_known=False)
     now = utcnow()
     report = margin_report(db, now - timedelta(days=7), now, 10.0)
@@ -275,3 +275,16 @@ def test_falha_nos_anuncios_nao_para_perguntas_e_taxas(db, ml_env):
     run = sync()
     assert run.status == "ok", run.error
     assert run.counts["perguntas"] == 3 and run.counts["anuncios_erro"] == 1
+
+
+def test_lucro_usa_o_valor_recebido_do_mercado_livre(db):
+    """Regra do dono: lucro = o que recebo pela venda (detalhe da venda no ML) − custo do Olist − impostos."""
+    from app.services.dashboard import money_confirmed, order_margin
+    prod = product(db, "X", cost=3000, price=9490)
+    order = sale(db, prod, qty=1, fee=1139, shipping=0)  # Olist não informa o frete
+    assert not money_confirmed(order)
+    order.net_received_cents = 6876  # valor real visto no diagnóstico: R$ 94,90 → R$ 68,76
+    m = order_margin(order, 2.5)
+    assert money_confirmed(order)
+    assert m.fee_cents == 1139 and m.shipping_cents == 9490 - 6876 - 1139  # frete + tarifas = o resto
+    assert m.profit_cents == 6876 - 3000 - round(9490 * 0.025)

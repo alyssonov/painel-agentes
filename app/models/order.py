@@ -30,6 +30,9 @@ class Order(TimestampMixin, Base):
     items_total_cents: Mapped[int] = mapped_column(BigInteger, default=0)
     marketplace_fee_cents: Mapped[int] = mapped_column(BigInteger, default=0)
     shipping_cost_cents: Mapped[int] = mapped_column(BigInteger, default=0)  # frete pago pela loja
+    # Valor que a loja RECEBE pela venda (líquido, já sem taxa, frete e tarifas), igual ao
+    # "detalhe da venda" do Mercado Livre — lido no Mercado Pago. None = ainda não conferido.
+    net_received_cents: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     # Se a taxa do marketplace já é conhecida. O Olist não informa a taxa: ela chega
     # pelas APIs do Mercado Livre e da Shopee (Fase 3). Até lá a margem não a inclui.
     fees_known: Mapped[bool] = mapped_column(default=False)

@@ -101,5 +101,36 @@ def sync_payments(db: Session, client: MLClient, mp: MercadoPagoClient, account,
         checked += 1
         if checked % 20 == 0:
             db.commit()
+    link_net_received(db)
     db.commit()
     return checked
+
+
+LINK_WINDOW = timedelta(days=60)
+
+
+def link_net_received(db: Session) -> int:
+    """Grava em cada venda do Mercado Livre o valor que a loja recebe (soma dos pagamentos aprovados).
+
+    É o mesmo número do "detalhe da venda" no Mercado Livre: preço − taxa − frete − tarifas.
+    Só grava quando TODOS os pagamentos aprovados da venda já têm o valor líquido; senão a
+    venda fica "ainda não conferida" (a margem avisa, em vez de mostrar lucro inflado).
+    """
+    from app.models import Order  # import local: evita ciclo models ↔ sync
+
+    since = utcnow() - LINK_WINDOW
+    totals: dict[str, int] = {}
+    incomplete: set[str] = set()
+    for row in db.scalars(select(Payment).where(Payment.channel == Channel.ML, Payment.status == "approved",
+                                                or_(Payment.approved_at.is_(None), Payment.approved_at >= since))):
+        if row.net_cents is None:
+            incomplete.add(row.order_ref)
+        else:
+            totals[row.order_ref] = totals.get(row.order_ref, 0) + row.net_cents
+    changed = 0
+    for order in db.scalars(select(Order).where(Order.channel == Channel.ML, Order.ordered_at >= since)):
+        value = None if order.external_id in incomplete else totals.get(order.external_id)
+        if value is not None and order.net_received_cents != value:
+            order.net_received_cents = value
+            changed += 1
+    return changed

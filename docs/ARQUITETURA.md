@@ -576,3 +576,17 @@ ponta arredondada de 4px, grade discreta, dica ao passar o mouse/focar (JS em
 `app.js`) e tabela com os mesmos números. Cores validadas com o validador da
 skill de visualização: azul `#2a78d6`, prejuízo em vermelho `#e34948` (abaixo
 do zero e com o texto "prejuízo" na dica — nunca só a cor).
+
+## 23. Lucro real com o valor recebido (regra do dono, 11/11/2026)
+
+No Mercado Livre o lucro passa a ser **valor recebido − custo do Olist −
+impostos**, onde valor recebido = soma dos `net_received_amount` dos
+pagamentos aprovados da venda no Mercado Pago (o mesmo número do "detalhe da
+venda"). Coluna `orders.net_received_cents` (migração 0011), preenchida por
+`ml_payments.link_net_received` (depois da leitura do Mercado Pago e depois
+da leitura de pedidos do Olist). Só é preenchida quando todos os pagamentos
+aprovados da venda têm o líquido. `order_margin` reparte o que foi descontado
+em taxa (comissão `sale_fee`) e "frete e tarifas" (o resto). Sem o valor
+recebido, a venda conta como "taxa e frete ainda não conferidos" na Margem
+real (antes o frete vinha do campo informativo `valorFretePagoEmpresa` do
+Olist, que costuma vir zerado nas vendas do ML — lucro inflado).

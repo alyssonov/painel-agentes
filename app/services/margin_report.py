@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models import Order, OrderItem
 from app.models.enums import CHANNEL_LABELS, Channel, KanbanStatus
-from app.services.dashboard import order_margin
+from app.services.dashboard import money_confirmed, order_margin
 
 
 @dataclass
@@ -87,7 +87,7 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
         totals.tax += m.tax_cents
         totals.profit += m.profit_cents
         totals.orders += 1
-        if not order.fees_known:
+        if not money_confirmed(order):
             missing_fees += 1
         if m.is_loss:
             losses.append(LossOrder(order.id, order.external_id,
@@ -109,7 +109,7 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
             entry.revenue += item_rev
             entry.profit += profit
             entry.missing_cost = entry.missing_cost or not (item.product and item.product.cost_cents > 0)
-            entry.missing_fees = entry.missing_fees or not order.fees_known
+            entry.missing_fees = entry.missing_fees or not money_confirmed(order)
 
     product_list = sorted(products.values(), key=lambda p: (p.profit >= 0, p.margin_pct if p.margin_pct is not None else 0))
     losses.sort(key=lambda o: o.profit)

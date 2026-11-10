@@ -32,6 +32,7 @@ from app.integrations.olist.mapping import (
 )
 from app.models import Invoice, MarketplaceFee, Order, OrderItem, Product, StockSnapshot, SyncRun
 from app.models.enums import Provider, SyncStatus
+from app.sync.ml_payments import link_net_received
 from app.sync.common import (
     SyncAlreadyRunning,
     describe_unexpected,
@@ -180,6 +181,8 @@ def sync_orders(db: Session, client: OlistClient, account, started: datetime) ->
         upsert_order(db, summary, detail, products)
         count += 1
         db.commit()  # grava pedido a pedido: se cair no meio, o que foi lido fica salvo
+    # Pedido do Mercado Livre que chegou agora no Olist: liga o valor recebido (já lido no Mercado Pago).
+    link_net_received(db)
     _set_cursor(account, "cursor_pedidos", started)
     db.commit()
     return count
