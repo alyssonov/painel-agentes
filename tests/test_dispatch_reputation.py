@@ -156,3 +156,56 @@ def test_visao_geral_mostra_envios_de_hoje(logged_client, db, ml_env):
     connect_ml(db)
     html = logged_client.get("/").text
     assert "Envios de hoje" in html and "para enviar hoje" in html
+
+
+# --- Regressões do primeiro uso real: 54 enviados, painel mostrava 44 "prazo venceu" ---------
+
+def test_enviado_no_olist_nao_aparece_como_atrasado(db, ml_env):
+    """O Mercado Livre ainda não atualizou, mas o pedido já está "Enviado" no Olist."""
+    from app.models.enums import KanbanStatus
+    from app.services.dashboard import dispatch_day, kanban
+    connect_ml(db)
+    now = utcnow()
+    db.add(Order(channel=Channel.ML, external_id="P1", olist_id="o1", customer_short_name="A",
+                 ordered_at=now - timedelta(days=1), kanban_status=KanbanStatus.SHIPPED))
+    shipment(db, "1", now - timedelta(hours=2), ref="P1")  # ML ainda diz "ready_to_ship"
+    db.commit()
+    cols = {c.status: c for c in kanban(db)}
+    assert [o.external_id for o in cols["enviado"].orders] == ["P1"] and not cols["problema"].orders
+    assert dispatch_day(db).late == 0
+    specs, late, _ = dispatch_alerts(db, warn_hours=24)
+    assert late == 0 and specs == []
+
+
+def test_despachado_hoje_com_prazo_amanha_conta_como_enviado(db, ml_env):
+    from app.core.timeutil import local_day_bounds_utc, local_today
+    from app.services.dashboard import dispatch_day
+    connect_ml(db)
+    start, end = local_day_bounds_utc(local_today())
+    db.add(Shipment(channel=Channel.ML, shipment_id="7", order_ref="P7", status="shipped",
+                    dispatch_deadline=end + timedelta(hours=10), shipped_at=start + timedelta(hours=1),
+                    checked_at=utcnow()))
+    db.commit()
+    assert dispatch_day(db).shipped == 1
+
+
+@respx.mock
+def test_um_envio_com_erro_nao_trava_os_outros(db, ml_env):
+    import httpx
+    connect_ml(db)
+    # Dois envios já conhecidos, ainda "pronto para enviar" desde a leitura anterior.
+    for sid in ("4100001", "4100002"):
+        db.add(Shipment(channel=Channel.ML, shipment_id=sid, order_ref=f"P{sid}", status="ready_to_ship",
+                        logistic_type="xd_drop_off", checked_at=utcnow()))
+    db.commit()
+    routes = ml_fake.install(respx.mock)
+    routes["shipment"].mock(side_effect=lambda r, sid: httpx.Response(403, json={"message": "forbidden"})
+                            if sid == "4100002" else httpx.Response(200, json={
+                                "id": 4100001, "status": "shipped",
+                                "status_history": {"date_shipped": "2026-11-10T11:30:00.000-03:00"}}))
+    run = sync()
+    assert run.status == "ok", run.error
+    rows = {s.shipment_id: s for s in db.scalars(select(Shipment))}
+    assert rows["4100001"].status == "shipped"
+    assert rows["4100001"].shipped_at == datetime(2026, 11, 10, 14, 30)  # 11:30 Brasília
+    assert rows["4100002"].status == "ready_to_ship"  # este falhou, mas não travou o outro

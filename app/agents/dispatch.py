@@ -17,7 +17,7 @@ from app.core.timeutil import to_local
 from app.integrations.mercadolivre.mapping import WAITING_DISPATCH
 from app.models import Order, Shipment
 from app.models.enums import AlertSeverity, Channel
-from app.services.dashboard import dispatch_day
+from app.services.dashboard import dispatch_day, is_shipped
 
 SLUG = "despacho"
 MAX_ALERTS = 10
@@ -43,6 +43,8 @@ def build_alerts(db: Session, warn_hours: float) -> tuple[list[AlertSpec], int, 
         if row.logistic_type == "fulfillment":
             continue
         order = db.scalar(select(Order).where(Order.channel == Channel.ML, Order.external_id == row.order_ref))
+        if is_shipped(row, order):
+            continue  # o Olist já marca como enviado: não é atraso
         label = f"Pedido {order.olist_number}" if order and order.olist_number else f"Pedido {row.order_ref}"
         if row.dispatch_deadline <= now:
             hours = int((now - row.dispatch_deadline).total_seconds() // 3600)

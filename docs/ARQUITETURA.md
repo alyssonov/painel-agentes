@@ -455,3 +455,12 @@ Sem IA. Os três só leem e criam/resolvem alertas.
   oficial traz tabelas diferentes entre páginas/países; padrões da tabela MLB:
   reclamações 2%, atrasos 10%, cancelamentos 1,5%); aviso a partir de 80% do
   limite, urgente acima dele.
+
+### 16.1 Correções após o primeiro uso real (54 enviados × 44 "prazo venceu")
+
+- Um envio com erro na consulta (ex.: 403) descartava a atualização de todos
+  os outros; agora cada envio é lido isoladamente e o erro é só registrado.
+- "Saiu" passa a valer pelo Mercado Livre **ou** pela situação do pedido no
+  Olist (Enviado/Entregue) — `services.dashboard.is_shipped`.
+- `shipments.shipped_at` guarda quando o pacote saiu (`status_history.date_shipped`);
+  a coluna "Enviado" mostra tudo que saiu hoje, mesmo com prazo em outro dia.

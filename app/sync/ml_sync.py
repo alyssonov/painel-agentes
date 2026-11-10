@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.db import utcnow
-from app.integrations.errors import IntegrationError, NotConnected
+from app.integrations.errors import AuthExpired, IntegrationError, NotConnected, TemporaryError
 from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
 from app.integrations.mercadolivre.client import MLClient
 from app.integrations.mercadolivre.mapping import (
@@ -234,6 +234,7 @@ def sync_fees(db: Session, client: MLClient, account, seller_id: str, started,
     return len(fees)
 
 
+SHIPPED = {"shipped", "delivered"}
 SHIPMENTS_EVERY = timedelta(minutes=15)
 
 
@@ -247,23 +248,44 @@ def sync_shipments(db: Session, client: MLClient, account, started, new: dict[st
         Shipment.channel == Channel.ML, Shipment.status.in_(WAITING_DISPATCH)))}
     known = set(db.scalars(select(Shipment.shipment_id).where(Shipment.channel == Channel.ML)))
     to_check = {**pending, **{sid: ref for sid, ref in new.items() if sid not in known}}
+    failed = 0
     for shipment_id, order_ref in to_check.items():
-        data = client.get_shipment(shipment_id) or {}
+        try:
+            data = client.get_shipment(shipment_id) or {}
+            sla = None
+            status = data.get("status")
+            logistic = data.get("logistic_type") or (data.get("logistic") or {}).get("type")
+            if status in WAITING_DISPATCH and logistic != "fulfillment":
+                sla = client.get_shipment_sla(shipment_id) or {}
+        except (AuthExpired, TemporaryError):
+            raise
+        except IntegrationError as exc:
+            # Um envio com problema (ex.: sem permissão) NÃO pode travar a atualização dos outros.
+            failed += 1
+            logger.warning("Envio %s não pôde ser lido: %s", shipment_id, exc)
+            continue
+        if not data:
+            continue
         row = db.scalar(select(Shipment).where(Shipment.channel == Channel.ML, Shipment.shipment_id == shipment_id))
         if row is None:
             row = Shipment(channel=Channel.ML, shipment_id=shipment_id, order_ref=order_ref,
-                           status=data.get("status") or "desconhecido", checked_at=started)
+                           status=status or "desconhecido", checked_at=started)
             db.add(row)
-        row.status = data.get("status") or row.status
+        row.status = status or row.status
         row.substatus = data.get("substatus")
-        row.logistic_type = data.get("logistic_type") or (data.get("logistic") or {}).get("type")
-        if row.status in WAITING_DISPATCH and row.logistic_type != "fulfillment":
-            sla = client.get_shipment_sla(shipment_id) or {}
+        row.logistic_type = logistic
+        if sla:
             row.dispatch_deadline = parse_datetime(sla.get("expected_date")) or row.dispatch_deadline
+        if row.status in SHIPPED and row.shipped_at is None:
+            history = data.get("status_history") or {}
+            row.shipped_at = (parse_datetime(history.get("date_shipped"))
+                              or parse_datetime(data.get("date_shipped")) or started)
         row.checked_at = started
     set_cursor(account, "cursor_envios", started)
     db.commit()
-    return len(to_check)
+    if failed:
+        logger.warning("%s envio(s) do Mercado Livre não puderam ser lidos nesta rodada.", failed)
+    return len(to_check) - failed
 
 
 # Anúncios: relidos de hora em hora (estoque muda pouco e o Olist é a fonte da verdade).

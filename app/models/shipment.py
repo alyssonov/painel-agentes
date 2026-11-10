@@ -22,4 +22,6 @@ class Shipment(TimestampMixin, Base):
     logistic_type: Mapped[str | None] = mapped_column(String(30), nullable=True)  # fulfillment = Full
     # Prazo limite para despachar (UTC), lido do SLA do marketplace.
     dispatch_deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    # Quando o pacote saiu de fato (status_history.date_shipped; ou quando vimos "enviado" pela 1ª vez).
+    shipped_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
     checked_at: Mapped[datetime] = mapped_column(DateTime)

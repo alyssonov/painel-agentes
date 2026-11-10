@@ -176,17 +176,20 @@ def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn
         Shipment.channel == Channel.ML,
         or_(Shipment.logistic_type.is_(None), Shipment.logistic_type != "fulfillment"),
         or_(
-            and_(Shipment.dispatch_deadline >= start, Shipment.dispatch_deadline < end),
-            and_(Shipment.status.in_(WAITING_STATUSES), Shipment.dispatch_deadline < start),
-            and_(Shipment.status.in_(SHIPPED_STATUSES), Shipment.dispatch_deadline.is_(None),
-                 Shipment.updated_at >= start),
+            # ainda não saiu e o prazo é hoje (ou já venceu)
+            and_(Shipment.status.in_(WAITING_STATUSES), Shipment.dispatch_deadline < end),
+            # saiu hoje (mesmo que o prazo fosse outro dia)
+            and_(Shipment.shipped_at >= start, Shipment.shipped_at < end),
+            # saiu, sem data de envio conhecida, e o prazo era hoje
+            and_(Shipment.status.in_(SHIPPED_STATUSES), Shipment.shipped_at.is_(None),
+                 Shipment.dispatch_deadline >= start, Shipment.dispatch_deadline < end),
         )).order_by(Shipment.dispatch_deadline))
     for row in rows:
         order = db.scalar(select(Order).where(Order.channel == Channel.ML, Order.external_id == row.order_ref)
                           .options(selectinload(Order.items).selectinload(OrderItem.product)))
         deadline = to_local(row.dispatch_deadline) if row.dispatch_deadline else None
         problem = order.problem_note if order else None
-        if row.status in SHIPPED_STATUSES:
+        if is_shipped(row, order):
             status, label = KanbanStatus.SHIPPED, "enviado"
             day.shipped += 1
         elif row.dispatch_deadline and row.dispatch_deadline <= now:
@@ -211,6 +214,11 @@ def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn
             total_cents=order.items_total_cents if order else 0, time_label=label, problem=problem,
             is_loss=order_margin(order, tax_rate).is_loss if order else False))
     return list(columns.values()), day
+
+
+def is_shipped(row: Shipment, order: Order | None) -> bool:
+    """Saiu? Vale o Mercado Livre OU a situação do pedido no Olist ("Enviado"/"Entregue")."""
+    return row.status in SHIPPED_STATUSES or bool(order and order.kanban_status == KanbanStatus.SHIPPED)
 
 
 def dispatch_day(db: Session) -> DispatchDay:
