@@ -236,56 +236,76 @@ def sync_fees(db: Session, client: MLClient, account, seller_id: str, started,
 
 SHIPPED = {"shipped", "delivered"}
 SHIPMENTS_EVERY = timedelta(minutes=15)
+MAX_SHIPMENTS_PER_RUN = 150
 
 
 def sync_shipments(db: Session, client: MLClient, account, started, new: dict[str, str]) -> int:
-    """Situação e prazo de despacho dos envios que ainda não saíram (de 15 em 15 min)."""
+    """Situação e prazo de despacho dos envios que ainda não saíram.
+
+    Cuidados (aprendidos no primeiro uso real, com ~70 envios pendentes):
+    - o prazo (SLA) só é consultado uma vez por envio;
+    - os mais antigos sem conferir vão primeiro, e o progresso é gravado aos poucos;
+    - se o Mercado Livre pedir pausa (limite de consultas), paramos SEM perder o
+      que já foi lido — o resto fica para a próxima rodada;
+    - um envio com erro não trava os outros.
+    """
     last = get_cursor(account, "cursor_envios")
-    if last and started - last < SHIPMENTS_EVERY and not new:
-        return 0
-    # Novos + os que ainda esperavam despacho na última leitura.
-    pending = {s.shipment_id: s.order_ref for s in db.scalars(select(Shipment).where(
-        Shipment.channel == Channel.ML, Shipment.status.in_(WAITING_DISPATCH)))}
+    recheck_pending = not last or started - last >= SHIPMENTS_EVERY
     known = set(db.scalars(select(Shipment.shipment_id).where(Shipment.channel == Channel.ML)))
-    to_check = {**pending, **{sid: ref for sid, ref in new.items() if sid not in known}}
-    failed = 0
-    for shipment_id, order_ref in to_check.items():
+    to_check: dict[str, str] = {sid: ref for sid, ref in new.items() if sid not in known}
+    if recheck_pending:
+        for row in db.scalars(select(Shipment).where(
+                Shipment.channel == Channel.ML, Shipment.status.in_(WAITING_DISPATCH))
+                .order_by(Shipment.checked_at)):
+            to_check.setdefault(row.shipment_id, row.order_ref)
+    if not to_check:
+        return 0
+
+    checked = failed = 0
+    for shipment_id, order_ref in list(to_check.items())[:MAX_SHIPMENTS_PER_RUN]:
+        row = db.scalar(select(Shipment).where(Shipment.channel == Channel.ML, Shipment.shipment_id == shipment_id))
         try:
             data = client.get_shipment(shipment_id) or {}
-            sla = None
             status = data.get("status")
             logistic = data.get("logistic_type") or (data.get("logistic") or {}).get("type")
-            if status in WAITING_DISPATCH and logistic != "fulfillment":
+            sla = None
+            needs_deadline = row is None or row.dispatch_deadline is None
+            if status in WAITING_DISPATCH and logistic != "fulfillment" and needs_deadline:
                 sla = client.get_shipment_sla(shipment_id) or {}
-        except (AuthExpired, TemporaryError):
+        except AuthExpired:
             raise
+        except TemporaryError as exc:
+            logger.warning("Mercado Livre pediu pausa ao ler envios (%s). Continua na próxima rodada.", exc)
+            break
         except IntegrationError as exc:
-            # Um envio com problema (ex.: sem permissão) NÃO pode travar a atualização dos outros.
             failed += 1
             logger.warning("Envio %s não pôde ser lido: %s", shipment_id, exc)
             continue
         if not data:
             continue
-        row = db.scalar(select(Shipment).where(Shipment.channel == Channel.ML, Shipment.shipment_id == shipment_id))
         if row is None:
             row = Shipment(channel=Channel.ML, shipment_id=shipment_id, order_ref=order_ref,
                            status=status or "desconhecido", checked_at=started)
             db.add(row)
         row.status = status or row.status
         row.substatus = data.get("substatus")
-        row.logistic_type = logistic
+        row.logistic_type = logistic or row.logistic_type
         if sla:
             row.dispatch_deadline = parse_datetime(sla.get("expected_date")) or row.dispatch_deadline
         if row.status in SHIPPED and row.shipped_at is None:
             history = data.get("status_history") or {}
             row.shipped_at = (parse_datetime(history.get("date_shipped"))
                               or parse_datetime(data.get("date_shipped")) or started)
-        row.checked_at = started
-    set_cursor(account, "cursor_envios", started)
+        row.checked_at = utcnow()
+        checked += 1
+        if checked % 10 == 0:
+            db.commit()  # grava aos poucos: uma pausa no meio não perde o que já foi lido
+    if recheck_pending:
+        set_cursor(account, "cursor_envios", started)
     db.commit()
     if failed:
         logger.warning("%s envio(s) do Mercado Livre não puderam ser lidos nesta rodada.", failed)
-    return len(to_check) - failed
+    return checked
 
 
 # Anúncios: relidos de hora em hora (estoque muda pouco e o Olist é a fonte da verdade).

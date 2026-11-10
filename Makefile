@@ -1,7 +1,7 @@
 # Atalhos do projeto. Use sempre o ambiente virtual em .venv.
 PY := .venv/bin/python
 
-.PHONY: install setup keys dev worker test migrate seed seed-demo user atualizar iniciar
+.PHONY: diagnostico install setup keys dev worker test migrate seed seed-demo user atualizar iniciar
 
 install:          ## instala as dependências (inclusive de desenvolvimento)
 	python3.12 -m venv .venv
@@ -38,3 +38,6 @@ atualizar:        ## busca a versão nova, instala dependências e atualiza o ba
 
 iniciar:          ## atualiza, liga o painel e abre o navegador
 	$(PY) tarefas.py iniciar
+
+diagnostico:      ## situação dos envios do Mercado Livre (sem dados de clientes)
+	$(PY) -m app.cli diag-envios

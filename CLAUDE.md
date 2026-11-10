@@ -111,6 +111,7 @@ python tarefas.py seed-demo  # recria os dados de simulação (só com DRY_RUN=t
 python tarefas.py dev        # sobe o painel em http://localhost:8000
 python tarefas.py worker     # sobe o agendador dos agentes
 python tarefas.py test       # roda os testes
+python tarefas.py diagnostico  # situação dos envios do Mercado Livre (sem dados de clientes)
 python tarefas.py atualizar  # git pull + dependências novas + migrações
 python tarefas.py iniciar    # atualizar + liga o painel + abre o navegador
 ```

@@ -209,3 +209,44 @@ def test_um_envio_com_erro_nao_trava_os_outros(db, ml_env):
     assert rows["4100001"].status == "shipped"
     assert rows["4100001"].shipped_at == datetime(2026, 11, 10, 14, 30)  # 11:30 Brasília
     assert rows["4100002"].status == "ready_to_ship"  # este falhou, mas não travou o outro
+
+
+@respx.mock
+def test_limite_de_consultas_nao_perde_o_que_ja_foi_lido(db, ml_env, monkeypatch):
+    """Com muitos envios, o Mercado Livre pode pedir pausa (429): o que foi lido fica gravado."""
+    import httpx
+    monkeypatch.setattr("app.integrations.http.MAX_ATTEMPTS", 1)
+    connect_ml(db)
+    for i in range(15):
+        db.add(Shipment(channel=Channel.ML, shipment_id=f"9{i:03d}", order_ref=f"R{i}", status="ready_to_ship",
+                        logistic_type="xd_drop_off", dispatch_deadline=utcnow(), checked_at=utcnow() - timedelta(hours=i)))
+    db.commit()
+    calls = {"n": 0}
+
+    def answer(request, sid):
+        calls["n"] += 1
+        if calls["n"] > 12:
+            return httpx.Response(429, headers={"Retry-After": "1"})
+        return httpx.Response(200, json={"status": "shipped", "status_history": {"date_shipped": "2026-11-09T09:00:00.000-03:00"}})
+
+    routes = ml_fake.install(respx.mock)
+    routes["shipment"].mock(side_effect=answer)
+    run = sync()
+    assert run.status == "ok", run.error
+    shipped = db.query(Shipment).filter(Shipment.status == "shipped").count()
+    assert shipped >= 12  # o que deu tempo de ler ficou salvo; o resto vai na próxima rodada
+
+
+@respx.mock
+def test_diagnostico_de_envios(db, ml_env, capsys):
+    from app.cli import cmd_diag_envios
+    connect_ml(db)
+    db.add(Shipment(channel=Channel.ML, shipment_id="4100001", order_ref="P1", status="ready_to_ship",
+                    logistic_type="xd_drop_off", dispatch_deadline=utcnow() - timedelta(hours=5),
+                    checked_at=utcnow() - timedelta(hours=20)))
+    db.commit()
+    ml_fake.install(respx.mock)
+    assert cmd_diag_envios(None) == 0
+    out = capsys.readouterr().out
+    assert "Aguardando despacho com prazo vencido: 1" in out
+    assert "Envio 4100001" in out and "status=ready_to_ship" in out

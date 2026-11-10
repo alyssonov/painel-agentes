@@ -90,6 +90,65 @@ def cmd_seed_demo(_args) -> int:
     return 0
 
 
+def cmd_diag_envios(_args) -> int:
+    """Diagnóstico dos envios do Mercado Livre (sem dados de clientes: só situações e datas)."""
+    from collections import Counter
+
+    from sqlalchemy import select
+
+    from app.core.db import get_sessionmaker, utcnow
+    from app.core.timeutil import to_local
+    from app.integrations.errors import IntegrationError
+    from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
+    from app.integrations.mercadolivre.client import MLClient
+    from app.models import Order, Shipment, SyncRun
+    from app.models.enums import Channel
+
+    def when(dt):
+        return to_local(dt).strftime("%d/%m %H:%M") if dt else "—"
+
+    sm = get_sessionmaker()
+    with sm() as db:
+        if get_ml_account(db) is None:
+            print("Mercado Livre não está conectado.")
+            return 1
+        print("== Últimas leituras do Mercado Livre ==")
+        for run in db.scalars(select(SyncRun).where(SyncRun.provider == "ml").order_by(SyncRun.id.desc()).limit(5)):
+            print(f"  {when(run.started_at)}  {run.status:8}  {run.counts}  {run.error or ''}")
+        rows = list(db.scalars(select(Shipment).where(Shipment.channel == Channel.ML)))
+        print(f"\n== Envios guardados: {len(rows)} ==")
+        for status, count in Counter(r.status for r in rows).most_common():
+            print(f"  {status:16} {count}")
+        now = utcnow()
+        late = sorted((r for r in rows if r.status in ("pending", "handling", "ready_to_ship")
+                       and r.dispatch_deadline and r.dispatch_deadline <= now), key=lambda r: r.checked_at)
+        print(f"\nAguardando despacho com prazo vencido: {len(late)}")
+        if late:
+            print(f"  conferido há mais tempo: {when(late[0].checked_at)} · mais recente: {when(late[-1].checked_at)}")
+        sample = late[:3]
+        if not sample:
+            return 0
+        print("\n== Amostra (o que o Mercado Livre responde AGORA) ==")
+        with MLClient(MLTokenProvider(sm)) as client:
+            for r in sample:
+                order = db.scalar(select(Order).where(Order.channel == Channel.ML, Order.external_id == r.order_ref))
+                print(f"\nEnvio {r.shipment_id} (pedido {r.order_ref})")
+                print(f"  no painel: {r.status}/{r.substatus} · prazo {when(r.dispatch_deadline)} · conferido {when(r.checked_at)}")
+                print(f"  no Olist:  {order.olist_status if order else 'pedido não encontrado'}")
+                try:
+                    data = client.get_shipment(r.shipment_id) or {}
+                except IntegrationError as exc:
+                    print(f"  Mercado Livre: ERRO — {exc}")
+                    continue
+                history = data.get("status_history") or {}
+                logistic = data.get("logistic_type") or (data.get("logistic") or {}).get("type")
+                print(f"  Mercado Livre: status={data.get('status')} substatus={data.get('substatus')} logistica={logistic}")
+                print(f"  campos recebidos: {', '.join(sorted(k for k in data.keys()))[:400]}")
+                dates = {k: v for k, v in history.items() if v} if isinstance(history, dict) else history
+                print(f"  status_history: {dates}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description="Administração do painel")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -100,6 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     p_user.add_argument("--name")
     p_user.set_defaults(func=cmd_create_user)
     sub.add_parser("seed-demo").set_defaults(func=cmd_seed_demo)
+    sub.add_parser("diag-envios").set_defaults(func=cmd_diag_envios)
     args = parser.parse_args(argv)
     return args.func(args)
 
