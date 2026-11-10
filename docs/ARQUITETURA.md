@@ -565,3 +565,14 @@ não cobre o período, a página avisa. Barra do acumulado com `<progress>`
   dia (fuso da loja). Página `/margem/recebimentos`.
 - Contas a receber do Olist (`GET /contas-receber`, só leitura) ficaram só no
   diagnóstico (`python tarefas.py diagnostico-recebimentos`).
+
+## 22. Gráficos (extra)
+
+`app/services/charts.py` + `partials/bar_chart.html`: SVG gerado no servidor
+(sem biblioteca de terceiros nem estilo inline, por causa da CSP). Página
+`/margem/graficos` (30 ou 90 dias): faturamento por dia e lucro real por dia em
+**gráficos separados** (uma escala cada; nunca dois eixos). Barras ≤ 24px com
+ponta arredondada de 4px, grade discreta, dica ao passar o mouse/focar (JS em
+`app.js`) e tabela com os mesmos números. Cores validadas com o validador da
+skill de visualização: azul `#2a78d6`, prejuízo em vermelho `#e34948` (abaixo
+do zero e com o texto "prejuízo" na dica — nunca só a cor).

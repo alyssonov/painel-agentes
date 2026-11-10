@@ -40,3 +40,29 @@ document.addEventListener("click", function (event) {
   button.setAttribute("aria-pressed", show ? "true" : "false");
   button.setAttribute("aria-label", show ? "Esconder senha" : "Mostrar senha");
 });
+
+// Gráficos: dica ao passar o mouse (ou focar com o teclado) em cada dia.
+(function () {
+  var tip = null;
+  function show(target, x, y) {
+    tip = tip || document.getElementById("chart-tip");
+    if (!tip) return;
+    tip.textContent = target.getAttribute("data-tip");
+    tip.hidden = false;
+    var left = Math.min(x + 12, window.innerWidth - tip.offsetWidth - 8);
+    tip.style.left = left + "px";
+    tip.style.top = (y - tip.offsetHeight - 12) + "px";
+  }
+  function hide() { if (tip) tip.hidden = true; }
+  document.addEventListener("pointermove", function (event) {
+    var target = event.target.closest && event.target.closest("[data-tip]");
+    if (target) show(target, event.clientX, event.clientY); else hide();
+  });
+  document.addEventListener("focusin", function (event) {
+    var target = event.target.closest && event.target.closest("[data-tip]");
+    if (!target) return;
+    var box = target.getBoundingClientRect();
+    show(target, box.left + box.width / 2, box.top + 20);
+  });
+  document.addEventListener("focusout", hide);
+})();

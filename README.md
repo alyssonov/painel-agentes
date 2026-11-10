@@ -226,6 +226,12 @@ poucos e em segundo plano, até 120 dias de vendas antigas do Olist
 (`OLIST_HISTORY_DAYS`). Os dois limites se ajustam em **Agentes → Vigia de
 estoque**.
 
+## Gráficos
+
+Em **Margem real → Gráficos**: faturamento e lucro real dia a dia (30 ou 90
+dias), com o melhor dia, os dias no prejuízo (em vermelho) e os números em
+tabela. Passe o mouse em cada barra para ver o valor do dia.
+
 ## Previsão de recebimentos
 
 Em **Margem real → Previsão de recebimentos**: quanto dinheiro das vendas do

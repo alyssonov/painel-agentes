@@ -437,3 +437,18 @@ a.brand { text-decoration: none; }
 .abc-B { background: var(--info-soft); color: var(--info); }
 .abc-C { background: var(--neutral-soft); color: var(--muted); }
 .toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* --- Gráficos (SVG do servidor). Cores validadas: azul #2a78d6 / vermelho #e34948 (prejuízo). --- */
+:root { --chart-1: #2a78d6; --chart-neg: #e34948; --chart-grid: #E1E0D9; }
+.chart { margin: 0; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-grid line { stroke: var(--chart-grid); stroke-width: 1; }
+.chart-baseline { stroke: #B9BCC2; stroke-width: 1; }
+.chart-axis { fill: var(--muted); font-size: 11px; font-family: inherit; }
+.chart-bar { fill: var(--chart-1); }
+.chart-bar-neg { fill: var(--chart-neg); }
+.chart-hit { fill: transparent; cursor: default; }
+.chart-hit:hover, .chart-hit:focus { fill: rgba(31, 50, 67, .06); outline: none; }
+.chart-tip { position: fixed; z-index: 50; pointer-events: none; background: var(--brand); color: #fff;
+  font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; box-shadow: var(--shadow); white-space: nowrap; }
+details > summary { cursor: pointer; }

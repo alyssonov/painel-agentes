@@ -19,6 +19,7 @@ from app.models.user import User
 from app.core.money import format_brl
 from app.services.margin_report import margin_report
 from app.services.abc import CLASS_INFO, abc_curve
+from app.services.charts import bar_chart, daily_points
 from app.services.idle import IDLE_LABELS, idle_products
 from app.services.receivables import forecast
 from app.services.purchase import URGENCY_LABELS, purchase_suggestions
@@ -172,3 +173,28 @@ def receivables_page(request: Request, db: Session = Depends(get_db), user: User
     days = [{"label": "Hoje" if d.day == today else "Amanhã" if d.day == today + timedelta(days=1)
              else f"{WEEKDAYS[d.day.weekday()]} {d.day:%d/%m}", "d": d} for d in result.days]
     return render(request, "receivables.html", {"f": result, "days": days}, db=db)
+
+
+CHART_PERIODS = [("30", "30 dias"), ("90", "90 dias")]
+
+
+@router.get("/margem/graficos")
+def charts_page(request: Request, periodo: str = "30", db: Session = Depends(get_db),
+                user: User = Depends(current_user)):
+    periodo = periodo if periodo in dict(CHART_PERIODS) else "30"
+    days = int(periodo)
+    demo = not has_real_data(db)
+    points = daily_points(db, days, float(get_setting(db, "tax_rate_pct") or 0), demo=demo)
+    revenue, profit = sum(p.revenue for p in points), sum(p.profit for p in points)
+    best = max(points, key=lambda p: p.revenue) if points else None
+    oldest = db.scalar(select(func.min(Order.ordered_at)).where(
+        Order.is_demo.is_(demo), Order.kanban_status != KanbanStatus.CANCELLED))
+    partial = not demo and (oldest is None or to_local(oldest).date() > points[0].day)
+    return render(request, "charts.html", {
+        "periodo": periodo, "periods": CHART_PERIODS, "points": points,
+        "revenue_chart": bar_chart(points, "revenue"), "profit_chart": bar_chart(points, "profit"),
+        "revenue": revenue, "profit": profit, "margin": profit / revenue * 100 if revenue else None,
+        "avg_day": revenue // days if days else 0, "best": best,
+        "loss_days": sum(1 for p in points if p.profit < 0),
+        "partial": partial, "oldest": to_local(oldest).strftime("%d/%m/%Y") if oldest else None,
+    }, db=db)

@@ -1,0 +1,65 @@
+{% extends "app_layout.html" %}
+{% block title %}Gráficos{% endblock %}
+{% block page_title %}Gráficos{% endblock %}
+{% block page_subtitle %}<p class="muted">Faturamento e lucro real dia a dia (Mercado Livre, Shopee e outros canais do Olist). <a class="link-light" href="/margem">← Voltar para Margem real</a></p>{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <div class="segmented segmented-light" role="group" aria-label="Período">
+    {% for value, label in periods %}
+    <a class="seg{% if periodo == value %} is-active{% endif %}" href="?periodo={{ value }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if partial %}
+<p class="card qcard-reason">O painel ainda está buscando o histórico de vendas no Olist{% if oldest %} (por enquanto desde {{ oldest }}){% endif %}. Os primeiros dias do gráfico podem aparecer vazios.</p>
+{% endif %}
+
+<section class="stats" aria-label="Resumo do período">
+  <article class="card stat tone-info">
+    <p class="stat-label">Faturamento</p><p class="stat-value">{{ revenue|brl }}</p>
+    <p class="stat-foot muted">Média de {{ avg_day|brl }} por dia</p>
+  </article>
+  <article class="card stat {{ 'tone-bad' if profit < 0 else 'tone-ok' }}">
+    <p class="stat-label">Lucro real</p><p class="stat-value">{{ profit|brl }}</p>
+    <p class="stat-foot muted">Margem {{ margin|pct }}</p>
+  </article>
+  <article class="card stat tone-info">
+    <p class="stat-label">Melhor dia</p><p class="stat-value stat-value-sm">{{ best.day.strftime('%d/%m') if best and best.revenue else '—' }}</p>
+    <p class="stat-foot muted">{{ best.revenue|brl if best and best.revenue else 'Sem vendas no período' }}</p>
+  </article>
+  <article class="card stat {{ 'tone-bad' if loss_days else 'tone-ok' }}">
+    <p class="stat-label">Dias no prejuízo</p><p class="stat-value">{{ loss_days }}</p>
+    <p class="stat-foot muted">{{ 'Barras em vermelho no gráfico de lucro' if loss_days else 'Nenhum no período ✓' }}</p>
+  </article>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Faturamento por dia</h2></div>
+  {% with c = revenue_chart, aria = "Faturamento por dia nos últimos " ~ periodo ~ " dias" %}{% include "partials/bar_chart.html" %}{% endwith %}
+</section>
+
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Lucro real por dia</h2></div>
+  <p class="muted small">Preço − taxas − frete − custo do Olist − impostos. Dias com prejuízo aparecem em vermelho, abaixo da linha do zero.</p>
+  {% with c = profit_chart, aria = "Lucro real por dia nos últimos " ~ periodo ~ " dias" %}{% include "partials/bar_chart.html" %}{% endwith %}
+</section>
+
+<section class="card">
+  <details>
+    <summary class="t-strong">Ver os números em tabela</summary>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Dia</th><th class="num">Pedidos</th><th class="num">Faturamento</th><th class="num">Lucro real</th></tr></thead>
+        <tbody>
+        {% for p in points|reverse %}
+          <tr><td>{{ p.day.strftime('%d/%m/%Y') }}</td><td class="num">{{ p.orders }}</td>
+            <td class="num">{{ p.revenue|brl }}</td><td class="num {{ 'text-danger' if p.profit < 0 }}">{{ p.profit|brl }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</section>
+<div class="chart-tip" id="chart-tip" role="status" hidden></div>
+{% endblock %}

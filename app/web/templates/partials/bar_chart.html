@@ -1,0 +1,22 @@
+{# Gráfico de barras em SVG (geometria calculada em app/services/charts.py). #}
+<figure class="chart" data-chart>
+  <svg viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="{{ aria }}" preserveAspectRatio="xMidYMid meet">
+    <g class="chart-grid">
+      {% for t in c.ticks %}
+      <line x1="{{ c.plot_left }}" x2="{{ c.plot_right }}" y1="{{ '%.1f'|format(t.y) }}" y2="{{ '%.1f'|format(t.y) }}"></line>
+      <text class="chart-axis" x="{{ c.plot_left - 8 }}" y="{{ '%.1f'|format(t.y + 4) }}" text-anchor="end">{{ t.label }}</text>
+      {% endfor %}
+    </g>
+    {% for b in c.bars %}{% if b.path %}
+    <path class="chart-bar{{ ' chart-bar-neg' if b.negative }}" d="{{ b.path }}"></path>
+    {% endif %}{% endfor %}
+    <line class="chart-baseline" x1="{{ c.plot_left }}" x2="{{ c.plot_right }}" y1="{{ '%.1f'|format(c.baseline) }}" y2="{{ '%.1f'|format(c.baseline) }}"></line>
+    {% for x in c.xlabels %}
+    <text class="chart-axis" x="{{ '%.1f'|format(x.x) }}" y="{{ c.height - 8 }}" text-anchor="middle">{{ x.label }}</text>
+    {% endfor %}
+    {# Áreas de toque maiores que as barras (a coluna inteira do dia). #}
+    {% for b in c.bars %}
+    <rect class="chart-hit" x="{{ '%.1f'|format(b.hit_x) }}" y="{{ c.plot_top }}" width="{{ '%.1f'|format(b.hit_w) }}" height="{{ c.plot_bottom - c.plot_top }}" data-tip="{{ b.tip }}" aria-label="{{ b.tip }}" tabindex="0"></rect>
+    {% endfor %}
+  </svg>
+</figure>
