@@ -249,6 +249,70 @@ def cmd_diag_recebimentos(_args) -> int:
     return 0
 
 
+def cmd_diag_precos(_args) -> int:
+    """Referências de preço do Mercado Livre para os anúncios da loja (só leitura, sem dados de clientes)."""
+    from app.core.db import get_sessionmaker
+    from app.core.money import format_brl
+    from app.integrations.errors import IntegrationError
+    from app.integrations.mercadolivre.auth import MLTokenProvider, get_ml_account
+    from app.integrations.mercadolivre.client import MLClient
+    from app.integrations.olist.dates import to_cents
+    from app.models import Listing, Product
+    from sqlalchemy import select
+
+    sm = get_sessionmaker()
+    with sm() as db:
+        ml = get_ml_account(db)
+        seller = ml.external_id if ml else None
+    if not seller:
+        print("Mercado Livre não está conectado.")
+        return 1
+    with MLClient(MLTokenProvider(sm)) as client:
+        print("== Referências de preço ==")
+        try:
+            items = client.get_price_suggestion_items(seller)
+        except IntegrationError as exc:
+            print(f"  ERRO: {exc}")
+            items = []
+        print(f"  {len(items)} anúncio(s) com referência de preço")
+        statuses: dict[str, int] = {}
+        samples = []
+        for item_id in items[:40]:
+            try:
+                data = client.get_price_suggestion(item_id) or {}
+            except IntegrationError as exc:
+                print(f"  {item_id}: ERRO {exc}")
+                continue
+            statuses[data.get("status") or "?"] = statuses.get(data.get("status") or "?", 0) + 1
+            if len(samples) < 4:
+                samples.append((item_id, data))
+        print(f"  situações (dos primeiros 40): {statuses}")
+        with sm() as db:
+            for item_id, d in samples:
+                listing = db.scalar(select(Listing).where(Listing.item_id == item_id))
+                product = db.get(Product, listing.product_id) if listing and listing.product_id else None
+                def amt(key):
+                    return (d.get(key) or {}).get("amount")
+                print(f"\n  Anúncio {item_id}: situação={d.get('status')} aplicável={d.get('applicable_suggestion')}")
+                print(f"    preço atual={amt('current_price')} sugerido={amt('suggested_price')} "
+                      f"menor={amt('lowest_price')} interno={amt('internal_price')} diferença={d.get('percent_difference')}%")
+                print(f"    custos informados pelo ML: {d.get('costs')} · comparou {((d.get('metadata') or {}).get('compared_values'))} anúncio(s)")
+                print(f"    no painel: preço {format_brl(listing.price_cents) if listing else '—'} · "
+                      f"custo Olist {format_brl(product.cost_cents) if product else 'produto não vinculado'}"
+                      f"{' · tem variações' if listing and listing.variation_label else ''}")
+                if d.get("promotion_detail"):
+                    print(f"    promoção sugerida: {d.get('promotion_detail', {}).get('campaign_name')}")
+        print("\n== Automatização de preços do Mercado Livre ==")
+        try:
+            automated = list(client.iter_automated_price_items(seller))
+            print(f"  {len(automated)} anúncio(s) com automatização (o painel não muda o preço desses)")
+            if automated:
+                print(f"  exemplo de campos: {sorted(automated[0].keys()) if isinstance(automated[0], dict) else automated[0]}")
+        except IntegrationError as exc:
+            print(f"  ERRO: {exc}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description="Administração do painel")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -261,6 +325,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("seed-demo").set_defaults(func=cmd_seed_demo)
     sub.add_parser("diag-envios").set_defaults(func=cmd_diag_envios)
     sub.add_parser("diag-recebimentos").set_defaults(func=cmd_diag_recebimentos)
+    sub.add_parser("diag-precos").set_defaults(func=cmd_diag_precos)
     args = parser.parse_args(argv)
     return args.func(args)
 

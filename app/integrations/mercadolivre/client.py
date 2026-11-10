@@ -233,3 +233,30 @@ class MLClient(ReadOnlyApiClient):
     def get_claim_reputation(self, claim_id: str) -> dict:
         """GET /post-purchase/v1/claims/{id}/affects-reputation — se afeta a reputação."""
         return self._get(f"/post-purchase/v1/claims/{claim_id}/affects-reputation") or {}
+
+    # --- Preços (Fase 7) ----------------------------------------------------------------
+    # Documentação oficial consultada em 11/11/2026:
+    #   https://developers.mercadolivre.com.br/pt_br/referencias-de-precos
+    #   https://developers.mercadolivre.com.br/pt_br/automatizacoes-de-precos
+    #   https://developers.mercadolivre.com.br/pt_br/api-de-precos
+
+    def get_price_suggestion_items(self, user_id: int | str) -> list[str]:
+        """GET /suggestions/user/{id}/items — anúncios que têm referência de preço."""
+        data = self._get(f"/suggestions/user/{user_id}/items") or {}
+        return [str(i) for i in data.get("items") or []]
+
+    def get_price_suggestion(self, item_id: str) -> dict | None:
+        """GET /suggestions/items/{id}/details — preço de referência, concorrência e custos."""
+        return self._get(f"/suggestions/items/{item_id}/details")
+
+    def iter_automated_price_items(self, user_id: int | str) -> Iterator[dict]:
+        """GET /pricing-automation/users/{id}/items — anúncios com automatização de preços do ML."""
+        offset = 0
+        while True:
+            data = self._get(f"/pricing-automation/users/{user_id}/items", {"offset": offset, "limit": 100}) or {}
+            results = data.get("items") or data.get("results") or []
+            yield from results
+            offset += len(results)
+            total = (data.get("paging") or {}).get("total") or data.get("total")
+            if not results or len(results) < 100 or (total is not None and offset >= int(total)):
+                return

@@ -113,6 +113,7 @@ python tarefas.py worker     # sobe o agendador dos agentes
 python tarefas.py test       # roda os testes
 python tarefas.py diagnostico  # situação dos envios do Mercado Livre (sem dados de clientes)
 python tarefas.py diagnostico-recebimentos  # de onde prever os recebimentos (sem dados de clientes)
+python tarefas.py diagnostico-precos  # referências de preço do ML para os anúncios (só leitura)
 python tarefas.py atualizar  # git pull + dependências novas + migrações
 python tarefas.py iniciar    # atualizar + liga o painel + abre o navegador
 ```
