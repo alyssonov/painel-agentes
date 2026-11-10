@@ -16,6 +16,12 @@
   </div>
 </div>
 
+<form class="card sale-search" method="get" action="/margem/venda" role="search">
+  <label for="numero" class="t-strong">Conferir uma venda</label>
+  <input id="numero" name="numero" class="field" inputmode="numeric" placeholder="Número da venda no Mercado Livre ou do pedido no Olist">
+  <button class="btn btn-primary" type="submit">Ver a conta</button>
+</form>
+
 {% set t = r.totals %}
 <section class="stats" aria-label="Totais do período">
   <article class="card stat tone-info">
@@ -79,7 +85,7 @@
       <thead><tr><th>Pedido</th><th>Quando</th><th class="num">Valor</th><th class="num">Resultado</th></tr></thead>
       <tbody>
       {% for item in loss_orders %}
-        <tr><td>{{ item.o.label }} <span class="muted small">· {{ item.o.channel_label }}</span></td><td>{{ item.when }}</td>
+        <tr><td><a href="/margem/venda/{{ item.o.order_id }}">{{ item.o.label }}</a> <span class="muted small">· {{ item.o.channel_label }}</span></td><td>{{ item.when }}</td>
           <td class="num">{{ item.o.revenue|brl }}</td><td class="num text-danger">{{ item.o.profit|brl }}</td></tr>
       {% endfor %}
       </tbody>

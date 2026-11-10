@@ -1,0 +1,97 @@
+{% extends "app_layout.html" %}
+{% block title %}Conferir venda{% endblock %}
+{% block page_title %}Conferir uma venda{% endblock %}
+{% block page_subtitle %}<p class="muted">A conta do lucro de uma venda, linha por linha, para comparar com o "detalhe da venda" do marketplace. <a class="link-light" href="/margem">← Voltar para Margem real</a></p>{% endblock %}
+{% block content %}
+<form class="card sale-search" method="get" action="/margem/venda" role="search">
+  <label for="numero" class="t-strong">Número da venda</label>
+  <input id="numero" name="numero" class="field" inputmode="numeric" value="{{ numero }}" placeholder="Número da venda no Mercado Livre ou do pedido no Olist">
+  <button class="btn btn-primary" type="submit">Ver a conta</button>
+</form>
+{% if not_found %}<p class="card qcard-reason">Não achei a venda “{{ numero }}”. Use o número que aparece no Mercado Livre (ou o do pacote, em vendas com vários itens) ou o número do pedido no Olist. Vendas muito antigas podem ainda não ter chegado ao painel.</p>{% endif %}
+
+{% if order %}
+<section class="card">
+  <div class="card-head">
+    <h2 class="card-title">{{ channel_label }} · venda {{ order.external_id }}{% if order.olist_number %} <span class="muted small">(Olist {{ order.olist_number }})</span>{% endif %}</h2>
+    {% if confirmed %}<span class="badge badge-ok">✓ Taxa e frete conferidos</span>
+    {% else %}<span class="badge badge-atencao">Taxa e frete ainda não conferidos</span>{% endif %}
+  </div>
+  <p class="muted small">Vendida em {{ when }}{% if order.olist_status %} · situação no Olist: {{ order.olist_status }}{% endif %}</p>
+  {% if not confirmed and order.channel == 'ml' %}
+  <p class="qcard-reason">O painel ainda não leu no Mercado Pago o valor que você recebe por esta venda (normalmente leva alguns minutos; vendas com mais de 35 dias não são lidas). Por enquanto a conta usa a taxa do Mercado Livre e o frete informado no Olist.</p>
+  {% endif %}
+
+  <div class="table-wrap">
+    <table class="table sale-calc">
+      <tbody>
+        <tr><td>Preço dos itens</td><td class="num">{{ m.revenue_cents|brl }}</td></tr>
+        <tr><td class="indent">Taxa de venda (comissão)</td><td class="num">− {{ m.fee_cents|brl }}</td></tr>
+        <tr><td class="indent">{{ 'Frete e tarifas' if order.net_received_cents is not none else 'Frete pago pela loja' }}
+          {% if m.shipping_cents < 0 %}<span class="muted small">(crédito de frete)</span>{% endif %}</td>
+          <td class="num">{{ '+ ' ~ (-m.shipping_cents)|brl if m.shipping_cents < 0 else '− ' ~ m.shipping_cents|brl }}</td></tr>
+        <tr class="sale-sub"><td>{{ 'Você recebe (Mercado Pago)' if order.net_received_cents is not none else 'Sobra depois do marketplace' }}</td>
+          <td class="num">{{ (m.revenue_cents - m.fee_cents - m.shipping_cents)|brl }}</td></tr>
+        <tr><td class="indent">Custo dos produtos (Olist)</td><td class="num">− {{ m.cost_cents|brl }}</td></tr>
+        <tr><td class="indent">Impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}% do preço)</td><td class="num">− {{ m.tax_cents|brl }}</td></tr>
+        <tr class="sale-total"><td>Lucro real</td>
+          <td class="num {{ 'text-danger' if m.profit_cents < 0 }}">{{ m.profit_cents|brl }} <span class="muted small">({{ m.margin_pct|pct }})</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Itens</h2></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Produto</th><th class="num">Qtd.</th><th class="num">Preço unit.</th><th class="num">Custo unit. (Olist)</th></tr></thead>
+      <tbody>
+      {% for i in items %}
+        <tr><td><span class="t-strong">{{ i.title }}</span><br><span class="muted small">{{ i.sku }}</span></td>
+          <td class="num">{{ i.qty }}</td><td class="num">{{ i.price|brl }}</td>
+          <td class="num">{% if i.missing_cost %}<span class="badge badge-atencao">sem custo no Olist</span>{% else %}{{ i.unit_cost|brl }}{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if payments %}
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Pagamentos (Mercado Pago)</h2></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Situação</th><th class="num">Pago pelo comprador</th><th class="num">Você recebe</th><th>Liberação do dinheiro</th></tr></thead>
+      <tbody>
+      {% for p in payments %}
+        <tr><td>{{ {'approved': 'Aprovado', 'refunded': 'Estornado', 'cancelled': 'Cancelado', 'charged_back': 'Contestado'}.get(p.status, p.status) }}</td>
+          <td class="num">{{ p.amount_cents|brl }}</td>
+          <td class="num">{{ p.net_cents|brl if p.net_cents is not none else 'lendo…' }}</td>
+          <td>{% if p.release_date %}{{ p.release_date|localdate }}{% if p.release_status == 'released' %} · liberado{% endif %}{% else %}—{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endif %}
+
+{% if recent %}
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Vendas recentes</h2></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Venda</th><th>Quando</th><th class="num">Preço</th><th>Taxa e frete</th></tr></thead>
+      <tbody>
+      {% for o in recent %}
+        <tr><td><a href="/margem/venda/{{ o.id }}">{{ o.external_id }}</a>{% if o.olist_number %} <span class="muted small">· Olist {{ o.olist_number }}</span>{% endif %}</td>
+          <td>{{ o.ordered_at|localdate }}</td><td class="num">{{ o.items_total_cents|brl }}</td>
+          <td>{% if o.channel != 'ml' or o.net_received_cents is not none %}<span class="badge badge-ok">✓ conferidos</span>{% else %}<span class="badge badge-atencao">não conferidos</span>{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

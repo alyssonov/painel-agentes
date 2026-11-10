@@ -452,3 +452,12 @@ a.brand { text-decoration: none; }
 .chart-tip { position: fixed; z-index: 50; pointer-events: none; background: var(--brand); color: #fff;
   font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; box-shadow: var(--shadow); white-space: nowrap; }
 details > summary { cursor: pointer; }
+
+/* --- Conferir uma venda ------------------------------------------------------ */
+.sale-search { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.sale-search .field { flex: 1; min-width: 220px; font: inherit; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); }
+.sale-calc td { padding-top: 8px; padding-bottom: 8px; }
+.sale-calc .indent { padding-left: 24px; color: var(--muted); }
+.sale-sub td { font-weight: 700; border-top: 1px solid var(--line); }
+.sale-total td { font-weight: 800; font-size: 16px; border-top: 2px solid var(--ink); }

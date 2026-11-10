@@ -226,6 +226,14 @@ poucos e em segundo plano, até 120 dias de vendas antigas do Olist
 (`OLIST_HISTORY_DAYS`). Os dois limites se ajustam em **Agentes → Vigia de
 estoque**.
 
+## Conferir uma venda
+
+Em **Margem real**, digite o número da venda (do Mercado Livre, do pacote ou do
+pedido no Olist) em **Conferir uma venda**. O painel mostra a conta linha por
+linha: preço, comissão, frete e tarifas, **quanto você recebe** (Mercado Pago),
+custo do Olist, impostos e lucro — para comparar com o "detalhe da venda" do
+Mercado Livre. Sem número, a página lista as vendas recentes.
+
 ## Gráficos
 
 Em **Margem real → Gráficos**: faturamento e lucro real dia a dia (30 ou 90

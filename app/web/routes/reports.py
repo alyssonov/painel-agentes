@@ -6,15 +6,16 @@ import csv
 import io
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.agents.config import agent_rules, has_real_data
 from app.core.db import get_db, utcnow
 from app.core.timeutil import local_day_bounds_utc, local_today, to_local
-from app.models import Agent, Order
-from app.models.enums import KanbanStatus
+from app.models import Agent, Order, Payment
+from app.models.enums import CHANNEL_LABELS, Channel, KanbanStatus
+from app.services.dashboard import money_confirmed, order_margin
 from app.models.user import User
 from app.core.money import format_brl
 from app.services.margin_report import margin_report
@@ -197,4 +198,50 @@ def charts_page(request: Request, periodo: str = "30", db: Session = Depends(get
         "avg_day": revenue // days if days else 0, "best": best,
         "loss_days": sum(1 for p in points if p.profit < 0),
         "partial": partial, "oldest": to_local(oldest).strftime("%d/%m/%Y") if oldest else None,
+    }, db=db)
+
+
+def _find_order(db: Session, number: str) -> Order | None:
+    """Acha a venda pelo número do Mercado Livre (venda ou pacote), da Shopee ou do pedido no Olist."""
+    number = "".join(number.split()).lstrip("#")
+    if not number:
+        return None
+    demo = not has_real_data(db)
+    base = select(Order).where(Order.is_demo.is_(demo))
+    return (db.scalar(base.where(Order.external_id == number))
+            or db.scalar(base.where(Order.olist_number == number))
+            or db.scalar(base.where(Order.olist_id == number)))
+
+
+@router.get("/margem/venda")
+def sale_lookup(request: Request, numero: str = "", db: Session = Depends(get_db),
+                user: User = Depends(current_user)):
+    """Conferir uma venda: busca pelo número e mostra a conta do lucro linha por linha."""
+    order = _find_order(db, numero) if numero else None
+    if order is not None:
+        return RedirectResponse(f"/margem/venda/{order.id}", status_code=303)
+    demo = not has_real_data(db)
+    recent = list(db.scalars(select(Order).where(Order.is_demo.is_(demo), Order.kanban_status != KanbanStatus.CANCELLED)
+                             .order_by(Order.ordered_at.desc()).limit(30)))
+    return render(request, "sale.html", {"order": None, "numero": numero, "not_found": bool(numero),
+                                         "recent": recent}, db=db)
+
+
+@router.get("/margem/venda/{order_id}")
+def sale_detail(request: Request, order_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    order = db.get(Order, order_id)
+    if order is None:
+        return RedirectResponse("/margem/venda", status_code=303)
+    tax = float(get_setting(db, "tax_rate_pct") or 0)
+    m = order_margin(order, tax)
+    payments = list(db.scalars(select(Payment).where(Payment.channel == order.channel,
+                                                     Payment.order_ref == order.external_id)
+                               .order_by(Payment.approved_at)))
+    items = [{"title": i.title, "sku": i.sku, "qty": i.quantity, "price": i.unit_price_cents,
+              "unit_cost": i.product.cost_cents if i.product else 0,
+              "missing_cost": not (i.product and i.product.cost_cents > 0)} for i in order.items]
+    return render(request, "sale.html", {
+        "order": order, "m": m, "tax_rate": tax, "items": items, "payments": payments,
+        "confirmed": money_confirmed(order), "channel_label": CHANNEL_LABELS.get(Channel(order.channel), order.channel),
+        "when": to_local(order.ordered_at).strftime("%d/%m/%Y às %H:%M"), "numero": "", "recent": [],
     }, db=db)
