@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="490 260 620 620" width="128" height="128">
+  <title>Gerente do Ano</title>
+  <defs>
+    <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6a7c90"/><stop offset=".55" stop-color="#3a4a5d"/><stop offset="1" stop-color="#1c2838"/>
+    </linearGradient>
+    <linearGradient id="gSilver" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6f9fc"/><stop offset=".5" stop-color="#b9c5d2"/><stop offset="1" stop-color="#8a98a9"/>
+    </linearGradient>
+    <linearGradient id="gBezel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#a3b1c0"/><stop offset="1" stop-color="#93a3b3"/>
+    </linearGradient>
+    <linearGradient id="gScreen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a5562"/><stop offset=".22" stop-color="#2a3646"/><stop offset=".6" stop-color="#1e2e42"/>
+      <stop offset="1" stop-color="#152233"/>
+    </linearGradient>
+    <linearGradient id="gEar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4b5b6f"/><stop offset="1" stop-color="#26354a"/>
+    </linearGradient>
+    <linearGradient id="gStalk" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8c9bab"/><stop offset=".5" stop-color="#f4f7fa"/><stop offset="1" stop-color="#8c9bab"/>
+    </linearGradient>
+    <radialGradient id="gBall" cx=".4" cy=".35" r=".7">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#e6eef6"/><stop offset="1" stop-color="#8ea4b8"/>
+    </radialGradient>
+    <linearGradient id="gGloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".16"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="fGlow" x="-50%" y="-120%" width="200%" height="340%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="fShadow" x="-30%" y="-200%" width="160%" height="500%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+  <circle cx="800" cy="570" r="310" fill="#2d3e50"/>
+  <circle cx="800" cy="570" r="296" fill="none" stroke="#5f6f7e" stroke-width="5"/>
+  <g id="robo">
+    <ellipse cx="800" cy="812" rx="215" ry="20" fill="#141e29" opacity=".75" filter="url(#fShadow)"/>
+    <rect x="791" y="396" width="18" height="48" rx="6" fill="url(#gStalk)"/>
+    <circle cx="800" cy="371" r="20" fill="url(#gBall)"/>
+    <rect x="539" y="533" width="40" height="142" rx="13" fill="url(#gEar)" stroke="url(#gSilver)" stroke-width="6"/>
+    <rect x="1021" y="533" width="40" height="142" rx="13" fill="url(#gEar)" stroke="url(#gSilver)" stroke-width="6"/>
+    <rect x="585" y="438" width="430" height="329" rx="96" fill="url(#gBody)" stroke="url(#gSilver)" stroke-width="12"/>
+    <rect x="629" y="481" width="342" height="241" rx="68" fill="url(#gScreen)" stroke="url(#gBezel)" stroke-width="9"/>
+    <path d="M640 548 Q640 490 698 490 H902 Q960 490 960 548 Z" fill="url(#gGloss)"/>
+    <g filter="url(#fGlow)" fill="#eaf6ff">
+      <rect x="683" y="577" width="82" height="39" rx="19.5"/>
+      <rect x="835" y="577" width="82" height="39" rx="19.5"/>
+    </g>
+  </g>
+</svg>
