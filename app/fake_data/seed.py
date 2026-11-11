@@ -30,6 +30,7 @@ from app.models import (
     Conversation,
     ConversationMessage,
     IntegrationAccount,
+    ListingQuality,
     Order,
     OrderItem,
     Payment,
@@ -136,6 +137,10 @@ def clear_demo(db: Session, *, pause_agents: bool = False) -> None:
         db.execute(delete(Action).where(Action.target_type == "anuncio", Action.target_id.in_(demo_price_ids)))
     db.execute(delete(PriceReference).where(PriceReference.is_demo.is_(True)))
     db.execute(delete(ProductReview).where(ProductReview.is_demo.is_(True)))
+    demo_quality_ids = [str(i) for i in db.scalars(select(ListingQuality.id).where(ListingQuality.is_demo.is_(True)))]
+    if demo_quality_ids:
+        db.execute(delete(Action).where(Action.target_type == "anuncio_texto", Action.target_id.in_(demo_quality_ids)))
+    db.execute(delete(ListingQuality).where(ListingQuality.is_demo.is_(True)))
     db.execute(delete(ProductInsight).where(ProductInsight.is_demo.is_(True)))
     demo_order_ids = select(Order.id).where(Order.is_demo.is_(True))
     db.execute(delete(OrderItem).where(OrderItem.order_id.in_(demo_order_ids)))
@@ -357,6 +362,30 @@ def seed_demo(db: Session, *, now: datetime | None = None, rng_seed: int | None 
                                        "Avisar o fornecedor e pedir troca do lote com defeito",
                                        "Explicar no anúncio como fechar a tampa corretamente"],
                           inputs_hash="demo", generated_at=now, is_demo=True))
+
+    # --- Anúncios: nota de qualidade do ML e uma sugestão do agente -----------
+    photos = {"bucket": "Fotos", "label": "Adicionar fotos", "title": "Use pelo menos 5 fotos.", "link": None}
+    gtin = {"bucket": "Ficha técnica", "label": "Completar código universal", "title": "", "link": None}
+    for i, (prod, score, wording, pending, sold) in enumerate([
+            (products[3], 38, "Básica", [photos, gtin], 41), (products[4], 55, "Básica", [gtin], 0),
+            (products[5], 68, "Satisfatória", [photos], 12), (products[6], 92, "Profissional", [], 230)]):
+        quality = ListingQuality(channel=Channel.ML, item_id=f"MLB-Q-{i}", title=prod.name, product_id=prod.id,
+                                 score=score, level_wording=wording, pending=pending, sold_quantity=sold,
+                                 checked_at=now, is_demo=True)
+        db.add(quality)
+        db.flush()
+        if i == 0:
+            new_text = (f"{prod.name} para o dia a dia, prática e fácil de limpar.\n\nCARACTERÍSTICAS\n"
+                        "- Material resistente\n- Uso doméstico\n\nGARANTIA E ENVIO\n"
+                        "- Garantia de 90 dias contra defeitos de fabricação\n- Envio em até 1 dia útil")
+            db.add(Action(agent_slug="anuncios", type=ActionType.UPDATE_LISTING, channel=Channel.ML,
+                          target_type="anuncio_texto", target_id=str(quality.id),
+                          payload={"item_id": quality.item_id, "description": new_text, "title": None,
+                                   "old_title": prod.name, "old_description": f"{prod.name}. Ótimo produto.",
+                                   "changes": ["Organizei a descrição em seções", "Incluí garantia e prazo de envio da loja",
+                                               "Faltam fotos e o código universal: corrija pelo link no Mercado Livre"]},
+                          original_payload={"description": new_text}, confidence="media", topic="anuncio",
+                          reason="Descrição reorganizada.", dry_run=True))
 
     # --- Pós-venda: conversas e uma reclamação --------------------------------
     demo_conversations = [

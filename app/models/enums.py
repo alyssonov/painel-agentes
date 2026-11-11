@@ -93,6 +93,7 @@ class ActionType(StrEnum):
     ANSWER_QUESTION = "responder_pergunta"
     SEND_MESSAGE = "enviar_mensagem"  # mensagem pós-venda para o comprador
     UPDATE_PRICE = "mudar_preco"  # novo preço de um anúncio
+    UPDATE_LISTING = "melhorar_anuncio"  # nova descrição (e título, se o anúncio não tem vendas)
 
 
 class ConversationStatus(StrEnum):

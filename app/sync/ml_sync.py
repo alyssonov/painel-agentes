@@ -38,6 +38,7 @@ from app.sync.ml_payments import record_order_payments, sync_payments
 from app.sync.ml_postsale import sync_claims, sync_messages
 from app.sync.ml_prices import sync_price_references
 from app.sync.ml_reviews import sync_reviews
+from app.sync.ml_listing_quality import sync_listing_quality
 from app.sync.common import (
     SyncAlreadyRunning,
     describe_unexpected,
@@ -114,7 +115,8 @@ def run_ml_sync(session_factory: sessionmaker[Session], client_factory: ClientFa
                 counts["recebimentos_erro"] = 1
             # Pós-venda (Fase 6) e referências de preço (Fase 7): cada parte isolada.
             for key, step in (("mensagens", sync_messages), ("reclamacoes", sync_claims),
-                              ("precos", sync_price_references), ("avaliacoes", sync_reviews)):
+                              ("precos", sync_price_references), ("avaliacoes", sync_reviews),
+                              ("qualidade", sync_listing_quality)):
                 try:
                     counts[key] = step(db, client, account, seller_id, started)
                 except AuthExpired:

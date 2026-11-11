@@ -10,6 +10,7 @@ from app.models.fee import MarketplaceFee
 from app.models.integration import IntegrationAccount
 from app.models.invoice import Invoice
 from app.models.listing import Listing
+from app.models.listing_quality import ListingQuality
 from app.models.order import Order, OrderItem
 from app.models.payment import Payment
 from app.models.price import PriceReference
@@ -39,6 +40,7 @@ __all__ = [
     "MarketplaceFee",
     "Invoice",
     "Listing",
+    "ListingQuality",
     "Order",
     "OrderItem",
     "Payment",

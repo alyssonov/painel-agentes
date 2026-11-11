@@ -18,7 +18,7 @@ from app.config import get_settings
 from app.core import audit
 from app.core.db import get_sessionmaker, utcnow
 from app.integrations.errors import IntegrationError
-from app.models import Action, Agent, Conversation, Listing, PriceReference, Question
+from app.models import Action, Agent, Conversation, Listing, ListingQuality, PriceReference, Question
 from app.models.enums import ActionStatus, ActionType, AgentMode, Channel, ConversationStatus, QuestionStatus
 
 logger = logging.getLogger("acoes")
@@ -82,7 +82,33 @@ def _execute_update_price(db: Session, action: Action) -> str:
     return "Preço alterado no Mercado Livre."
 
 
+def _execute_update_listing(db: Session, action: Action) -> str:
+    quality = db.get(ListingQuality, int(action.target_id))
+    if quality is None or quality.channel != Channel.ML:
+        raise IntegrationError("O anúncio não foi encontrado.")
+    from app.integrations.mercadolivre.auth import MLTokenProvider
+    from app.integrations.mercadolivre.client import MLClient
+    from app.integrations.mercadolivre.writes import MLWriter
+
+    title = action.payload.get("title")
+    sm = get_sessionmaker()
+    if title:
+        # Regra do ML: com vendas, o título não pode mudar. Confere na hora, antes de enviar.
+        with MLClient(MLTokenProvider(sm)) as client:
+            sold = int((client.get_item(quality.item_id) or {}).get("sold_quantity") or 0)
+        if sold:
+            title = None
+    with MLWriter(MLTokenProvider(sm)) as writer:
+        writer.update_description(quality.item_id, action.payload["description"])
+        if title:
+            writer.update_title(quality.item_id, title)
+    if action.payload.get("title") and not title:
+        return "Descrição atualizada. O título não mudou porque o anúncio já tem vendas."
+    return "Descrição" + (" e título atualizados" if title else " atualizada") + " no Mercado Livre."
+
+
 EXECUTORS: dict[str, Callable[[Session, Action], str]] = {
+    ActionType.UPDATE_LISTING: _execute_update_listing,
     ActionType.ANSWER_QUESTION: _execute_answer_question,
     ActionType.SEND_MESSAGE: _execute_send_message,
     ActionType.UPDATE_PRICE: _execute_update_price,

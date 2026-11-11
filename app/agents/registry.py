@@ -25,8 +25,8 @@ AGENTS: list[AgentDef] = [
              "Sugere respostas para as perguntas dos anúncios usando a ficha do produto e o estoque. "
              "Casos difíceis vão para uma pessoa.", 3),
     AgentDef("anuncios", "Criador e otimizador de anúncios",
-             "Cria títulos, descrições e fichas técnicas e sugere melhorias para anúncios fracos. "
-             "Nunca publica sem aprovação.", 7),
+             "Usa a nota de qualidade do Mercado Livre e sugere descrições (e títulos, sem vendas) melhores "
+             "para os anúncios fracos que mais vendem. Nunca publica sem aprovação.", 7),
     AgentDef("estoque", "Vigia de estoque",
              "Lê o estoque do Olist, prevê quando cada produto acaba e avisa divergências com os anúncios.", 4),
     AgentDef("precos", "Monitor de preços",

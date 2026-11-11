@@ -12,7 +12,6 @@ router = APIRouter()
 
 # endereço -> (título, fase em que chega, o que vai ter)
 SECTIONS = {
-    "/anuncios": ("Anúncios", 7, "Criação de anúncios e sugestões de melhoria para os anúncios fracos."),
 }
 
 

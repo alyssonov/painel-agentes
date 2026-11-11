@@ -464,3 +464,5 @@ details > summary { cursor: pointer; }
 .price-watch { margin-top: 16px; }
 .insight { background: var(--info-soft); border-radius: var(--radius-sm); padding: 10px 14px; }
 .insight ul { margin: 4px 0 6px 18px; padding: 0; }
+.pre { white-space: pre-wrap; }
+.qcard-form .field { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); }

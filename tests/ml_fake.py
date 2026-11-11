@@ -126,6 +126,15 @@ REVIEWS = {
                   "title": "Ótima", "content": "Gostei muito."},
              ]},
 }
+PERFORMANCE = {
+    "MLB1": {"entity_id": "MLB1", "score": 48, "level": "Bad", "level_wording": "Básica", "buckets": [
+        {"key": "PICTURES", "title": "Fotos", "status": "PENDING", "variables": [
+            {"key": "PICTURES_QTY", "status": "PENDING", "title": "Mostre o produto com mais fotos", "rules": [
+                {"key": "MIN_PICTURES", "status": "PENDING", "wordings": {
+                    "label": "Adicionar fotos", "title": "Use pelo menos 5 fotos.",
+                    "link": "https://www.mercadolivre.com.br/syi/core/modify?itemId=MLB1"}}]}]},
+        {"key": "CHARACTERISTICS", "title": "Ficha técnica", "status": "COMPLETED", "variables": []}]},
+}
 CLAIM_REASON = {"id": "PDD9549", "name": "defective_product", "detail": "O produto veio com defeito"}
 
 # Mercado Pago: data de liberação e valor líquido (formato confirmado com dados reais em 11/11/2026).
@@ -172,6 +181,10 @@ def install(router: respx.Router) -> dict[str, respx.Route]:
             side_effect=lambda r, iid: httpx.Response(200, json=REVIEWS.get(iid, {"reviews": []}))),
         "claim_reason": router.get(url__regex=re.escape(BASE_URL) + r"/post-purchase/v1/claims/reasons/\w+$").mock(
             return_value=httpx.Response(200, json=CLAIM_REASON)),
+        "item": router.get(url__regex=re.escape(BASE_URL) + r"/items/(?P<iid>MLB\w+)$").mock(
+            side_effect=lambda r, iid: httpx.Response(200, json=FULL_ITEMS.get(iid, {"id": iid, "title": ITEMS.get(iid, iid)}))),
+        "performance": router.get(url__regex=re.escape(BASE_URL) + r"/item/(?P<iid>\w+)/performance$").mock(
+            side_effect=lambda r, iid: httpx.Response(200, json=PERFORMANCE.get(iid, {"score": 90}))),
         "orders": router.get(f"{BASE_URL}/orders/search").mock(return_value=httpx.Response(200, json={
             "results": ORDERS, "paging": {"total": len(ORDERS), "offset": 0, "limit": 50}})),
     }

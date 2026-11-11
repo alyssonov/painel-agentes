@@ -280,7 +280,7 @@ Agentes 3, 7 e 9 **não usam IA** (são cálculos) — custo zero de tokens.
 | 4 | Agentes 3, 9 e 7 ✅ |
 | 5 | Agente 8 (WhatsApp/e-mail) — e-mail ✅; WhatsApp e PDFs a seguir |
 | 6 | Agente 5 (Pós-venda) ✅ |
-| 7 | Agentes 2, 4 e 6 — Preços (4) e Avaliações (6) em teste; Anúncios (2) a seguir |
+| 7 | Agentes 2, 4 e 6 — Preços, Avaliações e Anúncios prontos (em teste) |
 | 8 | Revisão de segurança, testes, Docker, guia do VPS |
 
 ---
@@ -634,3 +634,23 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   (tarefa `analise_avaliacoes`, até 5 produtos por rodada, no máximo 1 vez por
   semana por produto, cache por conteúdo) resume o que se repete e sugere ações.
 - **Painel**: Pós-venda → "Avaliações e devoluções por produto".
+
+## 26. Fase 7 — Agente 2 (Anúncios)
+
+- **Leitura** (`app/sync/ml_listing_quality.py`, 1×/semana): `GET
+  /item/{id}/performance` (nota 0–100, nível Básica/Satisfatória/Profissional,
+  regras PENDING com label/link oficial do ML) + `GET /items/{id}`
+  (sold_quantity). Só guarda links que começam no domínio do Mercado Livre.
+  Tabela `listing_quality` (migração 0014).
+- **Agente** (`app/agents/listings.py`, de hora em hora): anúncios com nota <
+  70, os que mais vendem primeiro; até 3 por rodada e 10 por semana (regras);
+  30 dias sem voltar ao mesmo anúncio depois de aprovar/descartar. IA
+  (tarefa `melhorar_anuncio`, Sonnet): descrição em texto simples só com a
+  ficha técnica e regras da loja; título só se `sold_quantity == 0`
+  (regra do ML). Dado de contato → sugestão descartada.
+- **Escrita**: Ação `melhorar_anuncio` NUNCA é aprovada sozinha (nem no
+  automático). Executor confere `sold_quantity` na hora; `PUT
+  /items/{id}/description?api_version=2` e, se permitido, `PUT /items/{id}`
+  com `title`. Texto limpo de emojis e `< >`.
+- **Painel**: menu **Anúncios** — sugestões (descrição/título editáveis,
+  descrição atual para comparar) e a tabela de qualidade com o que o ML pede.

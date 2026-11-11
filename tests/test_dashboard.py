@@ -32,10 +32,11 @@ def test_filtro_invalido_mostra_todos(db):
     assert sum(len(c.orders) for c in dashboard.kanban(db, "xyz")) == todos
 
 
-def test_secao_futura_mostra_aviso(logged_client):
-    r = logged_client.get("/anuncios")
-    assert r.status_code == 200
-    assert "Chega na fase 7" in r.text
+def test_todas_as_secoes_do_menu_funcionam(logged_client):
+    for path in ("/", "/perguntas", "/anuncios", "/estoque-precos", "/pos-venda", "/margem", "/relatorios", "/agentes"):
+        r = logged_client.get(path)
+        assert r.status_code == 200, path
+        assert "Chega na fase" not in r.text, path
 
 
 def test_numeros_da_visao_geral(db):

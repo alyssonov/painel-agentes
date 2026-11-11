@@ -21,6 +21,12 @@ https://developers.mercadolivre.com.br/pt_br/api-de-precos
   PUT /items/{id} {"price": ...} — o endpoint novo de preços "ainda não está
   disponível". Com automatização de preços ligada, o ML recusa (400) ou ignora o
   preço com um aviso (warning) — tratamos os dois como falha.
+
+Anúncio (documentação oficial consultada em 11/11/2026):
+https://developers.mercadolivre.com.br/pt_br/descricao-de-produtos
+  PUT /items/{id}/description?api_version=2 {"plain_text": ...} — só texto simples, quebras com \n.
+https://developers.mercadolivre.com.br/pt_br/produto-sincronizacao-de-publicacoes
+  PUT /items/{id} {"title": ...} — só se o anúncio NÃO tem vendas (sold_quantity = 0).
 """
 
 import httpx
@@ -33,6 +39,17 @@ import re
 ANSWERS_URL = "https://api.mercadolibre.com/answers"
 MESSAGES_URL = "https://api.mercadolibre.com/messages/packs/{pack}/sellers/{seller}"
 ITEM_URL = "https://api.mercadolibre.com/items/{item}"
+DESCRIPTION_URL = "https://api.mercadolibre.com/items/{item}/description"
+MAX_DESCRIPTION_CHARS = 5000
+MAX_TITLE_CHARS = 60
+# Emojis e símbolos fora do plano básico, e < > (o ML recusa como "caractere inválido").
+_DESCRIPTION_FORBIDDEN = re.compile(r"[\U00010000-\U0010FFFF<>\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]")
+
+
+def clean_listing_text(text: str) -> str:
+    """Texto simples aceito na descrição/título: sem emojis, sem < >, sem caracteres de controle."""
+    text = (text or "").replace("\r\n", "\n").replace("\r", "\n")
+    return _DESCRIPTION_FORBIDDEN.sub("", text).strip()
 MAX_ANSWER_CHARS = 2000
 MAX_MESSAGE_CHARS = 350
 MLB_MESSAGING_AGENT_ID = "3037675074"  # tabela "IDs dos Agentes por país" da documentação
@@ -129,6 +146,41 @@ class MLWriter:
         if isinstance(data, dict) and data.get("price") is not None and round(float(data["price"]) * 100) != price_cents:
             raise IntegrationError("O Mercado Livre respondeu com outro preço; confira o anúncio.")
         return data
+
+    def update_description(self, item_id: str, text: str) -> None:
+        """Troca a descrição do anúncio (texto simples)."""
+        text = clean_listing_text(text)
+        if not text or len(text) > MAX_DESCRIPTION_CHARS:
+            raise IntegrationError(f"A descrição precisa ter de 1 a {MAX_DESCRIPTION_CHARS} caracteres.")
+        response = self._put_checked(DESCRIPTION_URL.format(item=item_id) + "?api_version=2",
+                                     {"plain_text": text}, "a descrição")
+        if response.status_code not in (200, 201):
+            raise IntegrationError(f"O Mercado Livre recusou a descrição: {_error_text(response)}")
+
+    def update_title(self, item_id: str, title: str) -> None:
+        """Troca o título (o chamador já conferiu que o anúncio não tem vendas)."""
+        title = " ".join(clean_listing_text(title).split())
+        if not title or len(title) > MAX_TITLE_CHARS:
+            raise IntegrationError(f"O título precisa ter de 1 a {MAX_TITLE_CHARS} caracteres.")
+        response = self._put_checked(ITEM_URL.format(item=item_id), {"title": title}, "o título")
+        if response.status_code != 200:
+            raise IntegrationError(f"O Mercado Livre recusou o título: {_error_text(response)}")
+        data = response.json() if response.content else {}
+        if isinstance(data, dict) and data.get("warnings"):
+            raise IntegrationError(f"O Mercado Livre não aplicou o título: {str(data['warnings'])[:200]}")
+
+    def _put_checked(self, url: str, body: dict, what: str) -> httpx.Response:
+        try:
+            response = self._put(url, body, self._tokens.get_token())
+            if response.status_code == 401:
+                response = self._put(url, body, self._tokens.get_token(force_refresh=True))
+        except httpx.HTTPError as exc:
+            raise TemporaryError(f"Sem conexão com o Mercado Livre. {what.capitalize()} NÃO foi alterado.") from exc
+        if response.status_code == 401:
+            raise AuthExpired("O Mercado Livre recusou o acesso. Conecte de novo e tente outra vez.")
+        if response.status_code >= 500:
+            raise TemporaryError(f"O Mercado Livre está instável (erro {response.status_code}). Tente de novo.")
+        return response
 
     def _put(self, url: str, body: dict, token: str) -> httpx.Response:
         return self._http.put(url, json=body, headers={

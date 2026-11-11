@@ -291,3 +291,13 @@ class MLClient(ReadOnlyApiClient):
     def get_claim_reason(self, reason_id: str) -> dict:
         """GET /post-purchase/v1/claims/reasons/{id} — explicação do motivo da reclamação."""
         return self._get(f"/post-purchase/v1/claims/reasons/{reason_id}") or {}
+
+    # --- Anúncios (Fase 7) --------------------------------------------------------------
+    # Documentação oficial consultada em 11/11/2026:
+    #   https://developers.mercadolivre.com.br/pt_br/qualidade-das-publicacoes  GET /item/{id}/performance
+    #   https://developers.mercadolivre.com.br/pt_br/produto-sincronizacao-de-publicacoes (título só sem vendas)
+    #   https://developers.mercadolivre.com.br/pt_br/descricao-de-produtos
+
+    def get_item_performance(self, item_id: str) -> dict | None:
+        """GET /item/{id}/performance — nota de qualidade do anúncio e o que falta melhorar."""
+        return self._get(f"/item/{item_id}/performance")

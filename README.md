@@ -209,6 +209,17 @@ vendidos, perguntas, o que pede atenção e o que cada agente fez. Se o
 computador estiver desligado no horário, sai assim que o painel ligar (até o
 fim do dia), e nunca duas vezes. Falha no envio vira alerta. Sem custo de IA.
 
+## Anúncios (Fase 7 — agente Criador e otimizador de anúncios)
+
+No menu **Anúncios**: a nota de qualidade de cada anúncio no Mercado Livre
+(Básica, Satisfatória, Profissional) e o que o Mercado Livre pede para
+melhorar, com o link oficial para corrigir. O agente escolhe os anúncios
+fracos que mais vendem e sugere uma descrição nova (e um título novo, só para
+anúncios sem vendas — regra do Mercado Livre), usando apenas a ficha técnica.
+Você lê, edita e clica em **Aprovar e publicar** — o agente nunca publica
+sozinho, nem no modo automático. Limites (nota mínima e sugestões por semana)
+em **Agentes**.
+
 ## Preços (Fase 7 — agente Monitor de preços)
 
 O agente compara cada anúncio com as **referências de preço oficiais do Mercado

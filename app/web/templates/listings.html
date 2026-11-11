@@ -1,0 +1,81 @@
+{% extends "app_layout.html" %}
+{% block title %}Anúncios{% endblock %}
+{% block page_title %}Anúncios{% endblock %}
+{% block page_subtitle %}<p class="muted">Nota de qualidade de cada anúncio no Mercado Livre e sugestões de texto do agente. Nada é publicado sem a sua aprovação.</p>{% endblock %}
+{% block content %}
+<section class="stats" aria-label="Qualidade dos anúncios">
+  <article class="card stat tone-ok"><p class="stat-label">Profissional</p><p class="stat-value">{{ counts['Profissional'] }}</p><p class="stat-foot muted">Boa qualidade</p></article>
+  <article class="card stat {{ 'tone-warn' if counts['Satisfatória'] else 'tone-ok' }}"><p class="stat-label">Satisfatória</p><p class="stat-value">{{ counts['Satisfatória'] }}</p><p class="stat-foot muted">Dá para melhorar</p></article>
+  <article class="card stat {{ 'tone-bad' if counts['Básica'] else 'tone-ok' }}"><p class="stat-label">Básica</p><p class="stat-value">{{ counts['Básica'] }}</p><p class="stat-foot muted">Perdem exposição na busca</p></article>
+  <article class="card stat tone-info"><p class="stat-label">Sugestões</p><p class="stat-value">{{ queue|length }}</p><p class="stat-foot muted">Aguardando você</p></article>
+</section>
+
+<section class="card" aria-labelledby="sug-title">
+  <div class="card-head"><h2 id="sug-title" class="card-title">Sugestões do agente <span class="count">{{ queue|length }}</span></h2></div>
+  <p class="muted small">O agente escolhe os anúncios fracos que mais vendem e reescreve a descrição usando só a ficha técnica (não inventa dados). O título só é sugerido para anúncios sem vendas — regra do Mercado Livre. Leia e ajuste antes de aprovar.</p>
+  {% if queue %}
+  <div class="qlist">
+  {% for item in queue %}{% set a = item.a %}{% set q = item.q %}
+    <article class="qcard{% if a.status == 'falhou' %} qcard-human{% endif %}" data-card>
+      <div class="qcard-top">
+        <span class="chip chip-ml">Mercado Livre</span>
+        <span class="muted small">{{ q.item_id }} · nota {{ '%.0f'|format(q.score or 0) }}/100 · {{ q.level_wording or '—' }}</span>
+        {% if a.status == 'falhou' %}<span class="badge badge-erro">Não foi alterado</span>
+        {% else %}<span class="badge conf-{{ a.confidence }}">Confiança {{ a.confidence }}</span>{% endif %}
+      </div>
+      <p class="qcard-product">{{ a.payload.get('old_title') or q.title }}</p>
+      {% if a.payload.get('changes') %}<ul class="small">{% for c in a.payload['changes'] %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+      {% if a.status == 'falhou' and a.result %}<p class="form-error">{{ a.result }}</p>{% endif %}
+      <details>
+        <summary class="small t-strong">Ver a descrição atual</summary>
+        <p class="answered-a pre">{{ a.payload.get('old_description') or '(sem descrição)' }}</p>
+      </details>
+      <form method="post" action="/anuncios/acao/{{ a.id }}/aprovar" class="qcard-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% if a.payload.get('title') %}
+        <label class="small t-strong" for="tit-{{ a.id }}">Título sugerido</label>
+        <input id="tit-{{ a.id }}" name="titulo" class="field" maxlength="{{ max_title }}" value="{{ a.payload['title'] }}">
+        {% endif %}
+        <label class="small t-strong" for="desc-{{ a.id }}">Descrição sugerida</label>
+        <textarea id="desc-{{ a.id }}" name="descricao" rows="12" maxlength="{{ max_description }}">{{ a.payload.get('description', '') }}</textarea>
+        <div class="qcard-actions">
+          <button class="btn btn-primary" type="submit">Aprovar e publicar</button>
+          <span class="muted small" data-contador>{{ a.payload.get('description', '')|length }} / {{ max_description }}</span>
+        </div>
+      </form>
+      <form method="post" action="/anuncios/acao/{{ a.id }}/descartar" class="qcard-ignore">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost small" type="submit">Descartar (manter o anúncio como está)</button>
+      </form>
+    </article>
+  {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Nenhuma sugestão esperando você.</p>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="qual-title">
+  <div class="card-head"><h2 id="qual-title" class="card-title">Qualidade dos anúncios (piores primeiro)</h2></div>
+  {% if rows %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Anúncio</th><th class="num">Nota</th><th>Nível</th><th>O que o Mercado Livre pede</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><span class="t-strong">{{ r.title or r.item_id }}</span><br><span class="muted small">{{ r.item_id }}{% if r.sold_quantity %} · {{ r.sold_quantity }} vendido(s){% endif %}</span></td>
+          <td class="num">{{ '%.0f'|format(r.score) }}</td>
+          <td><span class="badge badge-{{ levels.get(r.level_wording, 'info') }}">{{ r.level_wording or r.level or '—' }}</span></td>
+          <td>{% for p in r.pending[:4] %}<div class="small">{% if p.link %}<a href="{{ p.link }}" target="_blank" rel="noopener noreferrer">{{ p.label }}</a>{% else %}{{ p.label }}{% endif %}</div>{% else %}<span class="muted small">Nada pendente ✓</span>{% endfor %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted small">Os links abrem a página oficial do Mercado Livre para corrigir (fotos, código universal, ficha técnica). A nota é atualizada uma vez por semana.</p>
+  {% else %}
+  <p class="muted">Ainda sem notas. Com o Mercado Livre conectado, o painel lê a qualidade dos anúncios uma vez por semana.</p>
+  {% endif %}
+</section>
+{% endblock %}

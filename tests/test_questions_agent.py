@@ -294,7 +294,7 @@ def test_resposta_vazia_e_recusada(logged_client, db):
 
 def test_pagina_de_agentes_liga_e_muda_modo(logged_client, db):
     html = logged_client.get("/agentes").text
-    assert "Respondedor de perguntas" in html and "Chega na fase 7" in html
+    assert "Respondedor de perguntas" in html and "Criador e otimizador de anúncios" in html
     token = csrf_from(html)
     logged_client.post("/agentes/perguntas/ativo", data={"csrf_token": token, "enabled": "1"})
     logged_client.post("/agentes/perguntas/modo", data={"csrf_token": token, "mode": "automatico"})
@@ -303,6 +303,6 @@ def test_pagina_de_agentes_liga_e_muda_modo(logged_client, db):
     db.expire_all()
     agent = db.scalar(select(Agent).where(Agent.slug == "perguntas"))
     assert agent.enabled and agent.mode == AgentMode.AUTO
-    # Agentes de fases futuras não podem ser ligados.
-    r = logged_client.post("/agentes/anuncios/ativo", data={"csrf_token": token, "enabled": "0"})
+    # Agente que não existe não pode ser ligado.
+    r = logged_client.post("/agentes/inexistente/ativo", data={"csrf_token": token, "enabled": "0"})
     assert "ainda não está disponível" in r.text

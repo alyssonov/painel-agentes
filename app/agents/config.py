@@ -44,6 +44,11 @@ RULES: dict[str, list[Rule]] = {
         Rule("margem_minima_pct", "Nunca sugerir preço com lucro real abaixo de", 15, 0, 80, "%"),
         Rule("variacao_maxima_pct", "No automático, mudar no máximo", 10, 1, 50, "% do preço por vez"),
     ],
+    "anuncios": [
+        Rule("nota_minima_qualidade", "Sugerir melhorias para anúncios com nota de qualidade abaixo de", 70, 10, 100,
+             "(de 0 a 100)"),
+        Rule("sugestoes_por_semana", "Máximo de sugestões por semana", 10, 1, 50, "anúncios"),
+    ],
     "avaliacoes": [
         Rule("limite_reclamacoes_pct", "Avisar produto com reclamações acima de", 5, 0.5, 50, "% das vendas (90 dias)"),
         Rule("nota_minima", "Avisar produto com nota abaixo de", 4.0, 1, 5, "estrelas"),
