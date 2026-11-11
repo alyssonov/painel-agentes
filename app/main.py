@@ -81,7 +81,7 @@ def create_app() -> FastAPI:
 
     @app.get("/favicon.ico", include_in_schema=False)
     def favicon():
-        """Ícone da aba do navegador (o troféu da logo)."""
+        """Ícone da aba do navegador (o robô da logo)."""
         return FileResponse(static_dir / "img" / "favicon.ico", media_type="image/x-icon")
 
     @app.get("/saude", include_in_schema=False)
