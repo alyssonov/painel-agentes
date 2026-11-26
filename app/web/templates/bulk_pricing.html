@@ -10,7 +10,7 @@
     <select name="regra">{% for k, label in rules.items() %}<option value="{{ k }}" {% if rule.kind == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
   <label class="field"><span>Valor (%) <span class="muted small">margem ou reajuste</span></span>
     <input type="text" inputmode="decimal" name="valor" value="{{ valor }}" placeholder="ex.: 20 ou -5"></label>
-  <label class="field"><span>Buscar anúncios</span><input type="search" name="busca" value="{{ rule.q }}" placeholder="título, MLB ou SKU"></label>
+  <label class="field"><span>Buscar anúncios</span><input type="search" name="busca" value="{{ rule.q }}" placeholder="palavras do título, MLB ou SKU, em qualquer ordem"></label>
   <label class="check"><input type="checkbox" name="final90" value="1" {% if rule.ending_90 %}checked{% endif %}> Preço terminado em ,90</label>
   <div class="actions"><button class="btn btn-primary" type="submit">Ver prévia</button></div>
 </form>

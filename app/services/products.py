@@ -10,7 +10,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.db import utcnow
@@ -18,6 +18,7 @@ from app.core.money import format_brl
 from app.models import Product, StockSnapshot
 from app.models.product_extra import ProductExtra
 from app.services.pricing_calc import parse_money
+from app.services.search import matches, terms
 
 PAGE = 50
 FILTERS = {"": "Todos", "sem_compat": "Sem compatibilidade", "abaixo_minimo": "Abaixo do estoque mínimo",
@@ -105,16 +106,15 @@ def latest_stock(db: Session) -> dict[int, int]:
 
 
 def list_products(db: Session, q: str = "", flt: str = "") -> list[ProductRow]:
+    """Produtos ativos; a busca acha pelas palavras em qualquer ordem (nome, SKU, moto, fornecedor, local)."""
     stmt = select(Product).where(Product.is_active.is_(True)).order_by(Product.name)
-    if q:
-        like = f"%{q.lower()}%"
-        compat_match = select(ProductExtra.product_id).where(func.lower(
-            func.cast(ProductExtra.compatibility, type_=ProductExtra.notes.type)).like(like))
-        stmt = stmt.where(or_(func.lower(Product.sku).like(like), func.lower(Product.name).like(like),
-                              Product.id.in_(compat_match)))
     extras = {e.product_id: e for e in db.scalars(select(ProductExtra))}
     stock = latest_stock(db)
     rows = [ProductRow(p, extras.get(p.id), stock.get(p.id)) for p in db.scalars(stmt)]
+    wanted = terms(q)
+    if wanted:
+        rows = [r for r in rows if matches(wanted, r.product.name, r.product.sku, *(
+            (format_compatibility(r.extra.compatibility), r.extra.supplier, r.extra.location) if r.extra else ()))]
     if flt == "sem_compat":
         rows = [r for r in rows if not (r.extra and r.extra.compatibility)]
     elif flt == "abaixo_minimo":

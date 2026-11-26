@@ -7,9 +7,10 @@ from sqlalchemy.orm import Session
 
 from app.core import actions
 from app.core.db import get_db
-from app.models import Action, ListingQuality
+from app.models import Action, Listing, ListingQuality
 from app.models.enums import ActionStatus, ActionType
 from app.models.user import User
+from app.services.search import matches, terms
 from app.web.auth import current_user, verify_csrf
 from app.web.templating import flash, render
 
@@ -20,8 +21,28 @@ MAX_TITLE = 60
 LEVELS = {"Profissional": "ok", "Satisfatória": "atencao", "Básica": "erro"}
 
 
+SEARCH_LIMIT = 200
+
+
+def search_listings(db: Session, query: str) -> list[dict]:
+    """Todos os anúncios (ML e Shopee) que têm as palavras buscadas, em qualquer ordem."""
+    wanted = terms(query)
+    if not wanted:
+        return []
+    quality = {q.item_id: q for q in db.scalars(select(ListingQuality))}
+    found = []
+    for listing in db.scalars(select(Listing).order_by(Listing.title)):
+        if matches(wanted, listing.title, listing.variation_label, listing.sku, listing.item_id, listing.external_id):
+            found.append({"l": listing, "q": quality.get(listing.item_id)})
+            if len(found) >= SEARCH_LIMIT:
+                break
+    return found
+
+
 @router.get("")
-def listings_page(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+def listings_page(request: Request, busca: str = "", db: Session = Depends(get_db),
+                  user: User = Depends(current_user)):
+    busca = busca.strip()[:80]
     queue = []
     for action in db.scalars(select(Action).where(
             Action.type == ActionType.UPDATE_LISTING,
@@ -36,7 +57,9 @@ def listings_page(request: Request, db: Session = Depends(get_db), user: User = 
         if row.level_wording in counts:
             counts[row.level_wording] += 1
     return render(request, "listings.html", {"queue": queue, "rows": rows, "counts": counts, "levels": LEVELS,
-                                             "max_description": MAX_DESCRIPTION, "max_title": MAX_TITLE}, db=db)
+                                             "max_description": MAX_DESCRIPTION, "max_title": MAX_TITLE,
+                                             "busca": busca, "found": search_listings(db, busca) if busca else None,
+                                             "search_limit": SEARCH_LIMIT}, db=db)
 
 
 @router.post("/acao/{action_id}/aprovar", dependencies=[Depends(verify_csrf)])

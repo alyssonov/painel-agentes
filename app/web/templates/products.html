@@ -4,7 +4,7 @@
 {% block page_subtitle %}<p class="muted">Produtos do Olist com o cadastro complementar do Gerente do Ano (fornecedor, estoque mínimo, local e compatibilidade com as motos). O Olist nunca é alterado.</p>{% endblock %}
 {% block content %}
 <form class="card hist-filters" method="get" action="/produtos" role="search">
-  <label class="field"><span>Buscar</span><input type="search" name="busca" value="{{ busca }}" placeholder="nome, SKU ou moto (ex.: CG 160)"></label>
+  <label class="field"><span>Buscar</span><input type="search" name="busca" value="{{ busca }}" placeholder="palavras em qualquer ordem: nome, SKU ou moto (ex.: protetor biz)"></label>
   <label class="field"><span>Mostrar</span>
     <select name="filtro">{% for k, label in filters.items() %}{% if k != 'custo_diferente' or can('ver_financeiro') %}<option value="{{ k }}" {% if filtro == k %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}</select></label>
   <div class="actions"><button class="btn btn-primary" type="submit">Filtrar</button><a class="btn btn-ghost" href="/produtos">Limpar</a></div>

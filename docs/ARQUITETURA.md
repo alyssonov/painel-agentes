@@ -842,3 +842,15 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   sugestão), `/compras/{id}` (marcar recebido/cancelado, planilha para mandar
   ao fornecedor). Permissão nova **registrar_compras** (Administrador, Gerente,
   Operação); custos só para quem vê o financeiro. Histórico em `compras.*`.
+
+## 37. Busca por palavras (todo o painel)
+
+- `app/services/search.py`: `terms(q)` separa a busca em palavras (sem acento,
+  minúsculas, sem palavras de ligação como "de"/"para") e `matches(termos,
+  *textos)` exige que TODAS apareçam em algum dos textos, em qualquer ordem
+  ("protetor biz" acha "Protetor Escapamento Biz"; "cg160" acha "CG 160").
+- Usada em: Produtos (nome, SKU, compatibilidade, fornecedor, local), Pedidos
+  (nº, nº Olist, cliente, produtos e SKUs), Preços em massa (título, MLB, SKU)
+  e na busca nova da tela **Anúncios** (todos os anúncios de ML e Shopee: título,
+  variação, SKU, MLB). Filtra em Python depois de ler do banco (volumes da loja
+  são pequenos; acentos não dependem do banco).

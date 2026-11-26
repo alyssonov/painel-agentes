@@ -159,6 +159,8 @@ automáticas, nada manual).
   `app/core/permissions.py` — rota nova: acrescente a regra lá (sem regra, exige
   "ver o painel"). Nos templates, `can("ver_financeiro")` esconde o que a pessoa
   não pode ver (esconder não substitui a conferência no servidor).
+- **Busca:** toda caixa de busca usa `app/services/search.py` (palavras em
+  qualquer ordem, sem acento) — nunca `LIKE '%frase inteira%'`.
 - Sem scripts/estilos inline nem de terceiros (CSP `'self'`): JS e CSS ficam
   em `app/web/static/`.
 

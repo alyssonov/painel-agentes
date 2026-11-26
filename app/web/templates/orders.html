@@ -6,7 +6,7 @@
 
 <form class="card hist-filters" method="get" action="/pedidos" role="search">
   <label class="field"><span>Buscar</span>
-    <input type="search" name="busca" value="{{ f.q }}" placeholder="nº do pedido, produto, SKU ou cliente"></label>
+    <input type="search" name="busca" value="{{ f.q }}" placeholder="nº do pedido, produto, SKU ou cliente — palavras em qualquer ordem"></label>
   <label class="field"><span>Período (data da venda)</span>
     <select name="periodo">{% for k, label in periods.items() %}<option value="{{ k }}" {% if f.period == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
   <label class="field"><span>Marketplace</span>

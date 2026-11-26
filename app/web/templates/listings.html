@@ -10,6 +10,39 @@
   <article class="card stat tone-info"><p class="stat-label">Sugestões</p><p class="stat-value">{{ queue|length }}</p><p class="stat-foot muted">Aguardando você</p></article>
 </section>
 
+<form class="card hist-filters" method="get" action="/anuncios" role="search">
+  <label class="field"><span>Buscar anúncio</span>
+    <input type="search" name="busca" value="{{ busca }}" placeholder="palavras do título, MLB ou SKU — em qualquer ordem (ex.: protetor biz)"></label>
+  <div class="actions"><button class="btn btn-primary" type="submit">Buscar</button>{% if busca %}<a class="btn btn-ghost" href="/anuncios">Limpar</a>{% endif %}</div>
+</form>
+
+{% if found is not none %}
+<section class="card" aria-labelledby="busca-title">
+  <div class="card-head"><h2 id="busca-title" class="card-title">Anúncios com "{{ busca }}" <span class="count">{{ found|length }}{% if found|length >= search_limit %}+{% endif %}</span></h2></div>
+  {% if found %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Anúncio</th><th class="num">Preço</th><th class="num">Estoque</th><th>Situação</th><th>Qualidade</th></tr></thead>
+      <tbody>
+      {% for item in found %}{% set l = item.l %}{% set q = item.q %}
+        <tr>
+          <td><span class="chip chip-{{ l.channel }}">{{ 'Mercado Livre' if l.channel == 'ml' else ('Shopee' if l.channel == 'shopee' else l.channel) }}</span>
+            {% if l.permalink %}<a class="link t-strong" href="{{ l.permalink }}" target="_blank" rel="noopener noreferrer">{{ l.title }}</a>{% else %}<span class="t-strong">{{ l.title }}</span>{% endif %}
+            {% if l.variation_label %}<span class="muted small">· {{ l.variation_label }}</span>{% endif %}
+            <br><span class="muted small">{{ l.item_id }}{% if l.sku %} · {{ l.sku }}{% endif %}{% if l.fulfillment %} · Full{% endif %}</span></td>
+          <td class="num">{{ l.price_cents|brl }}</td>
+          <td class="num">{{ l.available_quantity }}</td>
+          <td><span class="badge badge-{{ 'ok' if l.status == 'active' else 'pausado' }}">{{ {'active': 'Ativo', 'paused': 'Pausado', 'closed': 'Encerrado', 'under_review': 'Em revisão'}.get(l.status, l.status) }}</span></td>
+          <td class="small">{% if q and q.level_wording %}<span class="badge badge-{{ levels.get(q.level_wording, 'info') }}">{{ q.level_wording }}</span>{% if q.score is not none %} {{ '%.0f'|format(q.score) }}{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="muted">Nenhum anúncio tem todas essas palavras. Tente menos palavras ou parte do nome.</p>{% endif %}
+</section>
+{% endif %}
+
 <section class="card" aria-labelledby="sug-title">
   <div class="card-head"><h2 id="sug-title" class="card-title">Sugestões do agente <span class="count">{{ queue|length }}</span></h2></div>
   <p class="muted small">O agente escolhe os anúncios fracos que mais vendem e reescreve a descrição usando só a ficha técnica (não inventa dados). O título só é sugerido para anúncios sem vendas — regra do Mercado Livre. Leia e ajuste antes de aprovar.</p>

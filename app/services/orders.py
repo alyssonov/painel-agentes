@@ -10,15 +10,16 @@ import io
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.db import utcnow
 from app.core.money import format_brl
 from app.core.timeutil import local_day_bounds_utc, local_today, to_local
 from app.integrations.mercadolivre.mapping import left_the_store
-from app.models import Order, OrderItem, Product, ProductExtra, Shipment, StockSnapshot
+from app.models import Order, Product, ProductExtra, Shipment, StockSnapshot
 from app.models.enums import CHANNEL_LABELS, Channel, KanbanStatus
+from app.services.search import matches, terms
 
 PAGE = 50
 PICK_NO_DEADLINE_DAYS = 7
@@ -119,13 +120,11 @@ def list_orders(db: Session, f: OrderFilter, *, paginate: bool = True) -> OrderL
             .options(selectinload(Order.items)).order_by(Order.ordered_at.desc()))
     if f.channel:
         stmt = stmt.where(Order.channel == f.channel)
-    if f.q:
-        like = f"%{f.q.lower()}%"
-        item_match = select(OrderItem.order_id).where(or_(func.lower(OrderItem.sku).like(like),
-                                                          func.lower(OrderItem.title).like(like)))
-        stmt = stmt.where(or_(func.lower(Order.external_id).like(like), func.lower(Order.olist_number).like(like),
-                              func.lower(Order.customer_short_name).like(like), Order.id.in_(item_match)))
     orders = list(db.scalars(stmt).unique())
+    wanted = terms(f.q)
+    if wanted:  # palavras em qualquer ordem: nº do pedido, nº do Olist, cliente, produtos e SKUs
+        orders = [o for o in orders if matches(wanted, o.external_id, o.olist_number, o.customer_short_name,
+                                               *(i.title for i in o.items), *(i.sku for i in o.items))]
     shipments = _shipments_for(db, orders)
     now = utcnow()
     rows, counts = [], {k: 0 for k in SITUATIONS}

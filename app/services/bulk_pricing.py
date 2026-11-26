@@ -13,7 +13,7 @@ com variações, anúncio em promoção e produto sem custo no Olist.
 import math
 from dataclasses import dataclass
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.agents.config import agent_rules
@@ -22,6 +22,7 @@ from app.models import Action, Agent, PriceReference, Product
 from app.models.enums import ActionStatus, ActionType, Channel
 from app.services.marketplace_fees import load_fees
 from app.services.pricing_calc import round_up_price
+from app.services.search import matches, terms
 from app.services.store_settings import get_setting
 
 RULES = {"margem": "Preço para uma margem", "reajuste": "Reajuste em %", "referencia": "Ir para a referência do ML"}
@@ -109,15 +110,13 @@ def preview(db: Session, rule: Rule) -> tuple[list[PreviewRow], float]:
     floor_margin = min_margin(db)
     stmt = select(PriceReference).where(PriceReference.channel == Channel.ML).order_by(PriceReference.title)
     products = {p.id: p for p in db.scalars(select(Product))}
-    if rule.q:
-        like = f"%{rule.q.lower()}%"
-        sku_ids = [p.id for p in products.values() if rule.q.lower() in p.sku.lower()]
-        stmt = stmt.where(or_(func.lower(PriceReference.title).like(like), func.lower(PriceReference.item_id).like(like),
-                              PriceReference.product_id.in_(sku_ids)))
     pending = {a.target_id for a in db.scalars(select(Action).where(
         Action.type == ActionType.UPDATE_PRICE, Action.status.in_([ActionStatus.PENDING, ActionStatus.FAILED])))}
+    wanted = terms(rule.q)
+    refs = [ref for ref in db.scalars(stmt) if matches(
+        wanted, ref.title, ref.item_id, products[ref.product_id].sku if ref.product_id in products else None)]
     rows = []
-    for ref in db.scalars(stmt.limit(MAX_ROWS)):
+    for ref in refs[:MAX_ROWS]:
         product = products.get(ref.product_id) if ref.product_id else None
         cost = product.cost_cents if product else None
         blocked = None
