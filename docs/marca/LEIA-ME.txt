@@ -1,0 +1,16 @@
+GERENTE DO ANO — kit de logos para redes sociais
+
+1-selo ............. selo redondo completo (robô + nome). Transparente, fundo escuro e fundo branco.
+2-robo ............. só o robô (em círculo ou só a cabeça). Bom para ícones e marca-d'água.
+3-horizontal ....... robô ao lado do nome. Para sites, assinaturas de e-mail, banners.
+                     "para-fundo-escuro" = letras claras; "para-fundo-claro" = letras escuras.
+4-empilhada ........ robô em cima do nome, sem o círculo.
+5-foto-de-perfil ... 1080x1080, pronto para Instagram, Facebook, WhatsApp, LinkedIn, TikTok
+                     (as redes cortam em círculo; o selo já está centralizado para isso).
+6-capas-e-posts .... tamanhos certos de capa (Facebook, LinkedIn, X/Twitter, YouTube),
+                     post e story do Instagram e perfil do WhatsApp Business.
+7-vetor-svg ........ arquivos em vetor: aumentam sem perder qualidade (para gráfica,
+                     adesivos, fachada, camisetas). Abrem no navegador, Canva, Illustrator, Inkscape.
+
+Cores: fundo #0A101C · azul #3B82F6 · "do ano" #60A5FA · texto claro #E6EDF7
+Fontes (licença livre OFL): "GERENTE" em Inter Black; "do ano" em Orbitron SemiBold.
