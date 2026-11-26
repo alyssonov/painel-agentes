@@ -20,6 +20,7 @@
     <p class="stat-foot">{% if ov.revenue_yesterday_cents %}em relação a ontem neste horário{% else %}sem vendas ontem até este horário{% endif %}</p>
   </article>
 
+  {% if can('ver_financeiro') %}
   <article class="card stat {{ 'tone-bad' if ov.loss_orders else ('tone-warn' if not ov.tax_configured or ov.avg_margin_pct is none else 'tone-ok') }}">
     <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-trend"/></svg></span></div>
     <p class="stat-label">Margem média real (hoje)</p>
@@ -29,6 +30,7 @@
     {% if ov.fees_missing %}<p class="stat-foot">Algumas vendas com taxa ainda não conferida</p>{% endif %}
     {% if not ov.tax_configured %}<p class="stat-foot warn"><a class="link" href="/integracoes#imposto">Informe a alíquota de impostos</a></p>{% endif %}
   </article>
+  {% endif %}
 
   <article class="card stat {{ 'tone-warn' if ov.questions_waiting else 'tone-ok' }}">
     <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-chat"/></svg></span></div>
@@ -68,7 +70,7 @@
 {% set m = month.current %}{% set p = month.previous %}
 <div class="toolbar">
   <h2 class="section-title">Este mês <span class="muted small">({{ month.month_label }}, comparado com o mesmo período do mês passado)</span></h2>
-  <a class="link" href="/margem?periodo=30">Ver lucro real →</a>
+  {% if can('ver_financeiro') %}<a class="link" href="/margem?periodo=30">Ver lucro real →</a>{% endif %}
 </div>
 <section class="stats" aria-label="Resumo do mês">
   <article class="card stat">
@@ -77,12 +79,14 @@
     <p class="stat-value">{{ m.revenue|brl }}</p>
     <p class="stat-foot">mês passado até hoje: {{ p.revenue|brl }}</p>
   </article>
+  {% if can('ver_financeiro') %}
   <article class="card stat {{ 'tone-bad' if m.profit < 0 }}">
     <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-trend"/></svg></span>{{ delta_pill(month.delta(m.profit, p.profit)) }}</div>
     <p class="stat-label">Lucro real do mês</p>
     <p class="stat-value {{ 'text-danger' if m.profit < 0 }}">{{ m.profit|brl }}</p>
     <p class="stat-foot">margem {{ m.margin_pct|pct }}{% if m.unconfirmed %} · {{ m.unconfirmed }} venda(s) com taxa a conferir{% endif %}</p>
   </article>
+  {% endif %}
   <article class="card stat">
     <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-receipt"/></svg></span>{{ delta_pill(month.delta(m.orders, p.orders)) }}</div>
     <p class="stat-label">Pedidos do mês</p>
@@ -101,7 +105,7 @@
   <section class="card" aria-labelledby="chart-title">
     <div class="card-head">
       <h2 id="chart-title" class="card-title">Faturamento — últimos 30 dias</h2>
-      <span class="muted small">{{ chart_total|brl }} no período · <a class="link" href="/margem/graficos">mais gráficos</a></span>
+      <span class="muted small">{{ chart_total|brl }} no período · {% if can('ver_financeiro') %}<a class="link" href="/margem/graficos">mais gráficos</a>{% endif %}</span>
     </div>
     {% with c = revenue_chart, aria = "Faturamento por dia nos últimos 30 dias" %}{% include "partials/bar_chart.html" %}{% endwith %}
   </section>
@@ -114,7 +118,7 @@
         <span class="mk-name"><span class="chip chip-{{ c.channel }}">{{ c.label }}</span></span>
         <span class="mk-value">{{ c.totals.revenue|brl }}</span>
         <progress class="abc-bar" max="100" value="{{ '%.0f'|format(c.share_pct) }}">{{ '%.0f'|format(c.share_pct) }}%</progress>
-        <span class="mk-meta">{{ '%.0f'|format(c.share_pct) }}% do faturamento · {{ c.totals.orders }} pedido(s) · lucro {{ c.totals.profit|brl }} ({{ c.totals.margin_pct|pct }})</span>
+        <span class="mk-meta">{{ '%.0f'|format(c.share_pct) }}% do faturamento · {{ c.totals.orders }} pedido(s){% if can('ver_financeiro') %} · lucro {{ c.totals.profit|brl }} ({{ c.totals.margin_pct|pct }}){% endif %}</span>
       </li>
       {% endfor %}
     </ul>

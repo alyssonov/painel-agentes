@@ -698,3 +698,23 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
 - **Cópia de segurança automática:** antes de aplicar migração pendente, o
   `tarefas.py iniciar/atualizar` copia o banco para `data/backups/` (últimas 10;
   `python tarefas.py backup` faz uma cópia a qualquer hora).
+
+## 29. Etapa 3b — Papéis, permissões e tela Equipe
+
+- `app/core/permissions.py`: 9 permissões (ver painel, ver financeiro, aprovar
+  atendimento, aprovar preços e anúncios, usar precificação, configurar agentes,
+  configurar a loja, gerenciar equipe, ver histórico) e 5 papéis prontos
+  (Administrador, Gerente, Atendimento, Financeiro, Operação). Permissões
+  marcadas à mão (`users.permissions`, migração 0017) substituem as do papel;
+  o administrador tem sempre todas.
+- **Conferência no servidor:** `current_user` consulta `ROUTE_RULES` (uma tabela
+  única endereço → permissão) em TODA requisição; sem permissão → página 403
+  amigável. Endereço sem regra exige "ver o painel". Um teste percorre todas as
+  rotas do app para garantir que nenhuma fica sem regra.
+- O menu mostra só o que a pessoa pode abrir (mesmas regras); a Visão geral
+  esconde lucro e margem de quem não vê o financeiro (`can()` nos templates).
+- **Equipe** (`/equipe`): adicionar pessoa (senha provisória), mudar papel,
+  personalizar permissões, desativar, redefinir senha (derruba as sessões
+  abertas). Travas: só pessoas da mesma empresa; ninguém se desativa nem tira de
+  si "gerenciar equipe"; sempre fica ao menos uma pessoa ativa que gerencia a
+  equipe. Mudanças vão para o `audit_log` com "antes" e "depois" (a senha nunca).

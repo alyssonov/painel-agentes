@@ -10,7 +10,8 @@ def test_menu_marca_o_item_mais_especifico():
     assert active_nav("/margem/venda") == "/margem"
     assert active_nav("/margem/graficos") == "/margem/graficos"
     assert active_nav("/precificacao/taxas") == "/precificacao"
-    assert active_nav("/integracoes") == ""  # página fora do menu: nada marcado
+    assert active_nav("/integracoes/shopee/conectar") == "/integracoes"
+    assert active_nav("/login") == ""  # página fora do menu: nada marcado
 
 
 def test_tema_escuro_por_padrao_e_troca_para_claro(logged_client):

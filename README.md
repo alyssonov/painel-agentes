@@ -114,6 +114,16 @@ marketplace, os envios de hoje e os agentes.
 O painel abre no **tema escuro**. O botão de sol/lua no topo troca para o
 **tema claro** (a escolha fica guardada no navegador).
 
+## Equipe e permissões
+
+Menu **Administração → Equipe**: adicione pessoas com uma senha provisória e
+escolha o papel — **Administrador** (tudo), **Gerente** (operação e
+financeiro), **Atendimento** (perguntas e mensagens), **Financeiro** (lucro,
+recebimentos, relatórios) ou **Operação** (acompanhar pedidos, estoque e
+anúncios). Dá para marcar permissões à mão, desativar alguém ou redefinir a
+senha. O painel confere a permissão em toda tela e ação, e cada pessoa só vê no
+menu o que pode abrir. Toda mudança fica no histórico.
+
 ## Conectar o Olist ERP (somente leitura)
 
 1. No Olist: **Menu > Configurações > aba Geral > Aplicativos > + novo

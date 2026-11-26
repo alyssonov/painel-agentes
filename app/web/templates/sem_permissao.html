@@ -1,0 +1,11 @@
+{% extends "app_layout.html" %}
+{% block title %}Sem permissão{% endblock %}
+{% block page_title %}Sem permissão{% endblock %}
+{% block content %}
+<section class="card">
+  <h2 class="card-title"><svg class="icon"><use href="#i-alert"/></svg> Esta parte do painel não está liberada para você</h2>
+  <p>Para abrir, é preciso a permissão <strong>{{ permission_label }}</strong>.</p>
+  <p class="muted">Peça a quem administra o painel (menu <strong>Equipe</strong>) para liberar.</p>
+  <p><a class="btn btn-secondary" href="/">Voltar para a visão geral</a></p>
+</section>
+{% endblock %}

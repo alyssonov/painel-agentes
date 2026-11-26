@@ -96,6 +96,7 @@ a { color: inherit; }
 .small { font-size: 12px; }
 .t-strong { font-weight: 600; }
 .text-danger { color: var(--danger); font-weight: 600; }
+.text-ok { color: var(--ok); font-weight: 700; }
 .pre { white-space: pre-wrap; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 code { background: var(--neutral-soft); border-radius: 6px; padding: 1px 6px; font-size: 13px; word-break: break-all; }
@@ -536,3 +537,13 @@ form > .card { margin-bottom: 16px; }
   .user-chip span:not(.avatar) { display: none; }
   .agent-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Equipe ------------------------------------------------------------------- */
+.team-edit summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.team-form { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+.team-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.team-perms { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; display: grid; gap: 8px; margin: 0; }
+.team-perms .check { align-items: flex-start; }
+.team-perms .check .muted { white-space: normal; }
+.team-password { flex-direction: row; align-items: flex-end; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line); }
+.team-password .field { flex: 1 1 260px; }

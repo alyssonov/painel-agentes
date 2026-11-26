@@ -15,7 +15,14 @@ from app.agents.registry import ensure_agents
 from app.config import get_settings
 from app.core.db import get_sessionmaker
 from app.fake_data.seed import refresh_demo_if_stale
-from app.web.auth import CsrfFailed, LoginRequired, csrf_failed_handler, login_required_handler
+from app.web.auth import (
+    CsrfFailed,
+    LoginRequired,
+    PermissionDenied,
+    csrf_failed_handler,
+    login_required_handler,
+    permission_denied_handler,
+)
 from app.web.middleware import SecurityHeadersMiddleware
 from app.web.routes import (
     agents,
@@ -29,6 +36,7 @@ from app.web.routes import (
     report_pages,
     reports,
     sections,
+    team,
 )
 
 logger = logging.getLogger("painel")
@@ -65,6 +73,7 @@ def create_app() -> FastAPI:
 
     app.add_exception_handler(LoginRequired, login_required_handler)
     app.add_exception_handler(CsrfFailed, csrf_failed_handler)
+    app.add_exception_handler(PermissionDenied, permission_denied_handler)
 
     static_dir = Path(__file__).parent / "web" / "static"
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
@@ -80,6 +89,7 @@ def create_app() -> FastAPI:
     app.include_router(agents.router)
     app.include_router(reports.router)
     app.include_router(report_pages.router)
+    app.include_router(team.router)
 
     @app.get("/favicon.ico", include_in_schema=False)
     def favicon():

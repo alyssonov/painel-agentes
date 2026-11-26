@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
@@ -22,8 +22,19 @@ class User(TimestampMixin, Base):
     # Apenas o hash Argon2 — a senha em si nunca é guardada.
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20), default=UserRole.ADMIN)
+    # Permissões marcadas à mão na tela Equipe. Vazio (None) = valem as do papel.
+    permissions: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
     # Proteção contra tentativas de adivinhar a senha.
     failed_logins: Mapped[int] = mapped_column(Integer, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    @property
+    def effective_permissions(self) -> frozenset[str]:
+        """Permissões que valem para a pessoa (papel ou marcadas à mão)."""
+        from app.core.permissions import permissions_of
+        return permissions_of(self.role, self.permissions)
+
+    def can(self, permission: str | None) -> bool:
+        return permission is None or permission in self.effective_permissions

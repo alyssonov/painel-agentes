@@ -1,0 +1,102 @@
+{% extends "app_layout.html" %}
+{% block title %}Equipe{% endblock %}
+{% block page_title %}Equipe{% endblock %}
+{% block page_subtitle %}<p class="muted">Quem acessa o painel e o que cada pessoa pode fazer. As permissões valem na hora, em todas as telas.</p>{% endblock %}
+{% block content %}
+
+<section class="card" aria-labelledby="team-title">
+  <div class="card-head"><h2 id="team-title" class="card-title">Pessoas ({{ members|length }})</h2></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Pessoa</th><th>Papel</th><th>Situação</th><th>Último acesso</th></tr></thead>
+      <tbody>
+      {% for row in members %}{% set m = row.m %}
+        <tr>
+          <td><span class="t-strong">{{ m.name }}</span>{% if m.id == user.id %} <span class="muted small">(você)</span>{% endif %}<br>
+            <span class="muted small">{{ m.email }}</span></td>
+          <td>{{ row.role }}{% if row.custom %} <span class="badge badge-info">personalizado</span>{% endif %}</td>
+          <td>{% if m.is_active %}<span class="badge badge-ok">Ativo</span>{% else %}<span class="badge badge-pausado">Desativado</span>{% endif %}</td>
+          <td class="small">{{ row.last_login }}</td>
+        </tr>
+        <tr>
+          <td colspan="4">
+            <details class="team-edit">
+              <summary class="link">Editar {{ m.name.split(' ')[0] }}</summary>
+              <form method="post" action="/equipe/{{ m.id }}" class="team-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <div class="team-fields">
+                  <label class="field"><span>Nome</span><input type="text" name="name" value="{{ m.name }}" maxlength="120"></label>
+                  <label class="field"><span>Papel</span>
+                    <select name="role">
+                      {% for key, (label, desc, _p) in roles.items() %}
+                      <option value="{{ key }}" {% if m.role == key %}selected{% endif %}>{{ label }} — {{ desc }}</option>
+                      {% endfor %}
+                    </select></label>
+                  <label class="field"><span>Situação</span>
+                    <select name="ativo">
+                      <option value="1" {% if m.is_active %}selected{% endif %}>Ativo (pode entrar)</option>
+                      <option value="0" {% if not m.is_active %}selected{% endif %}>Desativado (não entra mais)</option>
+                    </select></label>
+                </div>
+                <label class="check"><input type="checkbox" name="personalizar" value="1" {% if row.custom %}checked{% endif %}>
+                  Escolher as permissões à mão <span class="muted small">(senão, valem as do papel; administrador sempre tem todas)</span></label>
+                <fieldset class="team-perms">
+                  <legend class="muted small">Permissões</legend>
+                  {% for p in permissions %}
+                  <label class="check" title="{{ p.description }}"><input type="checkbox" name="perm" value="{{ p.code }}" {% if p.code in row.perms %}checked{% endif %}>
+                    {{ p.label }} <span class="muted small">— {{ p.description }}</span></label>
+                  {% endfor %}
+                </fieldset>
+                <div class="actions"><button class="btn btn-primary" type="submit">Salvar</button></div>
+              </form>
+              <form method="post" action="/equipe/{{ m.id }}/senha" class="team-form team-password">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label class="field"><span>Nova senha (mínimo 10 caracteres, letras e números)</span>
+                  <input type="password" name="password" autocomplete="new-password" minlength="10" required></label>
+                <button class="btn btn-secondary" type="submit">Redefinir senha</button>
+              </form>
+            </details>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="new-title">
+  <h2 id="new-title" class="card-title">Adicionar pessoa</h2>
+  <form method="post" action="/equipe/novo" class="team-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="team-fields">
+      <label class="field"><span>Nome</span><input type="text" name="name" maxlength="120" required></label>
+      <label class="field"><span>E-mail (é o login)</span><input type="email" name="email" autocomplete="off" required></label>
+      <label class="field"><span>Papel</span>
+        <select name="role">
+          {% for key, (label, desc, _p) in roles.items() %}
+          <option value="{{ key }}" {% if key == 'atendimento' %}selected{% endif %}>{{ label }} — {{ desc }}</option>
+          {% endfor %}
+        </select></label>
+      <label class="field"><span>Senha provisória</span><input type="password" name="password" autocomplete="new-password" minlength="10" required></label>
+    </div>
+    <div class="actions"><button class="btn btn-primary" type="submit">Adicionar</button></div>
+    <p class="muted small">Passe a senha pessoalmente (nunca por mensagem). Depois é só ajustar o papel ou as permissões aqui.</p>
+  </form>
+</section>
+
+<section class="card" aria-labelledby="roles-title">
+  <h2 id="roles-title" class="card-title">O que cada papel pode fazer</h2>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Permissão</th>{% for key, (label, _d, _p) in roles.items() %}<th class="num">{{ label }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for p in permissions %}
+        <tr><td><span class="t-strong">{{ p.label }}</span><br><span class="muted small">{{ p.description }}</span></td>
+          {% for key, (_l, _d, perms) in roles.items() %}<td class="num">{% if p.code in perms %}<span class="text-ok" aria-label="sim">✓</span>{% else %}<span class="muted" aria-label="não">—</span>{% endif %}</td>{% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -155,7 +155,10 @@ automáticas, nada manual).
 - Mercado Livre e Shopee exigem redirect HTTPS público: usamos a página de
   repasse do repositório `alyssonov/painel-retorno` (GitHub Pages).
 - Toda rota POST usa a dependência `verify_csrf`; toda página usa
-  `current_user`.
+  `current_user`, que também confere a permissão pela tabela `ROUTE_RULES` de
+  `app/core/permissions.py` — rota nova: acrescente a regra lá (sem regra, exige
+  "ver o painel"). Nos templates, `can("ver_financeiro")` esconde o que a pessoa
+  não pode ver (esconder não substitui a conferência no servidor).
 - Sem scripts/estilos inline nem de terceiros (CSP `'self'`): JS e CSS ficam
   em `app/web/static/`.
 
@@ -172,7 +175,8 @@ automáticas, nada manual).
 - Menu lateral em **grupos** (`NAV_GROUPS` em `app/web/templating.py`): Visão
   geral; Operação (Anúncios, Estoque e compras, Precificação); Atendimento
   (Perguntas, Pós-venda); Financeiro (Lucro real, Recebimentos, Gráficos, Curva
-  ABC); Inteligência (Agentes, Relatórios). O item ativo é o endereço mais
+  ABC); Inteligência (Agentes, Relatórios); Administração (Equipe, Contas
+  conectadas). O menu só mostra o que a pessoa pode abrir. O item ativo é o endereço mais
   específico (`active_nav`). Abaixo do menu: contas conectadas (Mercado Livre,
   Shopee, Olist ERP) com status.
 - **Cores de status, com significado fixo** (variáveis `--ok`, `--warn`,

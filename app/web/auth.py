@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
+from app.core.permissions import required_permission
 from app.core.security import csrf_is_valid
 from app.core.tenant import set_company
 from app.models.user import User
@@ -15,6 +16,14 @@ SESSION_AUTH_VERSION_KEY = "auth_v"
 
 class LoginRequired(Exception):
     """A página exige login."""
+
+
+class PermissionDenied(Exception):
+    """A pessoa está logada, mas o papel dela não permite esta página/ação."""
+
+    def __init__(self, permission: str) -> None:
+        super().__init__(permission)
+        self.permission = permission
 
 
 class CsrfFailed(Exception):
@@ -40,6 +49,10 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> User:
     # Daqui em diante, toda consulta desta requisição só vê os dados da empresa do usuário.
     set_company(db, user.company_id)
     request.state.user = user
+    # Permissão conferida no servidor, pela tabela única de app/core/permissions.py.
+    needed = required_permission(request.method, request.url.path)
+    if not user.can(needed):
+        raise PermissionDenied(needed)
     return user
 
 
@@ -59,6 +72,16 @@ def login_required_handler(request: Request, _exc: LoginRequired) -> Response:
     if request.headers.get("HX-Request"):
         return Response(status_code=200, headers={"HX-Redirect": "/login"})
     return RedirectResponse("/login", status_code=303)
+
+
+def permission_denied_handler(request: Request, exc: PermissionDenied) -> Response:
+    """Página amigável de "sem permissão" (403)."""
+    from app.core.permissions import LABELS
+    from app.web.templating import render
+    if request.headers.get("HX-Request"):
+        return Response("Você não tem permissão para isso.", status_code=403, media_type="text/plain; charset=utf-8")
+    return render(request, "sem_permissao.html", {"permission_label": LABELS.get(exc.permission, exc.permission)},
+                  status_code=403)
 
 
 def csrf_failed_handler(_request: Request, _exc: CsrfFailed) -> Response:

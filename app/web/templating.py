@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.core.permissions import required_permission
 from app.core.money import format_brl, format_pct
 from app.core.security import get_or_create_csrf_token
 from app.core.timeutil import to_local
@@ -45,6 +46,7 @@ NAV_GROUPS = [
     ("Financeiro", [("/margem", "Lucro real", "coins"), ("/margem/recebimentos", "Recebimentos", "wallet"),
                     ("/margem/graficos", "Gráficos", "chart"), ("/margem/curva-abc", "Curva ABC", "layers")]),
     ("Inteligência", [("/agentes", "Agentes", "bot"), ("/relatorios", "Relatórios", "file")]),
+    ("Administração", [("/equipe", "Equipe", "users"), ("/integracoes", "Contas conectadas", "plug")]),
 ]
 NAV_ITEMS = [item for _title, items in NAV_GROUPS for item in items]
 THEMES = ("dark", "light")
@@ -58,6 +60,18 @@ def active_nav(path: str) -> str:
         if href != "/" and (path == href or path.startswith(href + "/")) and len(href) > len(best):
             best = href
     return best if (best != "/" or path == "/") else ""
+
+
+def nav_for(user) -> list:
+    """Menu só com o que a pessoa pode abrir (mesmas regras do servidor)."""
+    if user is None:
+        return NAV_GROUPS
+    groups = []
+    for title, items in NAV_GROUPS:
+        allowed = [item for item in items if user.can(required_permission("GET", item[0]))]
+        if allowed:
+            groups.append((title, allowed))
+    return groups
 
 
 def flash(request: Request, message: str, kind: str = "ok") -> None:
@@ -75,11 +89,13 @@ def render(request: Request, template: str, context: dict[str, Any] | None = Non
         "real_data": any(a.is_real for a in accounts),
         "csrf_token": get_or_create_csrf_token(request.session),
         "nav_items": NAV_ITEMS,
-        "nav_groups": NAV_GROUPS,
+        "nav_groups": nav_for(getattr(request.state, "user", None)),
         "active_nav": active_nav(request.url.path),
         "theme": request.cookies.get(THEME_COOKIE) if request.cookies.get(THEME_COOKIE) in THEMES else "dark",
         "current_path": request.url.path,
         "user": getattr(request.state, "user", None),
+        # can("ver_financeiro") nos templates: esconde o que a pessoa não pode ver.
+        "can": lambda perm: bool(getattr(request.state, "user", None)) and request.state.user.can(perm),
         "integrations": accounts,
         "flash": request.session.pop("flash", None),
     }
