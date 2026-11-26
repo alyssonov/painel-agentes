@@ -2,235 +2,174 @@
 {% block title %}Contas conectadas{% endblock %}
 {% block page_title %}Contas conectadas{% endblock %}
 {% block page_subtitle %}<p class="muted">O painel só lê os dados destas contas. Ações que falam com clientes sempre passam pela sua aprovação.</p>{% endblock %}
+{% macro status_badge(connected, status) -%}
+  {% if connected and status == 'ok' %}<span class="badge badge-ok">Conectado</span>
+  {% elif connected %}<span class="badge badge-erro">Com erro</span>
+  {% else %}<span class="badge badge-pausado">Não conectado</span>{% endif %}
+{%- endmacro %}
+{% macro run_label(run, label) -%}
+  {% if run %}{{ label }} · {% if run.status == 'ok' %}deu certo{% elif run.status == 'rodando' %}em andamento…{% else %}não deu certo{% endif %}{% else %}nenhuma ainda{% endif %}
+{%- endmacro %}
 {% block content %}
+<div class="conn-grid">
 
-<section class="card integration" aria-labelledby="olist-title">
-  <div class="integration-head">
-    <div>
-      <p class="eyebrow">Sistema de gestão · somente leitura</p>
-      <h2 id="olist-title" class="card-title">Olist ERP</h2>
-    </div>
-    {% if connected and account.status == 'ok' %}
-      <span class="badge badge-ok">Conectado</span>
-    {% elif connected %}
-      <span class="badge badge-erro">Com erro</span>
-    {% else %}
-      <span class="badge badge-pausado">Não conectado</span>
-    {% endif %}
-  </div>
-
+<section class="card conn" aria-labelledby="olist-title">
+  <header class="conn-head">
+    <div><h2 id="olist-title" class="conn-name">Olist ERP</h2><p class="conn-sub">Gestão · só leitura</p></div>
+    {{ status_badge(connected, account.status if account else None) }}
+  </header>
   {% if not olist_configured %}
-    <div class="notice">
-      <p><strong>Falta configurar as chaves do aplicativo do Olist.</strong></p>
+    <p class="conn-missing">Falta configurar as chaves do aplicativo do Olist.</p>
+    <details class="conn-help"><summary>Como configurar</summary>
       <ol class="steps">
         <li>No Olist: Menu &gt; Configurações &gt; aba Geral &gt; Aplicativos &gt; abra o seu aplicativo.</li>
         <li>No arquivo <code>.env</code> do painel, preencha <code>OLIST_CLIENT_ID</code> e <code>OLIST_CLIENT_SECRET</code>.</li>
         <li>Confira se a URL de redirecionamento do aplicativo é exatamente: <code>{{ redirect_uri }}</code></li>
         <li>Feche a janela do painel e ligue de novo.</li>
       </ol>
-    </div>
+    </details>
   {% else %}
-    <dl class="facts">
+    <dl class="conn-facts">
       {% if connected %}
-      <div><dt>Empresa</dt><dd>{{ account.account_name }}</dd></div>
-      <div><dt>Produtos importados</dt><dd>{{ products_count }}</dd></div>
+      <div><dt>Empresa</dt><dd>{{ account.account_name }}<span class="conn-note">{{ products_count }} produtos importados</span></dd></div>
       {% endif %}
-      <div><dt>Última atualização</dt><dd>
-        {% if last_run %}
-          {{ last_run_label }} —
-          {% if last_run.status == 'ok' %}deu certo
-            {% if last_run.counts %}({{ last_run.counts.get('pedidos', 0) }} pedidos, {{ last_run.counts.get('produtos', 0) }} produtos, {{ last_run.counts.get('notas', 0) }} notas){% endif %}
-          {% elif last_run.status == 'rodando' %}em andamento…
-          {% else %}não deu certo{% endif %}
-        {% else %}nenhuma ainda{% endif %}
-      </dd></div>
-      <div><dt>Frequência</dt><dd>A cada {{ sync_minutes }} minutos, enquanto o painel estiver ligado</dd></div>
+      <div><dt>Última atualização</dt><dd>{{ run_label(last_run, last_run_label) }}
+        {% if last_run and last_run.status == 'ok' and last_run.counts %}<span class="conn-note">{{ last_run.counts.get('pedidos', 0) }} pedidos, {{ last_run.counts.get('produtos', 0) }} produtos, {{ last_run.counts.get('notas', 0) }} notas</span>{% endif %}<span class="conn-note">Atualiza a cada {{ sync_minutes }} min</span></dd></div>
     </dl>
-
-    {% if connected and account.last_error %}
-      <p class="form-error">{{ account.last_error }}</p>
-    {% endif %}
-
-    <div class="actions">
-      <a class="btn btn-primary" href="/integracoes/olist/conectar">{{ 'Conectar de novo' if connected else 'Conectar o Olist' }}</a>
+    {% if connected and account.last_error %}<p class="form-error">{{ account.last_error }}</p>{% endif %}
+    <div class="conn-actions">
+      <a class="btn btn-primary btn-sm" href="/integracoes/olist/conectar">{{ 'Conectar de novo' if connected else 'Conectar o Olist' }}</a>
       {% if connected %}
-      <form method="post" action="/integracoes/olist/sincronizar">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="btn btn-secondary" type="submit">Atualizar agora</button>
-      </form>
-      <form method="post" action="/integracoes/olist/desconectar" class="push-right">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="btn btn-ghost" type="submit">Desconectar</button>
-      </form>
+      <form method="post" action="/integracoes/olist/sincronizar"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-secondary btn-sm" type="submit">Atualizar</button></form>
+      <form method="post" action="/integracoes/olist/desconectar" class="push-right"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost btn-sm conn-off" type="submit">Desconectar</button></form>
       {% endif %}
     </div>
-    <p class="muted small">
-      A autorização do Olist vale por 1 dia sem uso. Se o painel ficar desligado por mais tempo,
-      basta clicar em “Conectar de novo”.
-    </p>
+    <p class="conn-tip">A autorização vale 1 dia sem uso; depois, “Conectar de novo”.</p>
   {% endif %}
 </section>
 
-<section class="card integration" id="imposto" aria-labelledby="tax-title">
-  <p class="eyebrow">Regra da loja</p>
-  <h2 id="tax-title" class="card-title">Impostos sobre a venda</h2>
-  <p class="muted">Usada no cálculo da margem real. Informe a alíquota efetiva passada pela contabilidade (regime Lucro Real).</p>
-  {% if tax_rate_is_demo %}<p class="stat-foot warn">O valor atual é só um exemplo da simulação.</p>{% endif %}
-  <form method="post" action="/integracoes/imposto" class="inline-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <label class="field field-inline">
-      <span>Alíquota (%)</span>
-      <input type="text" name="tax_rate_pct" inputmode="decimal" value="{{ '%g'|format(tax_rate_pct) if tax_rate_pct else '' }}" placeholder="ex.: 14,25" required>
-    </label>
-    <button class="btn btn-primary" type="submit">Salvar</button>
-  </form>
-</section>
-
-<section class="card integration" aria-labelledby="ml-title">
-  <div class="integration-head">
-    <div>
-      <p class="eyebrow">Marketplace · lê perguntas, reputação e taxas</p>
-      <h2 id="ml-title" class="card-title">Mercado Livre</h2>
-    </div>
-    {% if ml.connected and ml.account.status == 'ok' %}
-      <span class="badge badge-ok">Conectado</span>
-    {% elif ml.connected %}
-      <span class="badge badge-erro">Com erro</span>
-    {% else %}
-      <span class="badge badge-pausado">Não conectado</span>
-    {% endif %}
-  </div>
-
+<section class="card conn" aria-labelledby="ml-title">
+  <header class="conn-head">
+    <div><h2 id="ml-title" class="conn-name">Mercado Livre</h2><p class="conn-sub">Marketplace · só leitura</p></div>
+    {{ status_badge(ml.connected, ml.account.status if ml.account else None) }}
+  </header>
   {% if not ml.configured %}
-    <div class="notice">
-      <p><strong>Falta configurar as chaves do aplicativo do Mercado Livre.</strong></p>
+    <p class="conn-missing">Falta configurar as chaves do aplicativo do Mercado Livre.</p>
+    <details class="conn-help"><summary>Como configurar</summary>
       <ol class="steps">
         <li>No DevCenter do Mercado Livre, abra o aplicativo e copie o Client ID e a chave secreta.</li>
         <li>No arquivo <code>.env</code>, preencha <code>ML_CLIENT_ID</code> e <code>ML_CLIENT_SECRET</code>.</li>
         <li>Confira se a URI de redirect do aplicativo é exatamente: <code>{{ ml.redirect_uri }}</code></li>
         <li>Feche a janela do painel e ligue de novo.</li>
       </ol>
-    </div>
+    </details>
   {% else %}
-    <dl class="facts">
+    <dl class="conn-facts">
       {% if ml.connected %}
       <div><dt>Conta</dt><dd>{{ ml.account.account_name }}</dd></div>
       <div><dt>Reputação</dt><dd>{{ (ml.account.extra or {}).get('reputation_label', '—') }}</dd></div>
       {% endif %}
-      <div><dt>Última atualização</dt><dd>
-        {% if ml.last_run %}
-          {{ ml.last_run_label }} —
-          {% if ml.last_run.status == 'ok' %}deu certo
-            {% if ml.last_run.counts %}({{ ml.last_run.counts.get('perguntas', 0) }} perguntas, {{ ml.last_run.counts.get('taxas', 0) }} vendas com taxa{% if ml.last_run.counts.get('anuncios') %}, {{ ml.last_run.counts.get('anuncios') }} anúncios{% endif %}){% endif %}
-            {% if ml.last_run.counts and ml.last_run.counts.get('anuncios_erro') %}<br><span class="badge badge-atencao">Atenção</span> <span class="small">a lista de anúncios não pôde ser lida desta vez (o resto funcionou)</span>{% endif %}
-          {% elif ml.last_run.status == 'rodando' %}em andamento…
-          {% else %}não deu certo{% endif %}
-        {% else %}nenhuma ainda{% endif %}
-      </dd></div>
-      <div><dt>Frequência</dt><dd>A cada {{ ml.sync_minutes }} minutos, enquanto o painel estiver ligado</dd></div>
+      <div><dt>Última atualização</dt><dd>{{ run_label(ml.last_run, ml.last_run_label) }}
+        {% if ml.last_run and ml.last_run.status == 'ok' and ml.last_run.counts %}<span class="conn-note">{{ ml.last_run.counts.get('perguntas', 0) }} perguntas, {{ ml.last_run.counts.get('taxas', 0) }} vendas com taxa{% if ml.last_run.counts.get('anuncios') %}, {{ ml.last_run.counts.get('anuncios') }} anúncios{% endif %}</span>{% endif %}<span class="conn-note">Atualiza a cada {{ ml.sync_minutes }} min</span>
+        {% if ml.last_run and ml.last_run.counts and ml.last_run.counts.get('anuncios_erro') %}<span class="conn-note"><span class="badge badge-atencao">Atenção</span> a lista de anúncios não pôde ser lida desta vez (o resto funcionou)</span>{% endif %}</dd></div>
     </dl>
-    {% if ml.connected and ml.account.last_error %}
-      <p class="form-error">{{ ml.account.last_error }}</p>
-    {% endif %}
-    <div class="actions">
-      <a class="btn btn-primary" href="/integracoes/mercadolivre/conectar">{{ 'Conectar de novo' if ml.connected else 'Conectar o Mercado Livre' }}</a>
+    {% if ml.connected and ml.account.last_error %}<p class="form-error">{{ ml.account.last_error }}</p>{% endif %}
+    <div class="conn-actions">
+      <a class="btn btn-primary btn-sm" href="/integracoes/mercadolivre/conectar">{{ 'Conectar de novo' if ml.connected else 'Conectar o Mercado Livre' }}</a>
       {% if ml.connected %}
-      <form method="post" action="/integracoes/mercadolivre/sincronizar">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="btn btn-secondary" type="submit">Atualizar agora</button>
-      </form>
-      <form method="post" action="/integracoes/mercadolivre/desconectar" class="push-right">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="btn btn-ghost" type="submit">Desconectar</button>
-      </form>
+      <form method="post" action="/integracoes/mercadolivre/sincronizar"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-secondary btn-sm" type="submit">Atualizar</button></form>
+      <form method="post" action="/integracoes/mercadolivre/desconectar" class="push-right"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost btn-sm conn-off" type="submit">Desconectar</button></form>
       {% endif %}
     </div>
-    <p class="muted small">Entre com a conta do Mercado Livre <strong>da loja</strong>. Nesta etapa o painel só lê:
-      responder perguntas chega com o agente, sempre com a sua aprovação.</p>
+    <p class="conn-tip">Entre com a conta <strong>da loja</strong>.</p>
   {% endif %}
 </section>
 
-<section class="card integration" aria-labelledby="shopee-title">
-  <div class="integration-head">
-    <div>
-      <p class="eyebrow">Marketplace · conexão oficial (Shopee Open Platform){% if shopee.sandbox %} · AMBIENTE DE TESTE{% endif %}</p>
-      <h2 id="shopee-title" class="card-title">Shopee</h2>
-    </div>
-    {% if shopee.connected and shopee.account.status == 'ok' %}
-      <span class="badge badge-ok">Conectado</span>
-    {% elif shopee.connected %}
-      <span class="badge badge-erro">Com erro</span>
-    {% else %}
-      <span class="badge badge-pausado">Não conectado</span>
-    {% endif %}
-  </div>
-
+<section class="card conn" aria-labelledby="shopee-title">
+  <header class="conn-head">
+    <div><h2 id="shopee-title" class="conn-name">Shopee</h2><p class="conn-sub">Marketplace{% if shopee.sandbox %} · <strong>ambiente de teste</strong>{% endif %}</p></div>
+    {{ status_badge(shopee.connected, shopee.account.status if shopee.account else None) }}
+  </header>
   {% if not shopee.configured %}
-    <div class="notice">
-      <p><strong>Falta configurar as chaves do app da Shopee.</strong></p>
+    <p class="conn-missing">Falta configurar as chaves do app da Shopee.</p>
+    <details class="conn-help"><summary>Como configurar</summary>
       <ol class="steps">
         <li>Em open.shopee.com → Console → App List, abra o app e veja o <strong>Partner ID</strong> e a <strong>Partner Key</strong> (de produção).</li>
         <li>No arquivo <code>.env</code>, preencha <code>SHOPEE_PARTNER_ID</code> e <code>SHOPEE_PARTNER_KEY</code>.</li>
         <li>No app, confira se o domínio de retorno (Live Redirect URL Domain) é <code>alyssonov.github.io</code>. O endereço completo usado é: <code>{{ shopee.redirect_uri }}</code></li>
         <li>Feche a janela do painel e ligue de novo.</li>
       </ol>
-    </div>
+    </details>
   {% else %}
-    <dl class="facts">
+    <dl class="conn-facts">
       {% if shopee.connected %}
       <div><dt>Loja</dt><dd>{{ shopee.account.account_name }}</dd></div>
-      <div><dt>Acesso renovado</dt><dd>{{ shopee.last_ok_label or '—' }} (o painel renova sozinho a cada poucas horas)</dd></div>
+      <div><dt>Acesso renovado</dt><dd>{{ shopee.last_ok_label or '—' }}</dd></div>
       {% endif %}
-      <div><dt>O que o painel lê</dt><dd>Por enquanto só a conexão. Pedidos, taxas, perguntas e envios da Shopee chegam na próxima etapa.</dd></div>
+      <div><dt>O que lê</dt><dd>Só a conexão, por enquanto<span class="conn-note">Pedidos, taxas e perguntas chegam na próxima etapa.</span></dd></div>
     </dl>
-    {% if shopee.connected and shopee.account.last_error %}
-      <p class="form-error">{{ shopee.account.last_error }}</p>
-    {% endif %}
-    <div class="actions">
-      <a class="btn btn-primary" href="/integracoes/shopee/conectar">{{ 'Conectar de novo' if shopee.connected else 'Conectar a Shopee' }}</a>
+    {% if shopee.connected and shopee.account.last_error %}<p class="form-error">{{ shopee.account.last_error }}</p>{% endif %}
+    <div class="conn-actions">
+      <a class="btn btn-primary btn-sm" href="/integracoes/shopee/conectar">{{ 'Conectar de novo' if shopee.connected else 'Conectar a Shopee' }}</a>
       {% if shopee.connected %}
-      <form method="post" action="/integracoes/shopee/desconectar" class="push-right">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="btn btn-ghost" type="submit">Desconectar</button>
-      </form>
+      <form method="post" action="/integracoes/shopee/desconectar" class="push-right"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost btn-sm conn-off" type="submit">Desconectar</button></form>
       {% endif %}
     </div>
-    <p class="muted small">Entre com a conta <strong>principal da loja</strong> na Shopee e, na tela de prazo, escolha
-      <strong>365 dias</strong> (o máximo). Depois desse prazo, a Shopee pede para conectar de novo.</p>
+    <p class="conn-tip">Conta <strong>principal da loja</strong>, prazo de <strong>365 dias</strong>.</p>
   {% endif %}
 </section>
 
-<section class="card integration" aria-labelledby="onix-title">
-  <div class="integration-head">
-    <div>
-      <p class="eyebrow">Loja física · sistema Onix (Foxconn) · só leitura</p>
-      <h2 id="onix-title" class="card-title">Onix</h2>
-    </div>
+<section class="card conn" aria-labelledby="onix-title">
+  <header class="conn-head">
+    <div><h2 id="onix-title" class="conn-name">Onix</h2><p class="conn-sub">Loja física · só leitura</p></div>
     {% if onix.configured and onix.last_run and onix.last_run.status == 'ok' %}<span class="badge badge-ok">Conectado</span>
     {% elif onix.configured and onix.last_run and onix.last_run.status == 'erro' %}<span class="badge badge-erro">Com erro</span>
     {% elif onix.configured %}<span class="badge badge-info">Configurado</span>
     {% else %}<span class="badge badge-pausado">Não configurado</span>{% endif %}
-  </div>
+  </header>
   {% if not onix.configured %}
-    <div class="notice">
-      <p><strong>Falta o endereço da API do Onix.</strong></p>
+    <p class="conn-missing">Falta o endereço da API do Onix.</p>
+    <details class="conn-help"><summary>Como configurar</summary>
       <ol class="steps">
         <li>No arquivo <code>.env</code>, preencha <code>ONIX_API_URL</code> com o endereço passado pelo fornecedor do Onix, só a parte inicial (ex.: <code>http://servidor:8020</code>).</li>
         <li>Feche a janela do painel e ligue de novo.</li>
       </ol>
-    </div>
+    </details>
   {% else %}
-    <dl class="facts">
-      <div><dt>O que o painel lê</dt><dd>Custo ({{ {'custo_prod': 'custo', 'vlmedio_prod': 'custo médio', 'custoatac_prod': 'custo atacado'}.get(onix.cost_field, onix.cost_field) }}), marca, qtd. mínima, código de fábrica e local de cada produto, pelo mesmo código do Olist. Nada é alterado no Onix.</dd></div>
-      <div><dt>Última leitura</dt><dd>{% if onix.last_run %}{{ onix.last_run_label }} — {% if onix.last_run.status == 'ok' %}deu certo ({{ onix.last_run.counts.get('consultados', 0) }} consultados, {{ onix.last_run.counts.get('atualizados', 0) }} atualizados, {{ onix.last_run.counts.get('nao_encontrados', 0) }} não achados no Onix){% elif onix.last_run.status == 'rodando' %}em andamento…{% else %}não deu certo: {{ onix.last_run.error }}{% endif %}{% else %}nenhuma ainda{% endif %}</dd></div>
-      <div><dt>Frequência</dt><dd>A cada {{ onix.hours }} horas, com o painel ligado</dd></div>
+    <dl class="conn-facts">
+      <div><dt>Última leitura</dt><dd>{{ run_label(onix.last_run, onix.last_run_label) }}
+        {% if onix.last_run and onix.last_run.status == 'ok' %}<span class="conn-note">{{ onix.last_run.counts.get('consultados', 0) }} consultados, {{ onix.last_run.counts.get('atualizados', 0) }} atualizados, {{ onix.last_run.counts.get('nao_encontrados', 0) }} não achados</span>
+        {% elif onix.last_run and onix.last_run.status == 'erro' %}<span class="conn-note">{{ onix.last_run.error }}</span>{% endif %}<span class="conn-note">Atualiza a cada {{ onix.hours }} h</span></dd></div>
     </dl>
-    {% if onix.insecure %}<p class="muted small">A API do Onix está aberta na internet sem senha (decisão do dono em 26/11/2026). Guarde o endereço só no <code>.env</code>.</p>{% endif %}
-    <div class="actions">
+    <div class="conn-actions">
       <form method="post" action="/integracoes/onix/sincronizar"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button class="btn btn-primary" type="submit">Atualizar custos agora</button></form>
-      <a class="link" href="/produtos?filtro=custo_diferente">Ver produtos com custo diferente do Olist →</a>
+        <button class="btn btn-primary btn-sm" type="submit">Atualizar custos</button></form>
+      <a class="link small" href="/produtos?filtro=custo_diferente" title="Produtos com custo diferente do Olist">Ver diferenças →</a>
     </div>
+    <p class="conn-tip">Lê {{ {'custo_prod': 'custo', 'vlmedio_prod': 'custo médio', 'custoatac_prod': 'custo atacado'}.get(onix.cost_field, onix.cost_field) }}, marca e local pelo código do Olist.{% if onix.insecure %} API aberta na internet sem senha: endereço só no <code>.env</code>.{% endif %}</p>
   {% endif %}
+</section>
+
+</div>
+
+<section class="card conn conn-tax" id="imposto" aria-labelledby="tax-title">
+  <div>
+    <h2 id="tax-title" class="conn-name">Impostos sobre a venda</h2>
+    <p class="conn-sub">Alíquota efetiva passada pela contabilidade (Lucro Real), usada na margem real.
+      {% if tax_rate_is_demo %}<span class="stat-foot warn">O valor atual é só um exemplo da simulação.</span>{% endif %}</p>
+  </div>
+  <form method="post" action="/integracoes/imposto" class="inline-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="field field-inline">
+      <span>Alíquota (%)</span>
+      <input type="text" name="tax_rate_pct" inputmode="decimal" value="{{ '%g'|format(tax_rate_pct) if tax_rate_pct else '' }}" placeholder="ex.: 14,25" required>
+    </label>
+    <button class="btn btn-primary btn-sm" type="submit">Salvar</button>
+  </form>
 </section>
 {% endblock %}

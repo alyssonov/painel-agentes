@@ -185,8 +185,9 @@ automáticas, nada manual).
   (Perguntas, Pós-venda); Financeiro (Lucro real, Recebimentos, DRE do mês,
   Despesas, Gráficos, Curva ABC); Inteligência (Assistente, Agentes, Relatórios); Administração (Equipe, Contas
   conectadas). O menu só mostra o que a pessoa pode abrir. O item ativo é o endereço mais
-  específico (`active_nav`). Abaixo do menu: contas conectadas (Mercado Livre,
-  Shopee, Olist ERP) com status.
+  específico (`active_nav`). O status das contas fica só na página Contas
+  conectadas (sem quadro no pé do menu — decisão do dono em 26/11/2026), em
+  cartões compactos que cabem na tela sem rolar.
 - **Cores de status, com significado fixo** (variáveis `--ok`, `--warn`,
   `--danger`, `--info` e versões `-soft`): verde = tudo certo; âmbar = atenção
   / precisa de você; vermelho = problema / urgente; azul = informação / em

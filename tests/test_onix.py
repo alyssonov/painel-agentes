@@ -104,7 +104,7 @@ def test_sem_endereco_nao_faz_nada(db):
 
 def test_tela_contas_conectadas(logged_client, db, onix_env, monkeypatch):
     html = logged_client.get("/integracoes").text
-    assert "Onix" in html and "Atualizar custos agora" in html and "aberta na internet sem senha" in html
+    assert "Onix" in html and "Atualizar custos" in html and "aberta na internet sem senha" in html
     called = []
     monkeypatch.setattr("app.web.routes.integrations._onix_sync_in_background", lambda: called.append(1))
     r = logged_client.post("/integracoes/onix/sincronizar", data={"csrf_token": csrf_from(html)})
