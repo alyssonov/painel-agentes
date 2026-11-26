@@ -50,8 +50,10 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   Onix** (botão "Enviar planilha" no painel) — funciona já.
 
 ### B3. Shopee — 🟡
-- **26/11:** o código de verificação chegava em outro celular (por isso não
-  dava certo). Agora vai: terminar o cadastro na Open Platform e criar o app.
+- **26/11:** cadastro enviado na Open Platform (o código ia para outro
+  celular; resolvido). **Em análise pela Shopee até 29/11** — o aviso chega
+  por e-mail. Depois: Console → App List → Create App (uso próprio da loja,
+  retorno `https://alyssonov.github.io/painel-retorno/shopee/`).
 - **Quando o app existir, me diga (sem colar números):** a situação do app
   (Developing/Live) e se aparecem Partner ID e Partner Key.
 - **Para eu programar a conexão:** o texto das páginas oficiais de autorização
