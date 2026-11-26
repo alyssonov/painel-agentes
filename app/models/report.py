@@ -7,12 +7,13 @@ from sqlalchemy import JSON, Date, DateTime, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 
 
-class Report(TimestampMixin, Base):
+class Report(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "reports"
     # Um relatório por tipo e período: impede envio duplicado.
-    __table_args__ = (UniqueConstraint("kind", "period_start"),)
+    __table_args__ = (UniqueConstraint("company_id", "kind", "period_start"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     kind: Mapped[str] = mapped_column(String(20))  # diario | semanal | mensal

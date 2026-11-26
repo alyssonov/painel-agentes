@@ -3,18 +3,20 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 from app.models.enums import AgentMode
 
 
-class Agent(TimestampMixin, Base):
+class Agent(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "agents"
+    __table_args__ = (UniqueConstraint("company_id", "slug"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    slug: Mapped[str] = mapped_column(String(40), unique=True)
+    slug: Mapped[str] = mapped_column(String(40))
     name: Mapped[str] = mapped_column(String(80))
     description: Mapped[str] = mapped_column(Text)
     position: Mapped[int] = mapped_column(Integer, default=0)  # ordem no painel
@@ -26,7 +28,7 @@ class Agent(TimestampMixin, Base):
     runs: Mapped[list["AgentRun"]] = relationship(back_populates="agent", cascade="all, delete-orphan")
 
 
-class AgentRun(TimestampMixin, Base):
+class AgentRun(CompanyScoped, TimestampMixin, Base):
     """Uma execução de um agente: quando rodou, quanto processou e o resumo."""
 
     __tablename__ = "agent_runs"

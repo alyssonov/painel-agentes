@@ -1,7 +1,7 @@
 # Atalhos do projeto. Use sempre o ambiente virtual em .venv.
 PY := .venv/bin/python
 
-.PHONY: diagnostico diagnostico-recebimentos diagnostico-precos install setup keys dev worker test migrate seed seed-demo user atualizar iniciar
+.PHONY: backup diagnostico diagnostico-recebimentos diagnostico-precos install setup keys dev worker test migrate seed seed-demo user atualizar iniciar
 
 install:          ## instala as dependências (inclusive de desenvolvimento)
 	python3.12 -m venv .venv
@@ -47,3 +47,6 @@ diagnostico-recebimentos: ## de onde dá para prever os recebimentos (sem dados 
 
 diagnostico-precos: ## referências de preço do Mercado Livre para os anúncios (só leitura)
 	$(PY) -m app.cli diag-precos
+
+backup:           ## cópia de segurança do banco (feita sozinha antes de cada atualização)
+	$(PY) -m app.cli backup-db --sempre

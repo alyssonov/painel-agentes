@@ -10,11 +10,12 @@ from sqlalchemy import BigInteger, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 
 
-class MarketplaceFee(TimestampMixin, Base):
+class MarketplaceFee(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "marketplace_fees"
-    __table_args__ = (UniqueConstraint("channel", "order_ref"),)
+    __table_args__ = (UniqueConstraint("company_id", "channel", "order_ref"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     channel: Mapped[str] = mapped_column(String(20))

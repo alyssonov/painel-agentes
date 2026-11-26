@@ -7,12 +7,13 @@ from sqlalchemy import JSON, DateTime, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 from app.models.enums import IntegrationStatus
 
 
-class IntegrationAccount(TimestampMixin, Base):
+class IntegrationAccount(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "integration_accounts"
-    __table_args__ = (UniqueConstraint("provider", "external_id"),)
+    __table_args__ = (UniqueConstraint("company_id", "provider", "external_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     provider: Mapped[str] = mapped_column(String(20), index=True)

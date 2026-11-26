@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.security import csrf_is_valid
+from app.core.tenant import set_company
 from app.models.user import User
 
 SESSION_USER_KEY = "user_id"
@@ -36,6 +37,8 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> User:
     ):
         request.session.pop(SESSION_USER_KEY, None)
         raise LoginRequired()
+    # Daqui em diante, toda consulta desta requisição só vê os dados da empresa do usuário.
+    set_company(db, user.company_id)
     request.state.user = user
     return user
 

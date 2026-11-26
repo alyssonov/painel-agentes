@@ -11,9 +11,10 @@ from sqlalchemy import JSON, DateTime, String, event
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, utcnow
+from app.models.company import CompanyScoped
 
 
-class AuditLog(Base):
+class AuditLog(CompanyScoped, Base):
     __tablename__ = "audit_log"
 
     id: Mapped[int] = mapped_column(primary_key=True)

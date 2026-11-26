@@ -6,10 +6,11 @@ from sqlalchemy import DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 from app.models.enums import AlertSeverity, AlertStatus
 
 
-class Alert(TimestampMixin, Base):
+class Alert(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "alerts"
 
     id: Mapped[int] = mapped_column(primary_key=True)

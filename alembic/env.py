@@ -29,11 +29,25 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     engine = build_engine(_url())
+    sqlite = engine.dialect.name == "sqlite"
     with engine.connect() as connection:
+        if sqlite:
+            # IMPORTANTE: no SQLite, alterar uma tabela = criar uma nova, copiar os dados e
+            # APAGAR a antiga. Com as chaves estrangeiras ligadas, apagar a antiga apagaria
+            # em cascata as linhas filhas (itens de pedido, histórico dos agentes...).
+            # Por isso elas ficam desligadas durante a migração e são conferidas no fim.
+            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            connection.commit()
         # render_as_batch: necessário para alterar tabelas no SQLite.
         context.configure(connection=connection, target_metadata=target_metadata, render_as_batch=True)
         with context.begin_transaction():
             context.run_migrations()
+        if sqlite:
+            problems = connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall()
+            connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+            connection.commit()
+            if problems:
+                raise RuntimeError(f"Migração deixou referências quebradas no banco: {problems[:5]}")
     engine.dispose()
 
 

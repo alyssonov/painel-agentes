@@ -122,7 +122,8 @@ python tarefas.py test       # roda os testes
 python tarefas.py diagnostico  # situação dos envios do Mercado Livre (sem dados de clientes)
 python tarefas.py diagnostico-recebimentos  # de onde prever os recebimentos (sem dados de clientes)
 python tarefas.py diagnostico-precos  # referências de preço do ML para os anúncios (só leitura)
-python tarefas.py atualizar  # git pull + dependências novas + migrações
+python tarefas.py backup     # cópia de segurança do banco (data/backups/)
+python tarefas.py atualizar  # git pull + dependências novas + cópia do banco + migrações
 python tarefas.py iniciar    # atualizar + liga o painel + abre o navegador
 ```
 
@@ -139,6 +140,10 @@ automáticas, nada manual).
 - Datas no banco em UTC sem fuso (`utcnow()`); "hoje" é calculado no fuso da
   loja com `app/core/timeutil.py`.
 - Registros da simulação têm `is_demo=true`.
+- **Multiempresa:** tabela nova de dados herda `CompanyScoped`
+  (`app/models/company.py`) e unicidades incluem `company_id`. O filtro por
+  empresa é automático (`app/core/tenant.py`); nunca contorne com
+  `all_companies=True` sem necessidade. Ver `docs/ARQUITETURA.md` §28.
 - Integrações ficam em `app/integrations/<nome>/` (auth, client, mapping,
   dates); a leitura API → banco fica em `app/sync/`. Testes de integração usam
   APIs simuladas com `respx` (ex.: `tests/olist_fake.py`).

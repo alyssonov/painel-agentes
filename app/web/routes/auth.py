@@ -12,6 +12,7 @@ from app.config import get_settings
 from app.core import audit
 from app.core.db import get_db, utcnow
 from app.core.security import get_or_create_csrf_token, mask_email, verify_password
+from app.core.tenant import set_company
 from app.models.user import User
 from app.web.auth import SESSION_AUTH_VERSION_KEY, SESSION_USER_KEY, auth_version, current_user, verify_csrf
 from app.web.templating import render
@@ -58,6 +59,7 @@ def login_submit(
         db.commit()
         return render(request, "login.html", {"error": _GENERIC_ERROR, "email": email}, status_code=401)
 
+    set_company(db, user.company_id)  # o registro do login fica na empresa do usuário
     user.failed_logins = 0
     user.locked_until = None
     user.last_login_at = now

@@ -6,12 +6,13 @@ from sqlalchemy import DateTime, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 from app.models.enums import QuestionStatus
 
 
-class Question(TimestampMixin, Base):
+class Question(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "questions"
-    __table_args__ = (UniqueConstraint("channel", "external_id"),)
+    __table_args__ = (UniqueConstraint("company_id", "channel", "external_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     channel: Mapped[str] = mapped_column(String(20), index=True)

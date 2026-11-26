@@ -6,9 +6,10 @@ from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
+from app.models.company import CompanyScoped
 
 
-class PricingSimulation(Base):
+class PricingSimulation(CompanyScoped, Base):
     __tablename__ = "pricing_simulations"
 
     id: Mapped[int] = mapped_column(primary_key=True)

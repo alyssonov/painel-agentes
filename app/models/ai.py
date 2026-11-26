@@ -6,9 +6,10 @@ from sqlalchemy import DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, utcnow
+from app.models.company import CompanyScoped
 
 
-class AiUsage(Base):
+class AiUsage(CompanyScoped, Base):
     __tablename__ = "ai_usage"
 
     id: Mapped[int] = mapped_column(primary_key=True)

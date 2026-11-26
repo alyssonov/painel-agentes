@@ -10,13 +10,14 @@ from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text,
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 
 
-class ItemRating(TimestampMixin, Base):
+class ItemRating(CompanyScoped, TimestampMixin, Base):
     """Resumo das avaliações de um anúncio (média e quantidade por estrela)."""
 
     __tablename__ = "item_ratings"
-    __table_args__ = (UniqueConstraint("channel", "item_id"),)
+    __table_args__ = (UniqueConstraint("company_id", "channel", "item_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     channel: Mapped[str] = mapped_column(String(20), index=True)
@@ -30,11 +31,11 @@ class ItemRating(TimestampMixin, Base):
     is_demo: Mapped[bool] = mapped_column(default=False)
 
 
-class ProductReview(Base):
+class ProductReview(CompanyScoped, Base):
     """Avaliação negativa (1 a 3 estrelas) de um anúncio — base para achar problemas que se repetem."""
 
     __tablename__ = "product_reviews"
-    __table_args__ = (UniqueConstraint("channel", "review_id"),)
+    __table_args__ = (UniqueConstraint("company_id", "channel", "review_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     channel: Mapped[str] = mapped_column(String(20), index=True)
@@ -50,7 +51,7 @@ class ProductReview(Base):
     is_demo: Mapped[bool] = mapped_column(default=False)
 
 
-class ClaimReason(Base):
+class ClaimReason(CompanyScoped, Base):
     """Explicação de cada motivo de reclamação do Mercado Livre (cache de /claims/reasons/{id})."""
 
     __tablename__ = "claim_reasons"
@@ -60,7 +61,7 @@ class ClaimReason(Base):
     detail: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
 
-class ProductInsight(TimestampMixin, Base):
+class ProductInsight(CompanyScoped, TimestampMixin, Base):
     """O que se repete nas avaliações e devoluções de um produto, resumido pela IA (semanal)."""
 
     __tablename__ = "product_insights"

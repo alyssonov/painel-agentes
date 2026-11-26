@@ -10,11 +10,12 @@ from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Unique
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 
 
-class Listing(TimestampMixin, Base):
+class Listing(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "listings"
-    __table_args__ = (UniqueConstraint("channel", "external_id"),)
+    __table_args__ = (UniqueConstraint("company_id", "channel", "external_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     channel: Mapped[str] = mapped_column(String(20), index=True)

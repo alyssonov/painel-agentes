@@ -6,11 +6,12 @@ from sqlalchemy import DateTime, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 
 
-class Shipment(TimestampMixin, Base):
+class Shipment(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "shipments"
-    __table_args__ = (UniqueConstraint("channel", "shipment_id"),)
+    __table_args__ = (UniqueConstraint("company_id", "channel", "shipment_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     channel: Mapped[str] = mapped_column(String(20))

@@ -2,22 +2,24 @@
 
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 from app.models.catalog import Product
 from app.models.enums import KanbanStatus
 
 
-class Order(TimestampMixin, Base):
+class Order(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "orders"
+    __table_args__ = (UniqueConstraint("company_id", "olist_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     channel: Mapped[str] = mapped_column(String(20), index=True)
     external_id: Mapped[str] = mapped_column(String(64), index=True)  # número no marketplace
     # Identificador do pedido no Olist (único): é por ele que a sincronização atualiza.
-    olist_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    olist_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     olist_number: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # Nota fiscal vinculada no Olist (campo idNotaFiscal do pedido). Só leitura.
     invoice_olist_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -42,7 +44,7 @@ class Order(TimestampMixin, Base):
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
 
 
-class OrderItem(TimestampMixin, Base):
+class OrderItem(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "order_items"
 
     id: Mapped[int] = mapped_column(primary_key=True)

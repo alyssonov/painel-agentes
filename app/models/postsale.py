@@ -10,14 +10,15 @@ from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Text, Unique
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 from app.models.enums import ConversationStatus
 
 
-class Conversation(TimestampMixin, Base):
+class Conversation(CompanyScoped, TimestampMixin, Base):
     """Conversa pós-venda de um pacote/pedido."""
 
     __tablename__ = "conversations"
-    __table_args__ = (UniqueConstraint("channel", "pack_ref"),)
+    __table_args__ = (UniqueConstraint("company_id", "channel", "pack_ref"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     channel: Mapped[str] = mapped_column(String(20), index=True)
@@ -38,9 +39,9 @@ class Conversation(TimestampMixin, Base):
         back_populates="conversation", order_by="ConversationMessage.sent_at", cascade="all, delete-orphan")
 
 
-class ConversationMessage(Base):
+class ConversationMessage(CompanyScoped, Base):
     __tablename__ = "conversation_messages"
-    __table_args__ = (UniqueConstraint("conversation_id", "external_id"),)
+    __table_args__ = (UniqueConstraint("company_id", "conversation_id", "external_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), index=True)
@@ -52,11 +53,11 @@ class ConversationMessage(Base):
     conversation: Mapped[Conversation] = relationship(back_populates="messages")
 
 
-class Claim(TimestampMixin, Base):
+class Claim(CompanyScoped, TimestampMixin, Base):
     """Reclamação aberta contra a loja (somente leitura: a resolução é feita no marketplace)."""
 
     __tablename__ = "claims"
-    __table_args__ = (UniqueConstraint("channel", "external_id"),)
+    __table_args__ = (UniqueConstraint("company_id", "channel", "external_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     channel: Mapped[str] = mapped_column(String(20), index=True)

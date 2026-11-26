@@ -324,6 +324,19 @@ def cmd_diag_precos(_args) -> int:
     return 0
 
 
+def cmd_backup_db(args) -> int:
+    """Cópia de segurança do banco antes de atualizar (só quando há atualização pendente)."""
+    from app.core.backup import backup_before_migrate
+    try:
+        path = backup_before_migrate(always=args.sempre)
+    except Exception as exc:  # noqa: BLE001 - a cópia nunca pode impedir o painel de ligar
+        print(f"Aviso: não foi possível fazer a cópia de segurança do banco ({exc}).")
+        return 0
+    if path:
+        print(f"Cópia de segurança do banco salva em: {path}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description="Administração do painel")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -337,6 +350,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("diag-envios").set_defaults(func=cmd_diag_envios)
     sub.add_parser("diag-recebimentos").set_defaults(func=cmd_diag_recebimentos)
     sub.add_parser("diag-precos").set_defaults(func=cmd_diag_precos)
+    p_backup = sub.add_parser("backup-db")
+    p_backup.add_argument("--sempre", action="store_true", help="copia mesmo sem atualização pendente")
+    p_backup.set_defaults(func=cmd_backup_db)
     args = parser.parse_args(argv)
     return args.func(args)
 

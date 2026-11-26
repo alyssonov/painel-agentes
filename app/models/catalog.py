@@ -3,18 +3,20 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, BigInteger, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, BigInteger, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 
 
-class Product(TimestampMixin, Base):
+class Product(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "products"
+    __table_args__ = (UniqueConstraint("company_id", "olist_id"), UniqueConstraint("company_id", "sku"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    olist_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
-    sku: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    olist_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    sku: Mapped[str] = mapped_column(String(64), index=True)
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     specs: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # ficha técnica
@@ -25,7 +27,7 @@ class Product(TimestampMixin, Base):
     is_demo: Mapped[bool] = mapped_column(default=False)
 
 
-class StockSnapshot(TimestampMixin, Base):
+class StockSnapshot(CompanyScoped, TimestampMixin, Base):
     """Saldo de estoque lido do Olist em um momento (nunca alteramos o estoque)."""
 
     __tablename__ = "stock_snapshots"

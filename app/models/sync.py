@@ -7,9 +7,10 @@ from sqlalchemy import JSON, DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, utcnow
+from app.models.company import CompanyScoped
 
 
-class SyncRun(Base):
+class SyncRun(CompanyScoped, Base):
     __tablename__ = "sync_runs"
 
     id: Mapped[int] = mapped_column(primary_key=True)

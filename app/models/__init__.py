@@ -6,6 +6,7 @@ from app.models.ai import AiCache, AiUsage
 from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.catalog import Product, StockSnapshot
+from app.models.company import Company
 from app.models.fee import MarketplaceFee
 from app.models.integration import IntegrationAccount
 from app.models.invoice import Invoice
@@ -33,6 +34,7 @@ __all__ = [
     "Alert",
     "AuditLog",
     "Claim",
+    "Company",
     "ClaimReason",
     "Conversation",
     "ConversationMessage",
@@ -58,3 +60,6 @@ __all__ = [
     "SyncRun",
     "User",
 ]
+
+# Liga o filtro automático por empresa (precisa vir depois de todas as tabelas).
+import app.core.tenant  # noqa: E402,F401

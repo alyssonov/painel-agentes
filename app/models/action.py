@@ -11,10 +11,11 @@ from sqlalchemy import JSON, DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 from app.models.enums import ActionStatus
 
 
-class Action(TimestampMixin, Base):
+class Action(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "actions"
 
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -5,17 +5,19 @@ O sistema nunca emite, cancela ou altera notas: só lê para conferir.
 
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String
+from sqlalchemy import BigInteger, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin
+from app.models.company import CompanyScoped
 
 
-class Invoice(TimestampMixin, Base):
+class Invoice(CompanyScoped, TimestampMixin, Base):
     __tablename__ = "invoices"
+    __table_args__ = (UniqueConstraint("company_id", "olist_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    olist_id: Mapped[str] = mapped_column(String(64), unique=True)
+    olist_id: Mapped[str] = mapped_column(String(64))
     # Pedido de origem no Olist (campo origem.id quando origem.tipo = "venda").
     order_olist_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     order_id: Mapped[int | None] = mapped_column(ForeignKey("orders.id", ondelete="SET NULL"),

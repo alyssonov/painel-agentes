@@ -15,6 +15,7 @@ Comandos:
   diagnostico mostra a situação dos envios do Mercado Livre (sem dados de clientes)
   diagnostico-recebimentos  de onde dá para prever os recebimentos (sem dados de clientes)
   diagnostico-precos  referências de preço do Mercado Livre para os anúncios (só leitura)
+  backup     cópia de segurança do banco (feita sozinha antes de cada atualização)
   atualizar  busca a versão nova no GitHub, instala dependências e atualiza o banco
   iniciar    atualiza, liga o painel + worker e abre o navegador (é o que o "Iniciar painel.bat" usa)
 """
@@ -115,6 +116,7 @@ def prepare() -> int:
     _save_deps_hash()
     if not (ROOT / ".env").exists():
         run(str(VENV_PY), "-m", "app.cli", "init-env")
+    run(str(VENV_PY), "-m", "app.cli", "backup-db")  # cópia do banco antes de mudar a estrutura
     print("Atualizando o banco de dados...")
     return run(str(VENV_PY), "-m", "alembic", "upgrade", "head")
 
@@ -171,6 +173,7 @@ COMMANDS = {
     "diagnostico": lambda: run(venv_python(), "-m", "app.cli", "diag-envios"),
     "diagnostico-recebimentos": lambda: run(venv_python(), "-m", "app.cli", "diag-recebimentos"),
     "diagnostico-precos": lambda: run(venv_python(), "-m", "app.cli", "diag-precos"),
+    "backup": lambda: run(venv_python(), "-m", "app.cli", "backup-db", "--sempre"),
 }
 
 

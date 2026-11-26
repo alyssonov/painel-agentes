@@ -672,3 +672,29 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
 - Histórico: tabela `pricing_simulations` (migração 0015), 10 por pessoa;
   testar preço no simulador não duplica. Página `/precificacao` (GET, sem
   alterar nada externo).
+
+## 28. Etapa 3a — Multiempresa (decisão A4, 26/11/2026)
+
+- Tabela `companies`; a loja instalada é a **empresa nº 1** ("Minha loja"). A
+  migração 0016 liga todo dado existente a ela (nada é apagado).
+- Toda tabela de dados usa a mistura `CompanyScoped` (`app/models/company.py`):
+  coluna `company_id` + índice. Unicidades passaram a valer **por empresa**
+  (ex.: o mesmo SKU pode existir em duas empresas).
+- Fora da mistura: `users` (tem `company_id`, mas o login procura o e-mail em
+  todas as empresas — o e-mail é único no sistema), `ai_cache` (compartilhado:
+  só guarda respostas de IA para entradas idênticas) e `companies`.
+- `app/core/tenant.py`: a sessão do banco guarda a empresa
+  (`session.info["company_id"]`). Toda consulta (select/update/delete, inclusive
+  `get()` e relacionamentos) recebe o filtro da empresa; registro novo recebe a
+  empresa sozinho; gravar registro de outra empresa gera `CrossCompanyWrite`.
+  No painel, `current_user` define a empresa do usuário logado. Sem definição
+  (worker, comandos), vale a empresa padrão — quando houver várias lojas
+  (etapa 8), o worker vai percorrer as empresas com uma sessão para cada.
+  Consulta de todas as empresas só com `.execution_options(all_companies=True)`.
+- **Migrações no SQLite:** alterar tabela = recriar e copiar. Com as chaves
+  estrangeiras ligadas, apagar a tabela antiga apagava em cascata as linhas
+  filhas. `alembic/env.py` desliga as chaves durante a migração e confere a
+  integridade (`PRAGMA foreign_key_check`) no fim.
+- **Cópia de segurança automática:** antes de aplicar migração pendente, o
+  `tarefas.py iniciar/atualizar` copia o banco para `data/backups/` (últimas 10;
+  `python tarefas.py backup` faz uma cópia a qualquer hora).
