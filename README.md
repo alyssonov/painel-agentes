@@ -278,25 +278,25 @@ vendidos, perguntas, o que pede atenção e o que cada agente fez. Se o
 computador estiver desligado no horário, sai assim que o painel ligar (até o
 fim do dia), e nunca duas vezes. Falha no envio vira alerta. Sem custo de IA.
 
-## Precificação (calculadora)
+## Precificação (calculadora "Saia do Prejuízo")
 
-No menu **Precificação** (no formato da "calculadora fácil" da NorteUp): custo
-do produto (ou busque o produto pelo SKU/nome — o custo vem do Olist), custo
-fixo (rateio em % do preço ou R$ por unidade), margem desejada (10/20/30% ou
-personalizada) ou lucro por venda, impostos (MEI, Simples, CPF), anúncios
-pagos, e os marketplaces: **Shopee, Mercado Livre Clássico, Mercado Livre
-Premium e TikTok Shop**. Em "Mais ajustes": desconto e comissão de afiliados;
-opção de preço terminando em ,90 e taxa de devolução da Shopee.
+No menu **Precificação**, a calculadora criada pelo dono, nas cores do painel:
 
-- **Mercado Livre:** a tarifa vem da **API oficial "Custos por vender"**, para o
-  preço calculado, com a logística da loja e a categoria do anúncio.
-- **Shopee e TikTok Shop:** tabela por faixa de preço em **Precificação →
-  Tabela de taxas** (valores de referência de 2026 — confira na Central do
-  Vendedor e corrija ali).
+- **Descobrir preço de venda:** informe custo, tarifa do marketplace (%), taxa
+  fixa (R$), publicidade (%), imposto (%) e outros custos (R$), e escolha
+  **margem** (lucro em % do preço) ou **markup** (lucro em % do custo, sobre o
+  valor que sobra). Mostra o preço, a margem/markup, o valor a receber e o
+  lucro líquido. **Desconto no anúncio** calcula o preço "de" para o comprador
+  pagar exatamente o preço calculado.
+- **Descobrir minha margem:** informe o preço que você cobra hoje e veja margem,
+  markup e lucro (fica vermelho quando dá prejuízo).
+- **Detalhamento:** barra com a parte de cada custo no preço (passe o mouse) e a
+  conta linha a linha.
 
-O resultado mostra o preço de cada marketplace, lucro, margem, quanto você
-recebe e a conta completa. Abaixo: **simuladores** (e se eu vender a outro
-preço?) e as **últimas 10 simulações**. Só faz contas: nada muda nos anúncios.
+O imposto já começa com a alíquota da loja (Contas conectadas). Só faz contas:
+nada é salvo nem muda nos anúncios. Para mudar preços de verdade, use **Preços
+em massa** (com aprovação). As taxas da Shopee/TikTok de referência ficam em
+**Precificação → Tabela de taxas**.
 
 ## Anúncios (Fase 7 — agente Criador e otimizador de anúncios)
 

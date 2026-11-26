@@ -172,6 +172,8 @@ automáticas, nada manual).
   sistema (Segoe UI no Windows). Todas as cores são variáveis em
   `:root, :root[data-theme="dark"]` e `:root[data-theme="light"]` no
   `app/web/static/css/app.css` — **nunca usar cor fixa** fora delas.
+- Precificação: calculadora "Saia do Prejuízo" (do dono), em
+  `app/web/static/js/calculadora.js` — ver `docs/ARQUITETURA.md` §34.
 - Menu lateral em **grupos** (`NAV_GROUPS` em `app/web/templating.py`): Visão
   geral; Operação (Pedidos, Produtos, Anúncios, Estoque e compras, Precificação); Atendimento
   (Perguntas, Pós-venda); Financeiro (Lucro real, Recebimentos, Gráficos, Curva

@@ -1,12 +1,5 @@
-"""Precificação — calculadora (taxas por faixa, tarifa oficial do ML, desconto, afiliados, histórico)."""
+"""Precificação — contas de preço (usadas pelos preços em massa), tela da calculadora e tabela de taxas."""
 
-import httpx
-import respx
-from sqlalchemy import select
-
-from app.core.db import utcnow
-from app.models import Listing, PriceReference, PricingSimulation, Product
-from app.models.enums import Channel as Mkt
 from app.services.marketplace_fees import DEFAULT_FEES
 from app.services.pricing_calc import (
     Channel,
@@ -21,8 +14,8 @@ from app.services.pricing_calc import (
     price_for,
     round_up_price,
 )
+from app.services.store_settings import set_setting
 from tests.conftest import csrf_from
-from tests.test_ml import connect_ml, ml_env  # noqa: F401 - fixture
 
 COSTS = Costs(cost_cents=3460, tax_pct=2.5)
 ML = Channel("ML", flat_fee(12), shipping_cents=915)
@@ -68,60 +61,17 @@ def test_leitura_de_valores():
     assert parse_percent("16,5") == 16.5 and parse_percent("") is None
 
 
-def _calc_url(extra=""):
-    return ("/precificacao?calcular=1&nome=Pastilha&custo=39,99&rateio=0&rateio_tipo=pct&modo=margem&margem=20"
-            "&regime=simples&imposto=2,5&ads=0&desconto=0&afiliados=0&final90=1&mk=shopee&mk=tiktok" + extra)
-
-
-def test_pagina_calcula_compara_e_guarda_historico(logged_client, db):
-    html = logged_client.get(_calc_url()).text
-    assert "Shopee" in html and "TikTok Shop" in html and "Mais lucro" in html and "Ver a conta" in html
-    assert "tabela de taxas do painel" in html and "style=" not in html
-    # Simulador: outro preço para a Shopee.
-    html = logged_client.get(_calc_url("&sim_shopee=79,90")).text
-    assert 'value="79,90"' in html and "Lucro" in html
-    sims = list(db.scalars(select(PricingSimulation)))
-    assert len(sims) == 1 and sims[0].title == "Pastilha"  # testar preço não duplica o histórico
-    assert "Pastilha" in logged_client.get("/precificacao").text  # aparece em "Últimas 10 simulações"
-    for i in range(12):
-        logged_client.get(_calc_url(f"&nome=P{i}"))
-    assert db.query(PricingSimulation).count() == 10
-    assert "Informe o custo" in logged_client.get("/precificacao?calcular=1&custo=&modo=margem&margem=20&mk=shopee").text
-    assert "Marque pelo menos um" in logged_client.get("/precificacao?calcular=1&custo=10&modo=margem&margem=20").text
-
-
-@respx.mock
-def test_mercado_livre_usa_a_tarifa_oficial(logged_client, db, ml_env):
-    connect_ml(db)
-    p = Product(sku="CAN-01", name="Caneca", olist_id="o1", cost_cents=3460)
-    db.add(p)
-    db.flush()
-    db.add(Listing(channel=Mkt.ML, external_id="MLB1", item_id="MLB1", sku="CAN-01", product_id=p.id,
-                   title="Caneca", price_cents=6800, status="active", synced_at=utcnow()))
-    db.add(PriceReference(channel=Mkt.ML, item_id="MLB1", product_id=p.id, current_cents=6800, suggested_cents=6162,
-                          selling_fee_cents=739, shipping_fee_cents=915, checked_at=utcnow()))
+def test_tela_da_calculadora_saia_do_prejuizo(logged_client, db):
+    """A calculadora roda no navegador (calculadora.js); a página traz os campos e os valores iniciais."""
+    html = logged_client.get("/precificacao").text
+    for field in ("custo", "tarifa", "fixa", "ads", "imposto", "outros", "margem", "markup", "atual", "desconto"):
+        assert f'id="{field}"' in html
+    assert "Descobrir preço de venda" in html and "Descobrir minha margem" in html and "Detalhamento" in html
+    assert "/static/js/calculadora.js" in html and "style=" not in html and "<script>" not in html
+    set_setting(db, "tax_rate_pct", 14.25)
     db.commit()
-    base = "https://api.mercadolibre.com"
-    respx.get(f"{base}/items/MLB1").mock(return_value=httpx.Response(200, json={"id": "MLB1", "category_id": "MLB1234"}))
-    fees = respx.get(f"{base}/sites/MLB/listing_prices").mock(side_effect=lambda r: httpx.Response(200, json=[{
-        "listing_type_id": r.url.params["listing_type_id"], "sale_fee_amount": 0,
-        "sale_fee_details": {"percentage_fee": 11.5 if r.url.params["listing_type_id"] == "gold_special" else 16.5,
-                             "fixed_fee": 0}}]))
-    html = logged_client.get(f"/precificacao?produto={p.id}").text
-    assert 'value="34,60"' in html and 'value="9,15"' in html  # custo do Olist e frete informado pelo ML
-    html = logged_client.get(f"/precificacao?calcular=1&produto={p.id}&custo=34,60&modo=margem&margem=15&imposto=2,5"
-                             "&ads=0&desconto=0&afiliados=0&rateio=0&rateio_tipo=pct&frete_ml=9,15"
-                             "&mk=ml_classico&mk=ml_premium").text
-    assert "tarifa oficial do Mercado Livre, da categoria do anúncio" in html
-    assert "Comissão (11,50%)" in html and "Comissão (16,50%)" in html
-    params = fees.calls[0].request.url.params
-    assert params["category_id"] == "MLB1234" and params["currency_id"] == "BRL"
-    assert all(c.request.method == "GET" for c in fees.calls)
-
-
-def test_sem_mercado_livre_conectado_usa_estimativa(logged_client, db):
-    html = logged_client.get(_calc_url("&mk=ml_classico")).text
-    assert "estimativa (12%)" in html
+    assert 'id="imposto" inputmode="decimal" value="14,25"' in logged_client.get("/precificacao").text
+    assert logged_client.get("/static/js/calculadora.js").status_code == 200
 
 
 def test_tabela_de_taxas_editavel(logged_client, db):

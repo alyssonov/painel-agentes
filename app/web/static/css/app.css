@@ -42,6 +42,8 @@
   --shadow: 0 1px 0 rgba(255, 255, 255, .02), 0 8px 24px rgba(0, 0, 0, .25);
   --focus: 0 0 0 3px rgba(59, 130, 246, .45);
   --chart-1: #3987E5; --chart-neg: #E66767; --chart-grid: #22304A; --chart-base: #3A4A66;
+  /* Calculadora (Precificação): cor de cada parte do preço na barra do detalhamento */
+  --sdp-k1: #8E9BB1; --sdp-k2: #E5A04A; --sdp-k3: #D283AD; --sdp-k4: #E8C547; --sdp-k5: #3987E5; --sdp-k6: #A78BFA;
   --sim-bg: #3A2E05; --sim-stripe: #46380A; --sim-ink: #FDE68A;
   --login-glow: rgba(59, 130, 246, .22);
   --radius-lg: 12px; --radius-md: 10px; --radius-sm: 8px;
@@ -74,6 +76,7 @@
   --shadow: 0 1px 2px rgba(15, 30, 45, .04), 0 6px 18px rgba(15, 30, 45, .05);
   --focus: 0 0 0 3px rgba(37, 99, 235, .35);
   --chart-1: #2A78D6; --chart-neg: #E34948; --chart-grid: #E5E7EB; --chart-base: #B9BCC2;
+  --sdp-k1: #6B7A90; --sdp-k2: #C27A1C; --sdp-k3: #B0518A; --sdp-k4: #B8930A; --sdp-k5: #2A78D6; --sdp-k6: #7C5CD6;
   --sim-bg: #FFE9A8; --sim-stripe: #FFE18A; --sim-ink: #4A3800;
   --login-glow: rgba(37, 99, 235, .14);
 }
@@ -575,3 +578,88 @@ form > .card { margin-bottom: 16px; }
   .table th, .table td, .muted, .text-danger { color: #000 !important; }
   .pick-box { border-color: #000; }
 }
+
+/* Precificação — calculadora "Saia do Prejuízo" ----------------------------------- */
+.sdp-grid { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: stretch; margin-bottom: 12px; }
+@media (min-width: 900px) { .sdp-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 1280px) {
+  .sdp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sdp-grid > .sdp-panel { min-height: 500px; }
+}
+.sdp-panel { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.sdp-col { display: flex; flex-direction: column; }
+.sdp-col .sdp-price { flex: 1; align-content: center; }
+.sdp-col .sdp-table { flex: 1; }
+.sdp-title { margin: 0; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.sdp-fields { display: grid; gap: 9px; }
+.sdp-field { display: grid; grid-template-columns: minmax(0, 1fr) 150px; grid-template-areas: "label input" "hint input";
+  gap: 1px 14px; align-items: center; }
+.sdp-field > label { grid-area: label; align-self: end; font-weight: 600; font-size: 14px; }
+.sdp-field > .sdp-hint { grid-area: hint; align-self: start; }
+.sdp-field > .sdp-input { grid-area: input; }
+.sdp-goal { grid-template-areas: "head head" "hint input"; row-gap: 8px; }
+.sdp-goal > .sdp-goal-head { grid-area: head; display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sdp-goal > .sdp-hint { align-self: center; }
+.sdp-hint { font-size: 12.5px; line-height: 1.35; color: var(--muted); }
+.sdp-input { display: flex; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--field); overflow: hidden; }
+.sdp-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.sdp-input span { font-size: 13px; color: var(--muted); padding: 0 12px; font-variant-numeric: tabular-nums; }
+.sdp-input .sdp-pre { border-right: 1px solid var(--line); min-width: 44px; text-align: center; padding: 0 8px; }
+.sdp-input input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 16px;
+  font-weight: 600; padding: 9px 12px; outline: none; font-variant-numeric: tabular-nums; }
+.sdp-divider { border: 0; border-top: 1px dashed var(--line); margin: 2px 0; }
+.sdp-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--card-2); border: 1px solid var(--line); border-radius: 10px; }
+.sdp-tabs button { font: inherit; font-size: 13.5px; font-weight: 600; color: var(--muted); background: transparent; border: 0;
+  border-radius: 7px; padding: 10px 8px; cursor: pointer; }
+.sdp-tabs button:hover { color: var(--ink); }
+.sdp-tabs button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.sdp-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sdp-tabs-mini { width: 150px; padding: 3px; border-radius: 8px; }
+.sdp-tabs-mini button { font-size: 12.5px; padding: 5px 4px; border-radius: 6px; }
+.sdp-price { background: var(--accent-soft); border-radius: 10px; padding: 20px; display: grid; gap: 6px; justify-items: center; text-align: center; }
+.sdp-lbl { font-size: 13px; color: var(--muted); font-weight: 600; }
+.sdp-val { font-weight: 800; font-size: clamp(38px, 4.2vw, 54px); line-height: 1.05; color: var(--accent-ink); font-variant-numeric: tabular-nums; }
+.sdp-de { font-size: 16px; color: var(--muted); font-weight: 500; }
+.sdp-de s { font-weight: 700; color: var(--ink); text-decoration: none; font-variant-numeric: tabular-nums; }
+.sdp-desc { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.sdp-desc label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.sdp-desc .sdp-input { background: var(--card); }
+.sdp-mini { width: 96px; flex-shrink: 0; }
+.sdp-mini input { text-align: right; padding: 6px 4px 6px 10px; font-size: 15px; }
+.sdp-mini span { padding: 0 10px 0 2px; }
+.sdp-price.is-neg { background: var(--danger-soft); }
+.sdp-price.is-neg .sdp-val { color: var(--danger); }
+.sdp-price.is-error { background: var(--danger-soft); }
+.sdp-price.is-error .sdp-val { color: var(--danger); font-size: 17px; font-weight: 600; }
+.sdp-rows { display: grid; }
+.sdp-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 13px 4px; border-bottom: 1px solid var(--line); }
+.sdp-row:last-child { border-bottom: 0; padding-bottom: 2px; }
+.sdp-row span { font-size: 14px; color: var(--muted); font-weight: 600; }
+.sdp-row b { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sdp-row b.sdp-lucro { color: var(--ok); }
+.sdp-row b.sdp-lucro.is-neg { color: var(--danger); }
+.sdp-bar { display: flex; height: 16px; border-radius: 8px; overflow: hidden; background: var(--line); flex-shrink: 0; }
+.sdp-bar i { display: block; height: 100%; cursor: default; transition: opacity .15s; }
+.sdp-bar:hover i { opacity: .4; }
+.sdp-bar i:hover { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) { .sdp-bar i { transition: width .25s ease, opacity .15s; } }
+.sdp-k1 { background: var(--sdp-k1); } .sdp-k2 { background: var(--sdp-k2); } .sdp-k3 { background: var(--sdp-k3); }
+.sdp-k4 { background: var(--sdp-k4); } .sdp-k5 { background: var(--sdp-k5); } .sdp-k6 { background: var(--sdp-k6); }
+.sdp-k7 { background: var(--ok); }
+.sdp-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+.sdp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sdp-table td { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.sdp-table td:first-child { font-weight: 600; }
+.sdp-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sdp-share { display: inline-block; min-width: 6ch; text-align: right; color: var(--muted); font-size: 12px; margin-right: 10px; }
+.sdp-cur { margin-right: 4px; color: var(--muted); }
+.sdp-amt { display: inline-block; min-width: var(--sdp-amtw, 8ch); text-align: right; }
+.sdp-total td { font-weight: 700; border-bottom: 2px solid var(--ink); }
+.sdp-profit td { border-bottom: 0; font-weight: 700; color: var(--ok); padding-top: 8px; }
+.sdp-profit.is-neg td { color: var(--danger); }
+.sdp-tip { margin: 0; }
+@media (max-width: 520px) { .sdp-field { grid-template-columns: minmax(0, 1fr) 120px; } .sdp-tabs-mini { width: 120px; } }
+
+/* Garante que [hidden] esconda mesmo com display definido acima (calculadora). */
+.sdp-grid [hidden] { display: none !important; }
+.sdp-goal-head label { font-weight: 600; font-size: 14px; }

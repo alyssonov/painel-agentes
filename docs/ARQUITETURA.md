@@ -789,3 +789,19 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   meio, as anteriores ficam registradas. No modo simulação viram "simulada".
 - Ações em massa de anúncios (pausar, reativar, editar texto) ficam para depois
   de consultar a documentação oficial dessas operações.
+
+## 34. Precificação — calculadora "Saia do Prejuízo" (26/11/2026)
+
+- A calculadora da tela Precificação foi trocada pela que o dono criou
+  ("Saia do Prejuízo"), adaptada à identidade do painel (tokens dos dois temas,
+  cores da barra em `--sdp-k1..k6`, sem fontes externas, sem script inline:
+  `app/web/static/js/calculadora.js`, carregado pelo bloco `head_extra`).
+- Roda no navegador; o servidor só entrega a página com os valores iniciais (o
+  imposto vem de `tax_rate_pct`). Fórmulas no comentário do JS (margem, markup,
+  "minha margem", desconto de fachada). A dica da barra usa o `#chart-tip` do
+  painel (`data-tip`).
+- Saíram da tela antiga: comparação lado a lado por marketplace, tarifa oficial
+  do ML por categoria, busca de produto, simuladores e histórico das 10 últimas
+  simulações (a tabela `pricing_simulations` continua no banco, sem uso). As
+  contas de `app/services/pricing_calc.py` e a tabela de taxas continuam, usadas
+  pelos Preços em massa.
