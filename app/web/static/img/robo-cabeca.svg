@@ -2,26 +2,26 @@
   <title>Gerente do Ano</title>
   <defs>
     <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#6a7c90"/><stop offset=".55" stop-color="#3a4a5d"/><stop offset="1" stop-color="#1c2838"/>
+      <stop offset="0" stop-color="#3D5F94"/><stop offset=".55" stop-color="#1F3559"/><stop offset="1" stop-color="#0E1A30"/>
     </linearGradient>
     <linearGradient id="gSilver" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f6f9fc"/><stop offset=".5" stop-color="#b9c5d2"/><stop offset="1" stop-color="#8a98a9"/>
+      <stop offset="0" stop-color="#f6f9fc"/><stop offset=".5" stop-color="#B7C6DB"/><stop offset="1" stop-color="#7F92AE"/>
     </linearGradient>
     <linearGradient id="gBezel" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#a3b1c0"/><stop offset="1" stop-color="#93a3b3"/>
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#A2B4CE"/><stop offset="1" stop-color="#8FA3C0"/>
     </linearGradient>
     <linearGradient id="gScreen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#4a5562"/><stop offset=".22" stop-color="#2a3646"/><stop offset=".6" stop-color="#1e2e42"/>
-      <stop offset="1" stop-color="#152233"/>
+      <stop offset="0" stop-color="#1C2B45"/><stop offset=".22" stop-color="#111C30"/><stop offset=".6" stop-color="#0B1424"/>
+      <stop offset="1" stop-color="#070D18"/>
     </linearGradient>
     <linearGradient id="gEar" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#4b5b6f"/><stop offset="1" stop-color="#26354a"/>
+      <stop offset="0" stop-color="#2F5590"/><stop offset="1" stop-color="#142848"/>
     </linearGradient>
     <linearGradient id="gStalk" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#8c9bab"/><stop offset=".5" stop-color="#f4f7fa"/><stop offset="1" stop-color="#8c9bab"/>
     </linearGradient>
     <radialGradient id="gBall" cx=".4" cy=".35" r=".7">
-      <stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#e6eef6"/><stop offset="1" stop-color="#8ea4b8"/>
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#9CC5FF"/><stop offset="1" stop-color="#3B82F6"/>
     </radialGradient>
     <linearGradient id="gGloss" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#ffffff" stop-opacity=".16"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
@@ -43,7 +43,7 @@
     <rect x="585" y="438" width="430" height="329" rx="96" fill="url(#gBody)" stroke="url(#gSilver)" stroke-width="12"/>
     <rect x="629" y="481" width="342" height="241" rx="68" fill="url(#gScreen)" stroke="url(#gBezel)" stroke-width="9"/>
     <path d="M640 548 Q640 490 698 490 H902 Q960 490 960 548 Z" fill="url(#gGloss)"/>
-    <g filter="url(#fGlow)" fill="#eaf6ff">
+    <g filter="url(#fGlow)" fill="#A9CCFF">
       <rect x="683" y="577" width="82" height="39" rx="19.5"/>
       <rect x="835" y="577" width="82" height="39" rx="19.5"/>
     </g>
