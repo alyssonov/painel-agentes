@@ -1,0 +1,44 @@
+{% extends "app_layout.html" %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block page_title %}{{ p.name }}{% endblock %}
+{% block page_subtitle %}<p class="muted">SKU {{ p.sku }} · <a class="link" href="/produtos">voltar para produtos</a>{% if can('ver_historico') %} · <a class="link" href="/historico?dias=365&registro=produto:{{ p.id }}">histórico</a>{% endif %}</p>{% endblock %}
+{% block content %}
+<section class="stats" aria-label="Dados do Olist">
+  <article class="card stat"><p class="stat-label">Estoque (Olist)</p><p class="stat-value">{{ stock if stock is not none else '—' }}</p>
+    {% if e and e.min_stock is not none %}<p class="stat-foot {{ 'down' if stock is not none and stock < e.min_stock else '' }}">mínimo {{ e.min_stock }}</p>{% endif %}</article>
+  {% if can('ver_financeiro') %}
+  <article class="card stat"><p class="stat-label">Custo (Olist)</p><p class="stat-value">{{ p.cost_cents|brl }}</p><p class="stat-foot">é o custo usado no lucro real</p></article>
+  <article class="card stat"><p class="stat-label">Custo (Onix)</p><p class="stat-value">{{ e.onix_cost_cents|brl if e and e.onix_cost_cents else '—' }}</p>
+    <p class="stat-foot">{% if cost_at %}atualizado em {{ cost_at }}{% else %}ainda não informado{% endif %}</p></article>
+  {% endif %}
+  <article class="card stat"><p class="stat-label">Preço (Olist)</p><p class="stat-value">{{ p.price_cents|brl }}</p></article>
+</section>
+
+<section class="card" aria-labelledby="extra-title">
+  <h2 id="extra-title" class="card-title">Cadastro complementar</h2>
+  <p class="muted small">Fica só no Gerente do Ano. O Olist continua igual.</p>
+  {% if can('editar_produtos') %}
+  <form method="post" action="/produtos/{{ p.id }}" class="team-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="team-fields">
+      <label class="field"><span>Fornecedor</span><input type="text" name="supplier" value="{{ e.supplier or '' if e else '' }}" maxlength="120"></label>
+      <label class="field"><span>Código no fornecedor</span><input type="text" name="supplier_code" value="{{ e.supplier_code or '' if e else '' }}" maxlength="64"></label>
+      {% if can('ver_financeiro') %}<label class="field"><span>Custo do Onix (R$)</span><input type="text" inputmode="decimal" name="onix_cost" value="{{ ('%.2f'|format(e.onix_cost_cents / 100)).replace('.', ',') if e and e.onix_cost_cents else '' }}" placeholder="ex.: 18,90"></label>{% endif %}
+      <label class="field"><span>Estoque mínimo</span><input type="text" inputmode="numeric" name="min_stock" value="{{ e.min_stock if e and e.min_stock is not none else '' }}"></label>
+      <label class="field"><span>Prazo do fornecedor (dias)</span><input type="text" inputmode="numeric" name="lead_time_days" value="{{ e.lead_time_days if e and e.lead_time_days is not none else '' }}"></label>
+      <label class="field"><span>Local na loja (prateleira)</span><input type="text" name="location" value="{{ e.location or '' if e else '' }}" maxlength="60" placeholder="ex.: A3-02"></label>
+    </div>
+    <label class="field"><span>Compatível com (uma moto por linha: marca, modelo e anos)</span>
+      <textarea name="compatibility" rows="6" placeholder="Exemplo (apague e escreva as motos deste produto):&#10;Honda CG 160 2016-2024&#10;Yamaha Factor 150 2017">{{ compat_text }}</textarea></label>
+    <label class="field"><span>Observações</span><textarea name="notes" rows="3" maxlength="2000">{{ e.notes or '' if e else '' }}</textarea></label>
+    <div class="actions"><button class="btn btn-primary" type="submit">Salvar</button></div>
+  </form>
+  {% else %}
+  <dl class="facts">
+    <div><dt>Fornecedor</dt><dd>{{ e.supplier if e and e.supplier else '—' }}</dd></div>
+    <div><dt>Local</dt><dd>{{ e.location if e and e.location else '—' }}</dd></div>
+    <div><dt>Compatível com</dt><dd>{{ compat_text.replace('\n', ' · ') if compat_text else '—' }}</dd></div>
+  </dl>
+  {% endif %}
+</section>
+{% endblock %}

@@ -16,6 +16,7 @@ from app.models.order import Order, OrderItem
 from app.models.payment import Payment
 from app.models.price import PriceReference
 from app.models.pricing import PricingSimulation
+from app.models.product_extra import ProductExtra
 from app.models.postsale import Claim, Conversation, ConversationMessage
 from app.models.question import Question
 from app.models.report import Report
@@ -49,6 +50,7 @@ __all__ = [
     "Payment",
     "PriceReference",
     "PricingSimulation",
+    "ProductExtra",
     "Product",
     "ProductInsight",
     "ProductReview",

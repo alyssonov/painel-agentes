@@ -19,6 +19,7 @@ FINANCE = "ver_financeiro"
 SUPPORT = "aprovar_atendimento"
 PRICES = "aprovar_precos_anuncios"
 PRICING = "usar_precificacao"
+PRODUCTS = "editar_produtos"
 AGENTS = "configurar_agentes"
 STORE = "configurar_loja"
 TEAM = "gerenciar_equipe"
@@ -38,6 +39,8 @@ PERMISSIONS: list[Permission] = [
     Permission(SUPPORT, "Aprovar atendimento", "Aprovar, editar ou escrever respostas para perguntas e mensagens."),
     Permission(PRICES, "Aprovar preços e anúncios", "Aprovar mudanças de preço e melhorias de anúncio sugeridas."),
     Permission(PRICING, "Usar a precificação", "Calculadora de preços e simulações."),
+    Permission(PRODUCTS, "Editar o cadastro dos produtos", "Fornecedor, estoque mínimo, local, compatibilidade e "
+               "planilha (só no Gerente do Ano; o Olist não muda)."),
     Permission(AGENTS, "Configurar agentes", "Ligar/desligar agentes, modo manual/automático e regras."),
     Permission(STORE, "Configurar a loja", "Contas conectadas, impostos, tabela de taxas e relatórios por e-mail."),
     Permission(TEAM, "Gerenciar a equipe", "Adicionar pessoas, mudar papéis e permissões, redefinir senhas."),
@@ -51,11 +54,12 @@ LABELS = {p.code: p.label for p in PERMISSIONS}
 ROLES: dict[str, tuple[str, str, frozenset[str]]] = {
     "admin": ("Administrador", "Tudo, inclusive equipe e contas conectadas.", ALL),
     "gerente": ("Gerente", "Toda a operação e o financeiro; não mexe na equipe nem nas contas.",
-                frozenset({VIEW, FINANCE, SUPPORT, PRICES, PRICING, AGENTS, AUDIT})),
+                frozenset({VIEW, FINANCE, SUPPORT, PRICES, PRICING, PRODUCTS, AGENTS, AUDIT})),
     "atendimento": ("Atendimento", "Responde perguntas e mensagens dos clientes.", frozenset({VIEW, SUPPORT})),
     "financeiro": ("Financeiro", "Lucro, recebimentos, relatórios e precificação.",
                    frozenset({VIEW, FINANCE, PRICING, AUDIT})),
-    "operador": ("Operação", "Acompanha pedidos, envios, estoque e anúncios (só olhar).", frozenset({VIEW, PRICING})),
+    "operador": ("Operação", "Pedidos, envios, estoque, anúncios e cadastro dos produtos.",
+                 frozenset({VIEW, PRICING, PRODUCTS})),
 }
 DEFAULT_ROLE = "operador"
 
@@ -90,6 +94,7 @@ ROUTE_RULES: list[tuple[str, str, str | None]] = [
     ("POST", r"^/(perguntas|pos-venda)/", SUPPORT),
     ("POST", r"^/(anuncios|estoque-precos)/", PRICES),
     ("POST", r"^/agentes/", AGENTS),
+    ("POST", r"^/produtos(/|$)", PRODUCTS),
     ("GET", r"^/", VIEW),
 ]
 _COMPILED = [(m, re.compile(p), perm) for m, p, perm in ROUTE_RULES]

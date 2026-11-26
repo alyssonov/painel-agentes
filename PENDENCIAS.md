@@ -54,8 +54,10 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 - **Por quê:** não existe informação pública sobre integração com o Onix. Sem
   saber o que o fornecedor permite, não dá para escolher o caminho seguro.
 - **Depende disso:** custos atualizados, recálculo de preços, sugestão de reajuste.
-- **Alternativa enquanto isso:** importar uma **planilha de custos exportada do
-  Onix** (botão "Enviar planilha" no painel) — funciona já.
+- **Alternativa enquanto isso (pronta desde 26/11):** exporte do Onix uma
+  planilha com o SKU (igual ao do Olist) e o custo, e envie em **Produtos →
+  Enviar planilha** (há um modelo para baixar). O painel mostra onde o custo do
+  Onix difere do custo do Olist.
 
 ### B3. Shopee — 🟡
 - **26/11:** cadastro enviado na Open Platform — **em análise pela Shopee até
@@ -89,10 +91,13 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 - **Depende disso:** lucro **líquido** de verdade (hoje o painel mostra lucro
   por venda, antes das despesas fixas).
 
-### B7. Compatibilidade das motopeças — ⚪
-- Vocês já têm essa informação em algum lugar (planilha, Onix, fichas do
-  Mercado Livre)? O Mercado Livre tem uma API oficial de compatibilidades de
-  autopeças que pode servir de base.
+### B7. Compatibilidade das motopeças — 🟡
+- **Pronto no painel (26/11):** campo de compatibilidade em cada produto e na
+  planilha (Produtos). A busca já encontra pela moto.
+- **Falta saber:** vocês já têm essa informação em algum lugar (planilha, Onix,
+  fichas do Mercado Livre)? Se estiver numa planilha, dá para enviar de uma vez.
+  O Mercado Livre e a Shopee têm APIs oficiais de compatibilidade de autopeças
+  que podem servir de base depois (consulta à documentação antes).
 
 ### B8. Relatório diário por e-mail — ⚪
 - Senha de app do Gmail e e-mails de quem recebe (passo a passo no README).

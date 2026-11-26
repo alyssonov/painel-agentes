@@ -40,11 +40,12 @@ templates.env.filters["rep_tone"] = reputation_tone
 # Só entram páginas que existem de verdade (nada de telas vazias "em breve").
 NAV_GROUPS = [
     (None, [("/", "Visão geral", "home")]),
-    ("Operação", [("/pedidos", "Pedidos", "cart"), ("/anuncios", "Anúncios", "tag"), ("/estoque-precos", "Estoque e compras", "box"),
+    ("Operação", [("/pedidos", "Pedidos", "cart"), ("/produtos", "Produtos", "box"),
+                  ("/anuncios", "Anúncios", "tag"), ("/estoque-precos", "Estoque e compras", "layers"),
                   ("/precificacao", "Precificação", "calc")]),
     ("Atendimento", [("/perguntas", "Perguntas", "chat"), ("/pos-venda", "Pós-venda", "truck")]),
     ("Financeiro", [("/margem", "Lucro real", "coins"), ("/margem/recebimentos", "Recebimentos", "wallet"),
-                    ("/margem/graficos", "Gráficos", "chart"), ("/margem/curva-abc", "Curva ABC", "layers")]),
+                    ("/margem/graficos", "Gráficos", "chart"), ("/margem/curva-abc", "Curva ABC", "star")]),
     ("Inteligência", [("/agentes", "Agentes", "bot"), ("/relatorios", "Relatórios", "file")]),
     ("Administração", [("/equipe", "Equipe", "users"), ("/historico", "Histórico", "receipt"),
                        ("/integracoes", "Contas conectadas", "plug")]),

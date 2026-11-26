@@ -123,6 +123,16 @@ número, produto, SKU ou cliente e filtros por período, marketplace e situaçã
 produto, tudo que precisa sair até o fim do dia (e o que está atrasado), mostra
 o estoque e tem botão para imprimir.
 
+## Produtos (cadastro complementar)
+
+Menu **Operação → Produtos**: os produtos do Olist com informações que ficam só
+no Gerente do Ano — fornecedor, custo do Onix, estoque mínimo, prazo do
+fornecedor, local na prateleira e **com quais motos o produto é compatível**
+(uma moto por linha, ex.: `Honda CG 160 2016-2024`). A busca encontra pela moto
+também. Para atualizar muitos produtos de uma vez, baixe o modelo e use
+**Enviar planilha** (serve para a planilha de custos exportada do Onix). O
+Olist nunca é alterado.
+
 ## Equipe e permissões
 
 Menu **Administração → Equipe**: adicione pessoas com uma senha provisória e

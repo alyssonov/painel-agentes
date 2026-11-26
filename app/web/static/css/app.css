@@ -194,7 +194,7 @@ a.accounts:hover, a.accounts.is-active { border-color: var(--accent); }
 
 /* --- Campos ------------------------------------------------------------------- */
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; }
-.field input, .field input[type=text], .field select { font: inherit; font-weight: 400; padding: 9px 12px; border-radius: var(--radius-sm);
+.field input, .field input[type=text], .field select, .field textarea { font: inherit; font-weight: 400; padding: 9px 12px; border-radius: var(--radius-sm);
   border: 1px solid var(--line); background: var(--field); color: var(--ink); }
 input.field, select.field, textarea.field,
 .calc-form .field, .calc-find .field, .fee-table .field, .fee-small, .sim-row .field, .sale-search .field, .qcard-form .field {

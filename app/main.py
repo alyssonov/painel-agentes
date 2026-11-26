@@ -34,6 +34,7 @@ from app.web.routes import (
     orders,
     postsale,
     pricing,
+    products,
     questions,
     report_pages,
     reports,
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
     app.include_router(questions.router)
     app.include_router(postsale.router)
     app.include_router(orders.router)
+    app.include_router(products.router)
     app.include_router(listings.router)
     app.include_router(pricing.router)
     app.include_router(agents.router)

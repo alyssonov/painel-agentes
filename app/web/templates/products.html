@@ -1,0 +1,59 @@
+{% extends "app_layout.html" %}
+{% block title %}Produtos{% endblock %}
+{% block page_title %}Produtos{% endblock %}
+{% block page_subtitle %}<p class="muted">Produtos do Olist com o cadastro complementar do Gerente do Ano (fornecedor, estoque mínimo, local e compatibilidade com as motos). O Olist nunca é alterado.</p>{% endblock %}
+{% block content %}
+<form class="card hist-filters" method="get" action="/produtos" role="search">
+  <label class="field"><span>Buscar</span><input type="search" name="busca" value="{{ busca }}" placeholder="nome, SKU ou moto (ex.: CG 160)"></label>
+  <label class="field"><span>Mostrar</span>
+    <select name="filtro">{% for k, label in filters.items() %}{% if k != 'custo_diferente' or can('ver_financeiro') %}<option value="{{ k }}" {% if filtro == k %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}</select></label>
+  <div class="actions"><button class="btn btn-primary" type="submit">Filtrar</button><a class="btn btn-ghost" href="/produtos">Limpar</a></div>
+</form>
+
+<div class="toolbar">
+  <p class="muted">{{ total }} produto(s){% if counts.sem_compat %} · <a class="link" href="/produtos?filtro=sem_compat">{{ counts.sem_compat }} sem compatibilidade</a>{% endif %}</p>
+  <div class="actions"><a class="btn btn-ghost" href="/produtos.csv?busca={{ busca|urlencode }}&filtro={{ filtro }}">Baixar planilha</a></div>
+</div>
+
+<section class="card">
+  {% if rows %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Produto</th><th>Compatível com</th><th class="num">Estoque</th><th>Fornecedor</th>{% if can('ver_financeiro') %}<th class="num">Custo Olist / Onix</th>{% endif %}<th>Local</th></tr></thead>
+      <tbody>
+      {% for r in rows %}{% set e = r.extra %}
+        <tr>
+          <td><a class="link t-strong" href="/produtos/{{ r.product.id }}">{{ r.product.name }}</a><br><span class="muted small">{{ r.product.sku }}</span></td>
+          <td class="small">{% if e and e.compatibility %}{% for c in e.compatibility[:3] %}<div>{{ c.marca }} {{ c.modelo }}{% if c.de %} {{ c.de }}{% if c.ate and c.ate != c.de %}–{{ c.ate }}{% endif %}{% endif %}</div>{% endfor %}{% if e.compatibility|length > 3 %}<span class="muted">+ {{ e.compatibility|length - 3 }}</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td class="num">{{ r.stock if r.stock is not none else '—' }}{% if e and e.min_stock is not none %}<br><span class="small {{ 'text-danger' if r.below_min else 'muted' }}">mín. {{ e.min_stock }}{% if r.below_min %} (abaixo){% endif %}</span>{% endif %}</td>
+          <td class="small">{{ e.supplier if e and e.supplier else '—' }}</td>
+          {% if can('ver_financeiro') %}<td class="num small">{{ r.product.cost_cents|brl }}<br>{% if e and e.onix_cost_cents %}<span class="{{ 'text-danger' if r.cost_differs else 'muted' }}">{{ e.onix_cost_cents|brl }}{% if r.cost_differs %} ({{ '%+.0f'|format(r.cost_diff_pct) }}%){% endif %}</span>{% else %}<span class="muted">—</span>{% endif %}</td>{% endif %}
+          <td class="small">{{ e.location if e and e.location else '—' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pages > 1 %}
+  <div class="actions hist-pager">
+    {% if page > 1 %}<a class="btn btn-secondary" href="/produtos?busca={{ busca|urlencode }}&filtro={{ filtro }}&pagina={{ page - 1 }}">← Anterior</a>{% endif %}
+    <span class="muted small">página {{ page }} de {{ pages }}</span>
+    {% if page < pages %}<a class="btn btn-secondary" href="/produtos?busca={{ busca|urlencode }}&filtro={{ filtro }}&pagina={{ page + 1 }}">Próxima →</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}<p class="muted">Nenhum produto com esses filtros.</p>{% endif %}
+</section>
+
+{% if can('editar_produtos') %}
+<section class="card" aria-labelledby="sheet-title">
+  <h2 id="sheet-title" class="card-title">Atualizar vários produtos por planilha</h2>
+  <p class="muted small">Serve para a planilha de custos exportada do Onix ou para cadastrar fornecedor, estoque mínimo, local e compatibilidade de muitos produtos de uma vez. Só as colunas preenchidas mudam; o produto é encontrado pelo SKU do Olist. Compatibilidade: várias motos separadas por <code>|</code> (ex.: <code>Honda CG 160 2016-2024 | Honda Fan 160 2016-2024</code>).</p>
+  <form method="post" action="/produtos/planilha" enctype="multipart/form-data" class="actions">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="file" name="arquivo" accept=".csv,text/csv" required>
+    <button class="btn btn-primary" type="submit">Enviar planilha</button>
+    <a class="btn btn-ghost" href="/produtos/modelo.csv">Baixar modelo</a>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

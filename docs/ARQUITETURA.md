@@ -748,3 +748,25 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   marketplace entra se estiver "a separar"/"embalado" no Olist há até 7 dias.
 - Etiquetas de envio: ficam para depois de consultar a documentação oficial de
   etiquetas do Mercado Livre e da Shopee.
+
+## 32. Etapa 4b — Cadastro complementar de produtos (decisão A2)
+
+- Tabela `product_extras` (migração 0018), uma linha por produto: fornecedor,
+  código no fornecedor, **custo do Onix** (com data), estoque mínimo, prazo do
+  fornecedor, local na loja, **compatibilidade com motos** (lista de
+  marca/modelo/anos) e observações. Fica só no Gerente do Ano: o Olist não
+  recebe nenhuma escrita e o lucro real continua usando o custo do Olist.
+- Compatibilidade em texto simples, uma moto por linha ("Honda CG 160
+  2016-2024"); `parse_compatibility` reconhece as marcas comuns (inclusive de
+  duas palavras) e recusa linhas que não entende — nada é salvo pela metade.
+- `/produtos`: busca por nome, SKU **ou moto**; filtros sem compatibilidade,
+  abaixo do mínimo, custo do Onix ≠ Olist (> 5%), sem fornecedor; planilha.
+  `/produtos/{id}`: dados do Olist + formulário do complemento.
+- Planilha (`/produtos/planilha`, modelo em `/produtos/modelo.csv`): CSV com ;
+  ou , (UTF-8 ou Windows), cabeçalhos flexíveis; só as colunas preenchidas
+  mudam; SKU desconhecido e valor inválido são relatados. Serve para a planilha
+  de custos do Onix (PENDENCIAS B2) enquanto não há integração.
+- Permissão nova **editar_produtos** (Gerente e Operação já têm); custo só para
+  quem vê o financeiro (inclusive na planilha). Toda mudança vai para o
+  histórico com antes → depois (`produto.cadastro_alterado`).
+- A lista de separação mostra o local da prateleira do complemento.

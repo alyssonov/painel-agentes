@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db, utcnow
 from app.core.tenant import company_of
 from app.core.timeutil import to_local
-from app.models import Agent, AuditLog
+from app.models import Agent, AuditLog, Product
 from app.models.user import User
 from app.web.auth import current_user
 from app.web.templating import render
@@ -31,6 +31,7 @@ GROUPS: dict[str, tuple[str, tuple[str, ...]]] = {
     "acoes": ("Respostas, preços e anúncios", ("acao.",)),
     "agentes": ("Agentes", ("agente.",)),
     "config": ("Configurações da loja", ("loja.", "precificacao.", "relatorio.destinatarios")),
+    "produtos": ("Cadastro de produtos", ("produto.",)),
     "contas": ("Contas conectadas", ("olist.", "ml.", "shopee.")),
     "relatorios": ("Relatórios enviados", ("relatorio.",)),
 }
@@ -49,6 +50,7 @@ EVENT_LABELS = {
     "loja.regras_alteradas": "Mudou as regras da loja", "loja.aliquota_alterada": "Mudou a alíquota de impostos",
     "precificacao.taxas_alteradas": "Mudou a tabela de taxas", "relatorio.destinatarios": "Mudou quem recebe o relatório",
     "simulacao.carregada": "Carregou a loja de simulação",
+    "produto.cadastro_alterado": "Mudou o cadastro do produto", "produto.planilha_importada": "Enviou planilha de produtos",
 }
 PROVIDERS = {"olist": "Olist", "ml": "Mercado Livre", "shopee": "Shopee"}
 PROVIDER_EVENTS = {"conectado": "conectado", "desconectado": "desconectado", "conexao.falhou": "conexão falhou",
@@ -56,10 +58,13 @@ PROVIDER_EVENTS = {"conectado": "conectado", "desconectado": "desconectado", "co
                    "sincronizacao.ok": "atualizado", "sincronizacao.erro": "atualização falhou"}
 TARGETS = {"pergunta": "Pergunta", "conversa": "Conversa", "anuncio": "Anúncio", "anuncio_texto": "Texto do anúncio",
            "agente": "Agente", "integracao": "Conta", "user": "Pessoa", "relatorio": "Relatório",
-           "sync_run": "Atualização", "pedido": "Pedido"}
+           "sync_run": "Atualização", "pedido": "Pedido", "produto": "Produto"}
 FIELD_LABELS = {"ativo": "Ativo", "modo": "Modo", "nome": "Nome", "papel": "Papel", "permissoes": "Permissões",
                 "aliquota_pct": "Alíquota (%)", "destinatarios": "Destinatários", "text": "Texto",
-                "texto": "Texto", "price_cents": "Preço (centavos)"}
+                "texto": "Texto", "price_cents": "Preço (centavos)", "custo_onix": "Custo do Onix",
+                "estoque_minimo": "Estoque mínimo", "prazo_dias": "Prazo do fornecedor (dias)",
+                "localizacao": "Local", "compatibilidade": "Compatível com", "observacoes": "Observações",
+                "fornecedor": "Fornecedor", "codigo_fornecedor": "Código no fornecedor"}
 
 
 def event_label(event: str) -> str:
@@ -118,10 +123,23 @@ def history_page(request: Request, dias: str = "30", quem: str = "", tipo: str =
         stmt = stmt.where(AuditLog.target_type == target_type, AuditLog.target_id == target_id)
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     pagina = max(1, pagina)
-    rows = db.scalars(stmt.order_by(AuditLog.at.desc(), AuditLog.id.desc()).offset((pagina - 1) * PAGE).limit(PAGE))
+    rows = list(db.scalars(stmt.order_by(AuditLog.at.desc(), AuditLog.id.desc())
+                           .offset((pagina - 1) * PAGE).limit(PAGE)))
 
     people = {u.id: u.name for u in db.scalars(select(User).where(User.company_id == company_of(db)))}
     agents = {a.slug: a.name for a in db.scalars(select(Agent))}
+    product_ids = {int(r.target_id) for r in rows if r.target_type == "produto" and str(r.target_id).isdigit()}
+    if target_type == "produto" and target_id.isdigit():
+        product_ids.add(int(target_id))
+    products = {p.id: p.name for p in db.scalars(select(Product).where(Product.id.in_(product_ids)))} \
+        if product_ids else {}
+
+    def target_name(kind: str, ref: str) -> str:
+        if kind == "user" and ref.isdigit():
+            return people.get(int(ref), ref)
+        if kind == "produto" and ref.isdigit():
+            return products.get(int(ref), ref)
+        return agents.get(ref, ref)
 
     def who(actor: str) -> tuple[str, str]:
         kind, _, ref = actor.partition(":")
@@ -138,17 +156,13 @@ def history_page(request: Request, dias: str = "30", quem: str = "", tipo: str =
         target = None
         if row.target_type:
             label = TARGETS.get(row.target_type, row.target_type)
-            shown = people.get(int(row.target_id), row.target_id) if row.target_type == "user" and \
-                str(row.target_id).isdigit() else agents.get(row.target_id, row.target_id)
-            target = {"label": f"{label}: {shown}", "filter": f"{row.target_type}:{row.target_id}"}
+            target = {"label": f"{label}: {target_name(row.target_type, str(row.target_id))}", "filter": f"{row.target_type}:{row.target_id}"}
         entries.append({"at": to_local(row.at).strftime("%d/%m/%Y %H:%M"), "who": name, "kind": kind,
                         "event": event_label(row.event), "target": target, "changes": changes, "extra": extra,
                         "simulated": row.dry_run and row.event.startswith("acao.")})
     registro_label = None
     if target_type in TARGETS and target_id:
-        shown = people.get(int(target_id), target_id) if target_type == "user" and target_id.isdigit() else \
-            agents.get(target_id, target_id)
-        registro_label = f"{TARGETS[target_type]}: {shown}"
+        registro_label = f"{TARGETS[target_type]}: {target_name(target_type, target_id)}"
     return render(request, "history.html", {
         "entries": entries, "total": total, "page": pagina, "pages": max(1, -(-total // PAGE)),
         "periods": PERIODS, "groups": {k: v[0] for k, v in GROUPS.items()}, "people": people,

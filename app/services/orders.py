@@ -17,7 +17,7 @@ from app.core.db import utcnow
 from app.core.money import format_brl
 from app.core.timeutil import local_day_bounds_utc, local_today, to_local
 from app.integrations.mercadolivre.mapping import left_the_store
-from app.models import Order, OrderItem, Product, Shipment, StockSnapshot
+from app.models import Order, OrderItem, Product, ProductExtra, Shipment, StockSnapshot
 from app.models.enums import CHANNEL_LABELS, Channel, KanbanStatus
 
 PAGE = 50
@@ -219,6 +219,8 @@ def pick_list(db: Session) -> PickList:
             line.orders.append(o.external_id)
     if by_sku:
         products = {p.sku: p for p in db.scalars(select(Product).where(Product.sku.in_(list(by_sku))))}
+        locations = {e.product_id: e.location for e in db.scalars(select(ProductExtra).where(
+            ProductExtra.product_id.in_([p.id for p in products.values()])))}
         latest = select(func.max(StockSnapshot.id)).group_by(StockSnapshot.product_id)
         stock = {s.product_id: s.quantity - (s.reserved or 0)
                  for s in db.scalars(select(StockSnapshot).where(StockSnapshot.id.in_(latest)))}
@@ -226,6 +228,6 @@ def pick_list(db: Session) -> PickList:
             product = products.get(line.sku)
             if product:
                 line.stock = stock.get(product.id)
-                line.location = (product.specs or {}).get("localizacao")
+                line.location = locations.get(product.id)
     lines = sorted(by_sku.values(), key=lambda li: (li.location or "~", li.title.lower()))
     return PickList(lines=lines, orders=n_orders, units=sum(li.quantity for li in lines), late=late)
