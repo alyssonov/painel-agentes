@@ -186,13 +186,15 @@ def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn
     """
     columns = {status: KanbanColumn(status, KANBAN_LABELS[status]) for status in KANBAN_COLUMNS}
     day = DispatchDay()
-    if channel not in (None, Channel.ML):
-        return list(columns.values()), day  # por enquanto só o Mercado Livre informa o prazo
+    # Mercado Livre e Shopee informam o prazo de despacho; outros canais ficam de fora.
+    channels = [Channel.ML, Channel.SHOPEE] if channel is None else [channel]
+    if not set(channels) <= {Channel.ML, Channel.SHOPEE}:
+        return list(columns.values()), day
     now = utcnow()
     start, end = local_day_bounds_utc(local_today())
     tax_rate = float(get_setting(db, "tax_rate_pct") or 0)
     rows = db.scalars(select(Shipment).where(
-        Shipment.channel == Channel.ML,
+        Shipment.channel.in_(channels),
         or_(Shipment.logistic_type.is_(None), Shipment.logistic_type != "fulfillment"),
         or_(
             # ainda não saiu e o prazo é hoje (ou já venceu)
@@ -206,7 +208,7 @@ def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn
                  Shipment.dispatch_deadline >= start, Shipment.dispatch_deadline < end),
         )).order_by(Shipment.dispatch_deadline))
     for row in rows:
-        order = db.scalar(select(Order).where(Order.channel == Channel.ML, Order.external_id == row.order_ref)
+        order = db.scalar(select(Order).where(Order.channel == row.channel, Order.external_id == row.order_ref)
                           .options(selectinload(Order.items).selectinload(OrderItem.product)))
         deadline = to_local(row.dispatch_deadline) if row.dispatch_deadline else None
         problem = order.problem_note if order else None
@@ -230,7 +232,7 @@ def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn
         else:
             summary = "Pedido ainda não importado do Olist"
         columns[status].orders.append(OrderCard(
-            id=order.id if order else 0, channel=Channel.ML, channel_label=CHANNEL_LABELS[Channel.ML],
+            id=order.id if order else 0, channel=row.channel, channel_label=CHANNEL_LABELS[row.channel],
             external_id=row.order_ref, customer=order.customer_short_name if order else "—", summary=summary,
             total_cents=order.items_total_cents if order else 0, time_label=label, problem=problem,
             is_loss=order_margin(order, tax_rate).is_loss if order else False))

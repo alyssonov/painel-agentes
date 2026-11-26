@@ -87,10 +87,10 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   → **Conectar a Shopee** → 365 dias. **Não cole a Key no chat.**
 - **Lista de IPs liberados (IP Whitelist):** a Shopee exige para dados
   sensíveis. No computador o IP da internet pode mudar; no servidor (B4) é fixo.
-- **Para a próxima etapa (ler pedidos, taxas e envios):** o texto destas
-  páginas oficiais (copiar do navegador e colar no chat):
-  `v2.order.get_order_detail`, `v2.payment.get_escrow_detail` e
-  `v2.shop.get_shop_info` (a `get_order_list` já veio).
+- ✅ **Leitura pronta (26/11):** pedidos (situação e prazo de despacho), taxas e
+  valor líquido de cada venda — começa sozinha assim que a Shopee for conectada.
+  Depois de conectar, confira em **Contas conectadas** (Última atualização da
+  Shopee) e no quadro **Envios de hoje** com o filtro Shopee.
 
 ### B4. Domínio e servidor — 🟡 (tudo pronto no projeto; falta comprar)
 - **Pronto (26/11):** o painel já roda em servidor (PostgreSQL + HTTPS + cópia

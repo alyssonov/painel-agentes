@@ -22,3 +22,6 @@ class MarketplaceFee(CompanyScoped, TimestampMixin, Base):
     # Número do pedido (ou do pacote) no marketplace.
     order_ref: Mapped[str] = mapped_column(String(64), index=True)
     fee_cents: Mapped[int] = mapped_column(BigInteger, default=0)
+    # Quanto a loja recebe pela venda (líquido), quando o marketplace informa junto
+    # (Shopee: escrow_amount). None = não informado aqui (o ML vem do Mercado Pago).
+    net_cents: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

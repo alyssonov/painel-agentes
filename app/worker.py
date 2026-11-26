@@ -34,7 +34,7 @@ from app.config import get_settings
 from app.core.db import get_sessionmaker
 from app.fake_data.seed import refresh_demo_if_stale
 from app.sync.ml_sync import run_ml_sync
-from app.sync.shopee_sync import keep_shopee_alive
+from app.sync.shopee_sync import keep_shopee_alive, run_shopee_sync
 from app.sync.onix_sync import run_onix_sync
 from app.sync.olist_sync import run_olist_sync
 
@@ -68,11 +68,15 @@ def job_sync_ml() -> None:
 
 
 def job_shopee_token() -> None:
-    """Shopee: renova o acesso antes de vencer (vale 4 h; o refresh, 30 dias)."""
+    """Shopee: lê pedidos, prazos de envio e taxas (renovando o acesso antes de vencer)."""
     try:
-        keep_shopee_alive(get_sessionmaker())
+        run = run_shopee_sync(get_sessionmaker())
+        if run is None:
+            keep_shopee_alive(get_sessionmaker())
+        else:
+            logger.info("Shopee: sincronização %s %s", run.status, run.counts)
     except Exception:  # noqa: BLE001 - o worker nunca pode cair
-        logger.exception("Erro ao renovar o acesso da Shopee")
+        logger.exception("Erro na sincronização da Shopee")
 
 
 def job_sync_onix() -> None:
@@ -138,7 +142,7 @@ def main() -> None:
                       max_instances=1, coalesce=True)
     scheduler.add_job(job_sync_ml, "interval", minutes=settings.ml_sync_minutes, id="sync_ml",
                       max_instances=1, coalesce=True)
-    scheduler.add_job(job_shopee_token, "interval", minutes=20, id="shopee_token",
+    scheduler.add_job(job_shopee_token, "interval", minutes=settings.shopee_sync_minutes, id="shopee_token",
                       max_instances=1, coalesce=True)
     if settings.onix_configured:
         # Primeira leitura logo ao ligar (em segundo plano, sem atrasar o resto).

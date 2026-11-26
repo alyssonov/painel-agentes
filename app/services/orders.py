@@ -105,13 +105,15 @@ def _period_start(period: str) -> datetime:
     return local_day_bounds_utc(today - timedelta(days=days))[0]
 
 
-def _shipments_for(db: Session, orders: list[Order]) -> dict[str, Shipment]:
-    refs = [o.external_id for o in orders if o.channel == Channel.ML]
-    found: dict[str, Shipment] = {}
-    for i in range(0, len(refs), 500):
-        for s in db.scalars(select(Shipment).where(Shipment.channel == Channel.ML,
-                                                   Shipment.order_ref.in_(refs[i:i + 500]))):
-            found[s.order_ref] = s
+def _shipments_for(db: Session, orders: list[Order]) -> dict[tuple[str, str], Shipment]:
+    """Envio de cada pedido do Mercado Livre e da Shopee, por (canal, número no marketplace)."""
+    found: dict[tuple[str, str], Shipment] = {}
+    for channel in (Channel.ML, Channel.SHOPEE):
+        refs = [o.external_id for o in orders if o.channel == channel]
+        for i in range(0, len(refs), 500):
+            for s in db.scalars(select(Shipment).where(Shipment.channel == channel,
+                                                       Shipment.order_ref.in_(refs[i:i + 500]))):
+                found[(channel, s.order_ref)] = s
     return found
 
 
@@ -129,7 +131,7 @@ def list_orders(db: Session, f: OrderFilter, *, paginate: bool = True) -> OrderL
     now = utcnow()
     rows, counts = [], {k: 0 for k in SITUATIONS}
     for o in orders:
-        situation, deadline = situation_of(o, shipments.get(o.external_id), now)
+        situation, deadline = situation_of(o, shipments.get((o.channel, o.external_id)), now)
         counts[situation] += 1
         if f.situation and situation != f.situation:
             continue
@@ -200,7 +202,7 @@ def pick_list(db: Session) -> PickList:
     by_sku: dict[str, PickLine] = {}
     n_orders = late = 0
     for o in orders:
-        situation, deadline = situation_of(o, shipments.get(o.external_id), now)
+        situation, deadline = situation_of(o, shipments.get((o.channel, o.external_id)), now)
         if situation not in ("a_enviar", "atrasado"):
             continue
         # Com prazo do marketplace: só o que vence até o fim de hoje. Sem prazo (Shopee/outros):

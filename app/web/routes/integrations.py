@@ -27,6 +27,7 @@ from app.models.user import User
 from app.services.store_settings import get_setting, set_setting
 from app.sync.ml_sync import run_ml_sync
 from app.sync.olist_sync import run_olist_sync
+from app.sync.shopee_sync import run_shopee_sync
 from app.web.auth import current_user, verify_csrf
 from app.web.templating import flash, render
 
@@ -299,6 +300,7 @@ def ml_disconnect(request: Request, db: Session = Depends(get_db), user: User = 
 def _shopee_context(db: Session) -> dict:
     settings = get_settings()
     account = shopee_auth.get_shopee_account(db)
+    last_run = _last_run(db, Provider.SHOPEE)
     return {
         "configured": settings.shopee_configured,
         "redirect_uri": settings.shopee_redirect_uri,
@@ -309,7 +311,37 @@ def _shopee_context(db: Session) -> dict:
         if account and account.last_ok_at else None,
         "valid_until": to_local(account.refresh_expires_at).strftime("%d/%m/%Y")
         if account and account.refresh_expires_at else None,
+        "last_run": last_run,
+        "last_run_label": to_local(last_run.started_at).strftime("%d/%m às %H:%M") if last_run else None,
+        "sync_minutes": settings.shopee_sync_minutes,
+        "auth_expires": _shopee_auth_expires(account),
     }
+
+
+def _shopee_auth_expires(account) -> str | None:
+    """Data em que a autorização da loja vence (a Shopee pede para conectar de novo)."""
+    value = ((account.extra or {}) if account else {}).get("auth_expires_at")
+    if not value:
+        return None
+    from datetime import datetime
+    return to_local(datetime.fromisoformat(value)).strftime("%d/%m/%Y")
+
+
+def _shopee_sync_in_background() -> None:
+    try:
+        run_shopee_sync(get_sessionmaker())
+    except Exception:  # noqa: BLE001
+        logger.exception("Falha na sincronização da Shopee em segundo plano")
+
+
+@router.post("/shopee/sincronizar", dependencies=[Depends(verify_csrf)])
+def shopee_sync_now(request: Request, background: BackgroundTasks, db: Session = Depends(get_db),
+                    user: User = Depends(current_user)):
+    audit.record(db, actor=f"user:{user.id}", event="shopee.sincronizacao.manual")
+    db.commit()
+    background.add_task(_shopee_sync_in_background)
+    flash(request, "Atualização da Shopee iniciada. Recarregue a página em instantes.")
+    return RedirectResponse("/integracoes", status_code=303)
 
 
 @router.get("/shopee/conectar")
@@ -328,7 +360,7 @@ def _int_or_none(value: str | None) -> int | None:
 
 
 @router.get("/shopee/retorno")
-def shopee_callback(request: Request, code: str | None = None, shop_id: str | None = None,
+def shopee_callback(request: Request, background: BackgroundTasks, code: str | None = None, shop_id: str | None = None,
                     main_account_id: str | None = None, state: str | None = None,
                     db: Session = Depends(get_db), user: User = Depends(current_user)):
     """A Shopee volta para cá (passando pela página de repasse) depois da autorização."""
@@ -367,7 +399,9 @@ def shopee_callback(request: Request, code: str | None = None, shop_id: str | No
     audit.record(db, actor=f"user:{user.id}", event="shopee.conectado", target_type="integracao",
                  target_id="shopee", details={"loja": str(shop), "teste": get_settings().shopee_sandbox})
     db.commit()
-    flash(request, "Shopee conectada! A leitura de pedidos, taxas e envios chega na próxima etapa.")
+    background.add_task(_shopee_sync_in_background)
+    flash(request, "Shopee conectada! Os pedidos, prazos de envio e taxas estão sendo lidos — "
+                   "isso pode levar alguns minutos.")
     return RedirectResponse("/integracoes", status_code=303)
 
 

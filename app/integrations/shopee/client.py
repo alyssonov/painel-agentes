@@ -13,6 +13,19 @@ usuário; o site não abre para leitura automática):
   time_range_field (create_time | update_time), time_from/time_to (no máximo 15
   dias), page_size 1–100, cursor/next_cursor, more; resposta em "response";
   erro "order.order_list_invalid_time" se o intervalo passar de 15 dias.
+
+Consultadas em 26/11/2026 (mesmo jeito):
+- GET /api/v2/order/get_order_detail
+  https://open.shopee.com/documents/v2/v2.order.get_order_detail?module=94&type=1
+  order_sn_list com até 50 números separados por vírgula; response_optional_fields
+  escolhe os campos extras (pedimos só itens, pacote, datas e total — sem endereço).
+- GET /api/v2/payment/get_escrow_detail
+  https://open.shopee.com/documents/v2/v2.payment.get_escrow_detail?module=97&type=1
+  um order_sn por vez; "order_income" traz escrow_amount e as taxas.
+- GET /api/v2/shop/get_shop_info
+  https://open.shopee.com/documents/v2/v2.shop.get_shop_info?module=92&type=1
+  shop_name, status (NORMAL | BANNED | FROZEN) e expire_time da autorização —
+  vêm na raiz da resposta, não dentro de "response".
 """
 
 import time
@@ -29,6 +42,10 @@ from app.integrations.http import RateLimited, ReadOnlyApiClient
 from app.integrations.shopee.auth import api_host, sign
 
 ORDER_LIST_PATH = "/api/v2/order/get_order_list"
+ORDER_DETAIL_PATH = "/api/v2/order/get_order_detail"
+ESCROW_PATH = "/api/v2/payment/get_escrow_detail"
+SHOP_INFO_PATH = "/api/v2/shop/get_shop_info"
+DETAIL_BATCH = 50
 ORDER_PAGE = 100
 MAX_WINDOW = timedelta(days=15)
 _UTC = ZoneInfo("UTC")
@@ -85,7 +102,8 @@ class ShopeeClient(ReadOnlyApiClient):
                                    f"{str(data.get('message') or '')[:200]}")
         if status != 200:
             raise IntegrationError(f"A Shopee recusou a consulta {path} (erro {status}).")
-        return data.get("response") or {}
+        # Quase todas as respostas vêm dentro de "response"; a get_shop_info vem na raiz.
+        return data["response"] if isinstance(data.get("response"), dict) else data
 
     def _call(self, path: str, params: dict[str, Any], token: str) -> tuple[dict, int]:
         timestamp = int(time.time())
@@ -136,3 +154,20 @@ class ShopeeClient(ReadOnlyApiClient):
                 if not page.get("more") or not cursor:
                     break
             start = end + timedelta(seconds=1)
+
+    def get_order_details(self, order_sns: list[str], fields: str) -> list[dict]:
+        """Detalhes dos pedidos (até 50 por consulta; listas maiores são divididas)."""
+        orders: list[dict] = []
+        for i in range(0, len(order_sns), DETAIL_BATCH):
+            page = self._get(ORDER_DETAIL_PATH, {"order_sn_list": ",".join(order_sns[i:i + DETAIL_BATCH]),
+                                                 "response_optional_fields": fields})
+            orders.extend(o for o in page.get("order_list") or [] if isinstance(o, dict) and o.get("order_sn"))
+        return orders
+
+    def get_escrow_detail(self, order_sn: str) -> dict:
+        """Taxas e valor a receber de um pedido."""
+        return self._get(ESCROW_PATH, {"order_sn": order_sn})
+
+    def get_shop_info(self) -> dict:
+        """Nome, situação da loja e validade da autorização."""
+        return self._get(SHOP_INFO_PATH, {})

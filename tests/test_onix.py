@@ -120,6 +120,8 @@ def test_tela_sem_configurar(logged_client):
 def test_leitura_do_onix_nao_trava_o_banco(db, onix_env, db_url):
     """Enquanto o Onix responde (devagar), o painel precisa conseguir gravar (ex.: conectar o Olist)."""
     import sqlite3
+    if not db_url.startswith("sqlite"):
+        pytest.skip("conferência específica do banco do computador (SQLite)")
     for i in range(3):
         db.add(Product(sku=str(500 + i), name=f"P{i}", cost_cents=1))
     db.commit()
@@ -140,6 +142,8 @@ def test_leitura_do_onix_nao_trava_o_banco(db, onix_env, db_url):
 
 def test_sqlite_espera_a_vez_e_usa_wal(db, db_url):
     from sqlalchemy import text
+    if not db_url.startswith("sqlite"):
+        pytest.skip("só vale para o banco do computador (SQLite)")
     from app.core.db import get_engine
     with get_engine().connect() as conn:
         assert conn.execute(text("PRAGMA journal_mode")).scalar().lower() == "wal"

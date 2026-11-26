@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     shopee_redirect_uri: str = "https://alyssonov.github.io/painel-retorno/shopee/"
     # true = ambiente de testes (Sandbox) da Shopee; false = loja de verdade.
     shopee_sandbox: bool = False
+    # De quantos em quantos minutos o painel lê pedidos, prazos de envio e taxas da Shopee.
+    shopee_sync_minutes: int = 10
 
     # Onix (sistema da loja física, Foxconn): API de produtos fornecida pelo próprio
     # fornecedor do Onix (só leitura). Endereço base, ex.: http://servidor:8020 — fica só aqui.

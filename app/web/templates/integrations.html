@@ -100,22 +100,25 @@
       <ol class="steps">
         <li>Em open.shopee.com → Console → App List, abra o app e veja o <strong>Partner ID</strong> e a <strong>Partner Key</strong> (de produção).</li>
         <li>No arquivo <code>.env</code>, preencha <code>SHOPEE_PARTNER_ID</code> e <code>SHOPEE_PARTNER_KEY</code>.</li>
-        <li>No app, confira se o domínio de retorno (Live Redirect URL Domain) é <code>alyssonov.github.io</code>. O endereço completo usado é: <code>{{ shopee.redirect_uri }}</code></li>
+        <li>No app, confira se o domínio de retorno (Live Redirect URL Domain) é <code>https://alyssonov.github.io</code>. O endereço completo usado é: <code>{{ shopee.redirect_uri }}</code></li>
         <li>Feche a janela do painel e ligue de novo.</li>
       </ol>
     </details>
   {% else %}
     <dl class="conn-facts">
       {% if shopee.connected %}
-      <div><dt>Loja</dt><dd>{{ shopee.account.account_name }}</dd></div>
-      <div><dt>Acesso renovado</dt><dd>{{ shopee.last_ok_label or '—' }}</dd></div>
+      <div><dt>Loja</dt><dd>{{ shopee.account.account_name }}{% if shopee.auth_expires %}<span class="conn-note">Autorização vale até {{ shopee.auth_expires }}</span>{% endif %}</dd></div>
       {% endif %}
-      <div><dt>O que lê</dt><dd>Só a conexão, por enquanto<span class="conn-note">Pedidos, taxas e perguntas chegam na próxima etapa.</span></dd></div>
+      <div><dt>Última atualização</dt><dd>{{ run_label(shopee.last_run, shopee.last_run_label) }}
+        {% if shopee.last_run and shopee.last_run.status == 'ok' and shopee.last_run.counts %}<span class="conn-note">{{ shopee.last_run.counts.get('pedidos', 0) }} pedidos, {{ shopee.last_run.counts.get('taxas', 0) }} com taxa</span>{% endif %}
+        <span class="conn-note">Atualiza a cada {{ shopee.sync_minutes }} min</span></dd></div>
     </dl>
     {% if shopee.connected and shopee.account.last_error %}<p class="form-error">{{ shopee.account.last_error }}</p>{% endif %}
     <div class="conn-actions">
       <a class="btn btn-primary btn-sm" href="/integracoes/shopee/conectar">{{ 'Conectar de novo' if shopee.connected else 'Conectar a Shopee' }}</a>
       {% if shopee.connected %}
+      <form method="post" action="/integracoes/shopee/sincronizar"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-secondary btn-sm" type="submit">Atualizar</button></form>
       <form method="post" action="/integracoes/shopee/desconectar" class="push-right"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn btn-ghost btn-sm conn-off" type="submit">Desconectar</button></form>
       {% endif %}

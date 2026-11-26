@@ -281,6 +281,8 @@ def upsert_order(db: Session, summary: dict, detail: dict, products: dict[str, i
                                                       MarketplaceFee.order_ref == order.external_id))
     if fee is not None:
         order.marketplace_fee_cents, order.fees_known = fee.fee_cents, True
+        if fee.net_cents is not None:  # Shopee: valor líquido veio junto com a taxa
+            order.net_received_cents = fee.net_cents
     else:
         order.marketplace_fee_cents = order.marketplace_fee_cents or 0
     order.ordered_at = (parse_olist_datetime(detail.get("dataCriacao") or summary.get("dataCriacao"))

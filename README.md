@@ -253,15 +253,20 @@ venda (que entra na margem real). Nesta etapa **nada é respondido**.
 
 ## Conectar a Shopee
 
-Usa a **Shopee Open Platform** (API v2 oficial). Por enquanto o painel só faz a
-conexão e mantém o acesso renovado; a leitura de pedidos, taxas, perguntas e
-envios da Shopee vem na próxima etapa.
+Usa a **Shopee Open Platform** (API v2 oficial), **só leitura**. A cada 10
+minutos (`SHOPEE_SYNC_MINUTES`) o painel lê os pedidos alterados: a situação e o
+**prazo de despacho** de cada um (entra no quadro "Envios de hoje", na central de
+pedidos e na lista de separação) e a **taxa e o valor que a loja recebe** por venda
+(entram no lucro real). Os pedidos em si continuam vindo do Olist; a Shopee
+completa com prazo e taxas, ligando pelo número do pedido. Nenhum dado pessoal
+do comprador é pedido (nome, endereço, telefone).
 
 1. Com o cadastro aprovado, em **open.shopee.com → Console → App List**, abra o
    app (tipo "Seller In House System").
-2. No app, em **Live Redirect URL Domain**, coloque `alyssonov.github.io`.
+2. No app, em **Live Redirect URL Domain**, coloque `https://alyssonov.github.io`
+   e peça a liberação (**Go Live**); as chaves de produção só saem depois dela.
 3. No `.env` do painel, preencha `SHOPEE_PARTNER_ID` e `SHOPEE_PARTNER_KEY`
-   (chaves de produção). Feche a janela do painel e ligue de novo.
+   (o par **Live**, de produção). Feche a janela do painel e ligue de novo.
 4. Em **Contas conectadas**, clique em **Conectar a Shopee**, entre com a conta
    principal da loja, digite o código do celular e confirme. Escolha **365
    dias** de validade.
