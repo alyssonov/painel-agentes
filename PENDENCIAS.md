@@ -53,21 +53,25 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   R$ 79,99: R$ 4,00 ou R$ 4,50). Compare com a Central do Vendedor e corrija lá
   mesmo. O Mercado Livre usa a tarifa **oficial** pela API (quando conectado).
 
-### B2. Onix (loja física, fonte dos custos) — 🔴
-- **O que preciso:**
-  1. Nome exato do sistema e da empresa que fornece (aparece em "Sobre" / "Ajuda").
-  2. Versão.
-  3. Se o fornecedor oferece **API**, **exportação automática** (CSV/Excel) ou
-     **acesso ao banco de dados** (perguntar ao suporte: "o Onix usa Firebird?
-     Vocês autorizam leitura do banco por outro sistema?").
-  4. Se o Onix roda num computador da loja que fica ligado durante o dia.
-- **Por quê:** não existe informação pública sobre integração com o Onix. Sem
-  saber o que o fornecedor permite, não dá para escolher o caminho seguro.
-- **Depende disso:** custos atualizados, recálculo de preços, sugestão de reajuste.
-- **Alternativa enquanto isso (pronta desde 26/11):** exporte do Onix uma
-  planilha com o SKU (igual ao do Olist) e o custo, e envie em **Produtos →
-  Enviar planilha** (há um modelo para baixar). O painel mostra onde o custo do
-  Onix difere do custo do Olist.
+### B2. Onix (loja física, fonte dos custos) — 🟡
+- **Descoberto em 26/11 (print da tela do Onix):** sistema **Onix, da Foxconn**,
+  versão **1.1.2.5**, instalado no Windows; banco de dados **Firebird**
+  (arquivo `.fdb`) num servidor da rede da loja. Firebird tem conector oficial
+  para Python: o painel pode **ler** os custos direto, com um usuário **só de
+  leitura** — sem nenhuma escrita no Onix.
+- **Perguntar ao suporte da Foxconn:**
+  1. Autorizam outro sistema a **apenas ler** o banco (produtos e custos)?
+  2. Podem criar um **usuário do Firebird só de leitura** (somente SELECT)?
+  3. Qual a **versão do Firebird** no servidor?
+  4. Em quais **tabelas/campos** ficam código do produto, descrição e **custo**
+     (ou um dicionário de dados)?
+- **Me dizer:** o painel roda no mesmo computador do Onix? O **código do produto
+  no Onix é igual ao SKU do Olist**?
+- **Usuário e senha do banco:** nunca no chat — vão no `.env` (eu explico onde).
+- **Enquanto isso (já funciona):** exportar do Onix (menu Estoque → relatório de
+  produtos com custo) e enviar em **Produtos → Enviar planilha**.
+- **Depende disso:** custos atualizados sozinhos, recálculo de preços, sugestão
+  de reajuste.
 
 ### B3. Shopee — 🟡
 - **26/11:** cadastro enviado na Open Platform — **em análise pela Shopee até
