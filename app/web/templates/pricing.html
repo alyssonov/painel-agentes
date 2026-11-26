@@ -1,7 +1,7 @@
 {% extends "app_layout.html" %}
 {% block title %}Precificação{% endblock %}
 {% block page_title %}Precificação{% endblock %}
-{% block page_subtitle %}<p class="muted">Descubra o preço certo em cada marketplace para a margem que você quer. Só faz contas: nada é alterado nos anúncios. <a class="link-light" href="/precificacao/taxas">Tabela de taxas →</a></p>{% endblock %}
+{% block page_subtitle %}<p class="muted">Descubra o preço certo em cada marketplace para a margem que você quer. Só faz contas: nada é alterado nos anúncios. <a class="link-light" href="/precificacao/taxas">Tabela de taxas →</a>{% if can('aprovar_precos_anuncios') %} · <a class="link-light" href="/precificacao/massa">Preços em massa →</a>{% endif %}</p>{% endblock %}
 {% block content %}
 <div class="calc-layout">
   <section class="card calc-main">

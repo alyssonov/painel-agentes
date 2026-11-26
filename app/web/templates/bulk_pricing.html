@@ -1,0 +1,91 @@
+{% extends "app_layout.html" %}
+{% block title %}Preços em massa{% endblock %}
+{% block page_title %}Preços em massa{% endblock %}
+{% block page_subtitle %}<p class="muted">Escolha uma regra, veja a prévia e crie as mudanças de preço para vários anúncios do Mercado Livre de uma vez. <strong>Nada muda no Mercado Livre até você aprovar</strong>{% if dry_run %} — e no modo simulação nada é enviado{% endif %}.</p>{% endblock %}
+{% block content %}
+
+<form class="card hist-filters" method="get" action="/precificacao/massa">
+  <input type="hidden" name="ver" value="1">
+  <label class="field"><span>Regra</span>
+    <select name="regra">{% for k, label in rules.items() %}<option value="{{ k }}" {% if rule.kind == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <label class="field"><span>Valor (%) <span class="muted small">margem ou reajuste</span></span>
+    <input type="text" inputmode="decimal" name="valor" value="{{ valor }}" placeholder="ex.: 20 ou -5"></label>
+  <label class="field"><span>Buscar anúncios</span><input type="search" name="busca" value="{{ rule.q }}" placeholder="título, MLB ou SKU"></label>
+  <label class="check"><input type="checkbox" name="final90" value="1" {% if rule.ending_90 %}checked{% endif %}> Preço terminado em ,90</label>
+  <div class="actions"><button class="btn btn-primary" type="submit">Ver prévia</button></div>
+</form>
+{% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+
+{% if shown %}
+<section class="card" aria-labelledby="prev-title">
+  <div class="card-head"><h2 id="prev-title" class="card-title">Prévia — {{ rows|length }} anúncio(s), {{ selectable }} podem mudar</h2>
+    <span class="muted small">margem mínima dos agentes: {{ '%.0f'|format(floor) }}%</span></div>
+  {% if rows %}
+  <form method="post" action="/precificacao/massa/propor">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="regra" value="{{ rule.kind }}"><input type="hidden" name="valor" value="{{ valor }}">
+    <input type="hidden" name="busca" value="{{ rule.q }}">{% if rule.ending_90 %}<input type="hidden" name="final90" value="1">{% endif %}
+    <div class="actions"><button type="button" class="link-btn" data-select-all="ref">Marcar todos</button>
+      <button type="button" class="link-btn" data-select-none="ref">Desmarcar todos</button>
+      <span class="muted small">Os com aviso (prejuízo, abaixo da margem mínima, mudança grande) vêm desmarcados.</span></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th></th><th>Anúncio</th><th class="num">Preço atual</th><th class="num">Preço novo</th><th class="num">Lucro atual</th><th class="num">Lucro novo</th><th>Avisos</th></tr></thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{% if r.selectable %}<input type="checkbox" name="ref" value="{{ r.ref.id }}" aria-label="Mudar {{ r.ref.title }}" {% if r.preselected %}checked{% endif %}>{% endif %}</td>
+            <td><span class="t-strong">{{ r.ref.title or r.ref.item_id }}</span><br><span class="muted small">{{ r.ref.item_id }}{% if r.sku %} · {{ r.sku }}{% endif %}</span></td>
+            <td class="num">{{ r.ref.current_cents|brl }}</td>
+            <td class="num t-strong">{% if r.new_cents %}{{ r.new_cents|brl }}<br><span class="small {{ 'up' if r.change_pct and r.change_pct > 0 else 'muted' }}">{{ '%+.1f'|format(r.change_pct) }}%</span>{% else %}—{% endif %}</td>
+            <td class="num">{% if r.profit_now is not none %}{{ r.profit_now|brl }}<br><span class="muted small">{{ r.margin_now|pct }}</span>{% else %}—{% endif %}</td>
+            <td class="num">{% if r.profit_new is not none %}<span class="{{ 'text-danger' if r.profit_new < 0 }}">{{ r.profit_new|brl }}</span><br><span class="muted small">{{ r.margin_new|pct }}</span>{% else %}—{% endif %}</td>
+            <td class="small">{% if r.blocked %}<span class="badge badge-pausado">{{ r.blocked }}</span>{% endif %}
+              {% for w in r.warnings %}<span class="badge badge-atencao">{{ w }}</span> {% endfor %}
+              {% if r.pending %}<span class="badge badge-info">já tem mudança aguardando (será trocada)</span>{% endif %}
+              {% if r.selectable is false and not r.blocked %}<span class="muted">já está nesse preço</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="actions"><button class="btn btn-primary" type="submit">Criar mudanças para aprovação</button>
+      <span class="muted small">Cria uma proposta para cada anúncio marcado. Depois é só aprovar aqui embaixo.</span></div>
+  </form>
+  {% else %}<p class="muted">Nenhum anúncio com referência de preço do Mercado Livre encontrado.</p>{% endif %}
+</section>
+{% endif %}
+
+<section class="card" id="pendentes" aria-labelledby="pend-title">
+  <h2 id="pend-title" class="card-title">Mudanças de preço aguardando aprovação ({{ pending|length }})</h2>
+  {% if pending %}
+  <form method="post" action="/precificacao/massa/decidir">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="actions"><button type="button" class="link-btn" data-select-all="acao">Marcar todas</button>
+      <button type="button" class="link-btn" data-select-none="acao">Desmarcar todas</button></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th></th><th>Anúncio</th><th class="num">De</th><th class="num">Para</th><th>Origem</th></tr></thead>
+        <tbody>
+        {% for a, ref in pending %}
+          <tr>
+            <td><input type="checkbox" name="acao" value="{{ a.id }}" aria-label="Selecionar"></td>
+            <td><span class="t-strong">{{ ref.title if ref else a.payload.get('item_id') }}</span><br><span class="muted small">{{ a.payload.get('item_id') }}</span>
+              {% if a.status == 'falhou' %}<br><span class="text-danger small">Não deu certo: {{ a.result }}</span>{% endif %}</td>
+            <td class="num">{{ a.payload.get('old_cents', 0)|brl }}</td>
+            <td class="num t-strong">{{ a.payload.get('price_cents', 0)|brl }}</td>
+            <td class="small">{{ 'Precificação em massa' if a.topic == 'massa' else 'Agente de Preços' }}<br><span class="muted">{{ a.reason or '' }}</span></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" name="decisao" value="aprovar">Aprovar marcadas</button>
+      <button class="btn btn-secondary" type="submit" name="decisao" value="descartar">Descartar marcadas</button>
+      <span class="muted small">Até {{ max_decide }} por vez. Cada aprovação fica no histórico com o seu nome.</span>
+    </div>
+  </form>
+  {% else %}<p class="muted">Nenhuma mudança de preço aguardando.</p>{% endif %}
+</section>
+{% endblock %}

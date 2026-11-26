@@ -107,3 +107,11 @@ document.addEventListener("click", function (event) {
 document.addEventListener("click", function (event) {
   if (event.target.closest("[data-imprimir]")) window.print();
 });
+
+// "Desmarcar todos" (precificação em massa).
+document.addEventListener("click", function (event) {
+  var none = event.target.closest("[data-select-none]");
+  if (!none) return;
+  var form = none.closest("form");
+  if (form) form.querySelectorAll('input[name="' + none.dataset.selectNone + '"]').forEach(function (c) { c.checked = false; });
+});

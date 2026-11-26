@@ -123,6 +123,16 @@ número, produto, SKU ou cliente e filtros por período, marketplace e situaçã
 produto, tudo que precisa sair até o fim do dia (e o que está atrasado), mostra
 o estoque e tem botão para imprimir.
 
+## Preços em massa
+
+Em **Precificação → Preços em massa** (ou pelo atalho em Estoque e compras):
+escolha uma regra — preço para uma margem, reajuste em % ou ir para a
+referência do Mercado Livre — e veja a prévia com o preço e o lucro de cada
+anúncio antes e depois. Os que dariam prejuízo, ficariam abaixo da margem
+mínima ou mudariam mais de 30% vêm desmarcados. **Criar mudanças** só cria as
+propostas; elas mudam no Mercado Livre quando você marca e clica em **Aprovar
+marcadas** (no modo simulação, nada é enviado).
+
 ## Produtos (cadastro complementar)
 
 Menu **Operação → Produtos**: os produtos do Olist com informações que ficam só

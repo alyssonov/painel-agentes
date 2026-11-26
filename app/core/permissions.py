@@ -87,6 +87,7 @@ ROUTE_RULES: list[tuple[str, str, str | None]] = [
     ("*", r"^/historico(/|$)", AUDIT),
     ("*", r"^/integracoes(/|$)", STORE),
     ("*", r"^/precificacao/taxas$", STORE),
+    ("*", r"^/precificacao/massa(/|$)", PRICES),
     ("GET", r"^/precificacao$", PRICING),
     ("*", r"^/margem(/|$)", FINANCE),
     ("GET", r"^/relatorios(/|$)", FINANCE),

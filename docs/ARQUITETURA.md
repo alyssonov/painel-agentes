@@ -770,3 +770,22 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   quem vê o financeiro (inclusive na planilha). Toda mudança vai para o
   histórico com antes → depois (`produto.cadastro_alterado`).
 - A lista de separação mostra o local da prateleira do complemento.
+
+## 33. Etapa 4c — Preços em massa e aprovação em lote
+
+- `/precificacao/massa` (permissão **aprovar preços e anúncios**). Regras:
+  preço para uma margem, reajuste em % (sobre o preço cadastrado) ou ir para a
+  referência do ML; opção de final ,90; busca por título, MLB ou SKU.
+- A prévia (`app/services/bulk_pricing.py`) usa a mesma conta do agente de
+  Preços (taxa da referência oficial do ML, frete, custo do Olist, imposto) e
+  mostra preço e lucro atual → novo. Ficam bloqueados: automatização do ML,
+  variações, promoção, sem custo. Avisos (prejuízo, abaixo da margem mínima dos
+  agentes, mudança > 30%) vêm desmarcados.
+- "Criar mudanças" recalcula tudo no servidor (não confia nos números da tela)
+  e cria Ações `mudar_preco` (tópico "massa") no ActionGateway, substituindo a
+  proposta pendente do mesmo anúncio. Nada é enviado nesse passo.
+- "Aprovar/Descartar marcadas" decide até 100 propostas por vez, uma a uma pelo
+  ActionGateway (`approve`/`reject`), com commit a cada uma: se o ML falhar no
+  meio, as anteriores ficam registradas. No modo simulação viram "simulada".
+- Ações em massa de anúncios (pausar, reativar, editar texto) ficam para depois
+  de consultar a documentação oficial dessas operações.

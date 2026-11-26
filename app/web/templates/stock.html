@@ -25,6 +25,7 @@
 <section class="card" id="precos" aria-labelledby="precos-title">
   <div class="card-head">
     <h2 id="precos-title" class="card-title">Sugestões de preço <span class="count">{{ price_queue|length }}</span></h2>
+    {% if can('aprovar_precos_anuncios') %}<a class="link" href="/precificacao/massa">Aprovar em lote ou mudar vários preços →</a>{% endif %}
   </div>
   <p class="muted small">Comparação com as referências de preço oficiais do Mercado Livre e o custo do Olist. O agente nunca sugere um preço com lucro real abaixo da margem mínima (Agentes → Monitor de preços). Nada muda sem a sua aprovação.</p>
   {% if price_queue %}

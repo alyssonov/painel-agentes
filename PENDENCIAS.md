@@ -29,6 +29,16 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   funcionário com outro papel e teste entrar com ele.
 - Menu **Administração → Histórico**: mudanças aparecem com "antes → depois".
 
+### Etapa 4 — o que conferir (26/11)
+- **Pedidos** (busca, filtros, "Atrasado", planilha) e **Lista de separação**
+  (imprimir).
+- **Produtos**: preencher compatibilidade/local de alguns itens e testar a
+  busca pela moto; se tiver, enviar a planilha de custos do Onix.
+- **Preços em massa**: ver a prévia com uma regra (ex.: margem 20%), criar as
+  mudanças e aprovar uma em lote (no modo simulação nada é enviado).
+- Ficaram para depois, porque dependem da documentação oficial: **etiquetas**
+  de envio e **pausar/reativar/editar anúncios em massa**.
+
 ## B. Informações e acessos
 
 ### B1. NorteUp — ✅ (calculadora feita; o resto do app não é necessário por agora — decisão de 26/11)
