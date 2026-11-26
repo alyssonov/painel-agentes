@@ -23,19 +23,19 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 
 ## B. Informações e acessos
 
-### B1. NorteUp (o que existe nos dois links) — 🔴
-- **O que preciso:** prints de **cada tela** do `app.norteup.com` e da
-  `calculadora_facil.php` (com os campos preenchidos e os resultados), **sem
-  senha aparecendo**.
-- **Por quê:** o ambiente onde eu trabalho não consegue abrir o norteup.com, e
-  o app provavelmente exige login. Não encontrei descrição pública da
-  ferramenta. Não vou "adivinhar" o que ela tem.
-- **Como conseguir:** entre no NorteUp, abra cada menu, aperte `Win + Shift + S`
-  para recortar a tela e mande as imagens aqui.
-- **Depende disso:** reproduzir no Gerente do Ano tudo que vocês usam lá.
-- **Enquanto isso:** a **calculadora de preço** já está pronta (menu
-  Precificação, 26/11). Com os prints, ajusto o que faltar para ficar igual
-  ao que vocês usam na NorteUp.
+### B1. NorteUp — 🟡 (calculadora feita; falta o resto do app)
+- **Recebido 26/11:** print da calculadora fácil → reproduzida no menu
+  **Precificação** (custo, custo fixo/rateio, margem 10/20/30/personalizada,
+  impostos MEI/Simples/CPF, anúncios pagos, Shopee/ML Clássico/ML
+  Premium/TikTok Shop, taxa de devolução da Shopee, desconto, afiliados, preço
+  final ,90, simuladores e últimas 10 simulações).
+- **O que ainda preciso:** prints das **outras telas** do `app.norteup.com`
+  (menu e cada página), sem senha aparecendo.
+- **Também confira:** a **tabela de taxas** da Shopee e do TikTok Shop
+  (Precificação → Tabela de taxas). Os valores vieram de fontes públicas de
+  2026 que **divergem** em alguns pontos (ex.: taxa fixa da Shopee até
+  R$ 79,99: R$ 4,00 ou R$ 4,50). Compare com a Central do Vendedor e corrija lá
+  mesmo. O Mercado Livre usa a tarifa **oficial** pela API (quando conectado).
 
 ### B2. Onix (loja física, fonte dos custos) — 🔴
 - **O que preciso:**

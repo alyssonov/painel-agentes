@@ -655,14 +655,20 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
 - **Painel**: menu **Anúncios** — sugestões (descrição/título editáveis,
   descrição atual para comparar) e a tabela de qualidade com o que o ML pede.
 
-## 27. Precificação — calculadora (etapa 1 do plano de evolução)
+## 27. Precificação — calculadora (etapa 1 do plano; formato da NorteUp)
 
-`app/services/pricing_calc.py` (sem IA, sem rede) + `/precificacao`.
-Preço → resultado: recebe = P − P×comissão − taxa fixa − frete; lucro = recebe −
-custo − outros R$ − P×(imposto + publicidade + outros %). Margem/lucro → preço:
-P = (custo + taxa fixa + frete + outros R$ + lucro) ÷ (1 − Σ% − margem).
-Arredondamento opcional para ,90; preço mínimo sem prejuízo. Produto opcional:
-custo do Olist e, se houver referência de preço do anúncio no ML, comissão
-(taxa ÷ preço sugerido) e frete que o próprio ML informa. Não há tabela de
-taxas "oficiais" embutida: as taxas mudam por categoria/tipo/faixa — a pessoa
-confere e digita. Formulário GET (não altera nada).
+- `app/services/pricing_calc.py` (sem IA): taxa = função do preço
+  (`flat_fee`, `band_fee` por faixa); `price_for` repete até a taxa do preço
+  calculado coincidir com a usada (faixas) e garante a meta depois de desconto
+  e final ,90 (o desconto vale sobre o preço anunciado; taxas e impostos sobre o
+  que o comprador paga). Custos: imposto, anúncios, afiliados, rateio % ou R$.
+- `app/services/marketplace_fees.py`: Mercado Livre pela API oficial
+  `GET /sites/MLB/listing_prices` (gold_special/gold_pro, `logistic_type` mais
+  usado pela loja + `shipping_mode=me2`, categoria do anúncio quando há
+  produto; cache por preço; falha → % de reserva marcada como estimativa).
+  Shopee/TikTok: tabela por faixa em `store_settings["marketplace_fees"]`,
+  editável em `/precificacao/taxas` (padrões de fontes públicas de 2026, com
+  links e aviso de divergência).
+- Histórico: tabela `pricing_simulations` (migração 0015), 10 por pessoa;
+  testar preço no simulador não duplica. Página `/precificacao` (GET, sem
+  alterar nada externo).

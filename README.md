@@ -211,14 +211,23 @@ fim do dia), e nunca duas vezes. Falha no envio vira alerta. Sem custo de IA.
 
 ## Precificação (calculadora)
 
-No menu **Precificação**: informe o custo (ou busque o produto pelo SKU/nome —
-o custo vem do Olist e, se o produto tem anúncio no Mercado Livre, a taxa e o
-frete vêm do próprio Mercado Livre), imposto, publicidade e outros custos, e
-até 3 marketplaces com comissão, taxa fixa e frete. Escolha:
-**"Quero uma margem de"** (calcula o preço), **"Quero um lucro por venda de"**
-ou **"Vou vender a"** (mostra a margem real). O resultado compara os
-marketplaces lado a lado, com quanto você recebe, lucro, margem, markup e o
-preço mínimo sem prejuízo. Só faz contas: nada muda nos anúncios.
+No menu **Precificação** (no formato da "calculadora fácil" da NorteUp): custo
+do produto (ou busque o produto pelo SKU/nome — o custo vem do Olist), custo
+fixo (rateio em % do preço ou R$ por unidade), margem desejada (10/20/30% ou
+personalizada) ou lucro por venda, impostos (MEI, Simples, CPF), anúncios
+pagos, e os marketplaces: **Shopee, Mercado Livre Clássico, Mercado Livre
+Premium e TikTok Shop**. Em "Mais ajustes": desconto e comissão de afiliados;
+opção de preço terminando em ,90 e taxa de devolução da Shopee.
+
+- **Mercado Livre:** a tarifa vem da **API oficial "Custos por vender"**, para o
+  preço calculado, com a logística da loja e a categoria do anúncio.
+- **Shopee e TikTok Shop:** tabela por faixa de preço em **Precificação →
+  Tabela de taxas** (valores de referência de 2026 — confira na Central do
+  Vendedor e corrija ali).
+
+O resultado mostra o preço de cada marketplace, lucro, margem, quanto você
+recebe e a conta completa. Abaixo: **simuladores** (e se eu vender a outro
+preço?) e as **últimas 10 simulações**. Só faz contas: nada muda nos anúncios.
 
 ## Anúncios (Fase 7 — agente Criador e otimizador de anúncios)
 

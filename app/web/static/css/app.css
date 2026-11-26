@@ -472,16 +472,67 @@ details > summary { cursor: pointer; }
   box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 2px 8px rgba(0,0,0,.25); }
 
 /* --- Precificação (calculadora) ---------------------------------------------- */
-.calc-form { display: contents; }
-.calc-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-.calc-fields label, .calc-col label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; }
-.calc-fields .field, .calc-col .field, .calc-target .field { font: inherit; font-weight: 400; padding: 9px 11px;
-  border: 1px solid var(--line); border-radius: var(--radius-sm); }
-.calc-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-.calc-col { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px; margin: 0;
-  display: flex; flex-direction: column; gap: 10px; }
-.calc-target { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.calc-target .segmented label { cursor: pointer; }
-.calc-target-value .field { width: 140px; }
-.pick-list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
-.calc-result td.indent { padding-left: 24px; color: var(--muted); }
+.calc-layout { display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
+.calc-layout-even { grid-template-columns: 1fr 1fr; }
+@media (max-width: 980px) { .calc-layout, .calc-layout-even { grid-template-columns: 1fr; } }
+.calc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 700px) { .calc-cols { grid-template-columns: 1fr; } }
+.calc-col-left, .calc-col-right { display: flex; flex-direction: column; gap: 16px; }
+.calc-col-right { border-left: 1px solid var(--line); padding-left: 24px; }
+@media (max-width: 700px) { .calc-col-right { border-left: 0; padding-left: 0; } }
+.calc-label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; margin: 0; border: 0; padding: 0; }
+.calc-label .muted { font-weight: 400; font-size: 11px; }
+.calc-label legend { font-size: 13px; font-weight: 700; margin-bottom: 6px; padding: 0; }
+.calc-form .field, .calc-find .field, .fee-table .field, .fee-small, .sim-row .field {
+  font: inherit; font-weight: 500; padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--field); width: 100%; box-sizing: border-box; }
+.calc-inline { display: flex; gap: 8px; align-items: center; }
+.calc-inline .field:first-child { max-width: 110px; }
+.calc-inline-sm .field { max-width: 90px; }
+.input-prefix, .input-suffix { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--field); overflow: hidden; }
+.input-prefix > span, .input-suffix > span { display: grid; place-items: center; padding: 0 10px; color: var(--muted); font-weight: 600; }
+.input-prefix .field, .input-suffix .field { border: 0 !important; border-radius: 0 !important; }
+.calc-profit { margin-top: 4px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-weight: 600; }
+.chip-btn { font: inherit; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.chip-btn:hover { border-color: var(--brand-2); }
+.chip-btn.is-active { background: var(--brand); border-color: var(--brand); color: #fff; }
+.chip-input { width: 72px !important; }
+.segmented-mini { margin-bottom: 4px; }
+.segmented-mini .seg { font-size: 12px; cursor: pointer; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 500; }
+.calc-mks .check { padding: 3px 0; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--info); text-decoration: underline; cursor: pointer;
+  font: inherit; font-size: 12px; align-self: flex-start; }
+.calc-more { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.calc-more[open] > summary { margin-bottom: 10px; }
+.calc-more summary { cursor: pointer; font-size: 13px; }
+.calc-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 22px; }
+.btn-lg { padding: 13px 40px; font-size: 15px; border-radius: 10px; }
+.link-muted { color: var(--muted); }
+.calc-results { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 16px; }
+.calc-card { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px 14px; display: flex;
+  flex-direction: column; gap: 6px; }
+.calc-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.calc-price { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.calc-breakdown td { padding: 5px 8px; font-size: 13px; }
+.calc-breakdown td.indent, .calc-result td.indent { padding-left: 20px; color: var(--muted); }
+.calc-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 50px 10px; }
+.calc-empty-sm { padding: 20px 10px; }
+.calc-empty-icon { width: 44px; height: 44px; padding: 12px; border-radius: 14px; background: var(--brand-soft); color: var(--brand); }
+.section-title { color: #fff; font-size: 20px; margin: 30px 0 4px; }
+.section-sub { color: rgba(255,255,255,.75); margin: 0 0 14px; }
+.sim-row { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin: 10px 0; }
+.sim-row .input-prefix { width: 150px; }
+.sim-row > span.small { flex-basis: 100%; padding-left: 160px; }
+@media (max-width: 700px) { .sim-row > span.small { padding-left: 0; } }
+.sim-name { font-weight: 700; font-size: 13px; width: 150px; }
+.history { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.history li { display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.fee-table .field { min-width: 90px; }
+.fee-small { max-width: 140px; }
+.calc-label .lt { display: block; }
+.check .muted { white-space: nowrap; }
+form > .card { margin-bottom: 16px; }

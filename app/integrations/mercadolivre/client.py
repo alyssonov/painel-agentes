@@ -301,3 +301,24 @@ class MLClient(ReadOnlyApiClient):
     def get_item_performance(self, item_id: str) -> dict | None:
         """GET /item/{id}/performance — nota de qualidade do anúncio e o que falta melhorar."""
         return self._get(f"/item/{item_id}/performance")
+
+    # --- Precificação ----------------------------------------------------------------
+    # Documentação oficial consultada em 26/11/2026:
+    #   https://developers.mercadolivre.com.br/pt_br/comissao-por-vender  (Custos por vender)
+    #   Com logistic_type + shipping_mode a taxa fixa calculada é a que o ML cobra de fato.
+
+    def get_listing_prices(self, price_cents: int, listing_type_id: str, *, category_id: str | None = None,
+                           logistic_type: str | None = None) -> dict | None:
+        """GET /sites/MLB/listing_prices — tarifa de venda exata para um preço e tipo de anúncio."""
+        data = self._get("/sites/MLB/listing_prices", {
+            "price": f"{price_cents / 100:.2f}", "currency_id": "BRL", "listing_type_id": listing_type_id,
+            "category_id": category_id, "logistic_type": logistic_type,
+            "shipping_mode": "me2" if logistic_type else None,
+        })
+        # A resposta pode vir como lista, ou lista de listas (consulta filtrada).
+        while isinstance(data, list) and data:
+            if isinstance(data[0], dict):
+                match = [d for d in data if d.get("listing_type_id") == listing_type_id]
+                return (match or data)[0]
+            data = data[0]
+        return data if isinstance(data, dict) else None

@@ -78,3 +78,27 @@ document.addEventListener("change", function (event) {
     label.classList.toggle("is-active", !!(input && input.checked));
   });
 });
+
+// Precificação: botões de opção (chips) que preenchem um campo; "Selecionar todos".
+document.addEventListener("click", function (event) {
+  var chip = event.target.closest("[data-fill]");
+  if (chip) {
+    var input = document.getElementById(chip.dataset.fill);
+    if (input) {
+      if (chip.dataset.value !== "") input.value = chip.dataset.value;
+      else { input.focus(); input.select(); }
+    }
+    if (chip.dataset.regime) {
+      var regime = document.getElementById("regime");
+      if (regime) regime.value = chip.dataset.regime;
+    }
+    var group = chip.closest(".chips");
+    if (group) group.querySelectorAll(".chip-btn").forEach(function (b) { b.classList.toggle("is-active", b === chip); });
+    return;
+  }
+  var all = event.target.closest("[data-select-all]");
+  if (all) {
+    var form = all.closest("form");
+    if (form) form.querySelectorAll('input[name="' + all.dataset.selectAll + '"]').forEach(function (c) { c.checked = true; });
+  }
+});

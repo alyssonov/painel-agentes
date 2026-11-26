@@ -14,6 +14,7 @@ from app.models.listing_quality import ListingQuality
 from app.models.order import Order, OrderItem
 from app.models.payment import Payment
 from app.models.price import PriceReference
+from app.models.pricing import PricingSimulation
 from app.models.postsale import Claim, Conversation, ConversationMessage
 from app.models.question import Question
 from app.models.report import Report
@@ -45,6 +46,7 @@ __all__ = [
     "OrderItem",
     "Payment",
     "PriceReference",
+    "PricingSimulation",
     "Product",
     "ProductInsight",
     "ProductReview",

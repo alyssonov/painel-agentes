@@ -1,107 +1,186 @@
 {% extends "app_layout.html" %}
 {% block title %}Precificação{% endblock %}
 {% block page_title %}Precificação{% endblock %}
-{% block page_subtitle %}<p class="muted">Calculadora de preço: descubra o preço para a margem que você quer, ou a margem real de um preço — e compare marketplaces lado a lado. Só faz contas: nada é alterado nos anúncios.</p>{% endblock %}
+{% block page_subtitle %}<p class="muted">Descubra o preço certo em cada marketplace para a margem que você quer. Só faz contas: nada é alterado nos anúncios. <a class="link-light" href="/precificacao/taxas">Tabela de taxas →</a></p>{% endblock %}
 {% block content %}
-<section class="card">
-  <div class="card-head"><h2 class="card-title">1. Produto</h2></div>
-  {% if product %}
-  <p><span class="t-strong">{{ product.name }}</span> <span class="muted small">· {{ product.sku }} · custo no Olist {{ product.cost_cents|brl if product.cost_cents else 'não cadastrado' }}</span>
-    <a class="small" href="/precificacao">trocar</a></p>
-  {% else %}
-  <form method="get" action="/precificacao" class="sale-search" role="search">
-    <label class="sr-only" for="busca">Buscar produto</label>
-    <input id="busca" name="busca" class="field" value="{{ busca }}" placeholder="SKU ou nome do produto (opcional: preenche o custo e as taxas do Mercado Livre)">
-    <button class="btn btn-secondary" type="submit">Buscar</button>
-  </form>
-  {% if busca and not matches %}<p class="muted small">Nenhum produto encontrado. Você pode digitar o custo direto abaixo.</p>{% endif %}
-  {% if matches %}
-  <ul class="pick-list">
-    {% for p in matches %}<li><a href="/precificacao?produto={{ p.id }}">{{ p.name }}</a> <span class="muted small">{{ p.sku }} · custo {{ p.cost_cents|brl if p.cost_cents else '—' }}</span></li>{% endfor %}
-  </ul>
-  {% endif %}
-  {% endif %}
-</section>
+<div class="calc-layout">
+  <section class="card calc-main">
+    {# Produto: busca opcional, preenche custo e frete do ML #}
+    {% if not product %}
+    <form method="get" action="/precificacao" class="sale-search calc-find" role="search">
+      <label class="sr-only" for="busca">Buscar produto cadastrado</label>
+      <input id="busca" name="busca" class="field" value="{{ busca }}" placeholder="Buscar produto pelo SKU ou nome (opcional)">
+      <button class="btn btn-secondary" type="submit">Buscar</button>
+    </form>
+    {% if busca and not matches %}<p class="muted small">Nenhum produto encontrado — digite o custo abaixo.</p>{% endif %}
+    {% if matches %}
+    <ul class="pick-list">{% for p in matches %}<li><a href="/precificacao?produto={{ p.id }}">{{ p.name }}</a> <span class="muted small">{{ p.sku }} · custo {{ p.cost_cents|brl if p.cost_cents else '—' }}</span></li>{% endfor %}</ul>
+    {% endif %}
+    {% endif %}
 
-<form method="get" action="/precificacao" class="calc-form">
-  <input type="hidden" name="calcular" value="1">
-  {% if product %}<input type="hidden" name="produto" value="{{ product.id }}">{% endif %}
+    <form method="get" action="/precificacao" class="calc-form" id="calc-form">
+      <input type="hidden" name="calcular" value="1">
+      {% if product %}<input type="hidden" name="produto" value="{{ product.id }}">{% endif %}
+      <div class="calc-cols">
+        <div class="calc-col-left">
+          <label class="calc-label"><span class="lt">Nome do produto <span class="muted">(opcional)</span></span>
+            <input class="field" name="nome" value="{{ form.nome }}" placeholder="Ex.: Pastilha de freio CG 160"></label>
+          {% if product %}<p class="muted small">Do cadastro: {{ product.sku }}{% if product.cost_cents %} · custo no Olist {{ product.cost_cents|brl }}{% endif %} · <a href="/precificacao">trocar</a></p>{% endif %}
 
-  <section class="card">
-    <div class="card-head"><h2 class="card-title">2. Custos</h2></div>
-    <div class="calc-fields">
-      <label>Custo do produto (R$)<input class="field" name="custo" inputmode="decimal" value="{{ cost_text }}" placeholder="0,00" required></label>
-      <label>Imposto (% do preço)<input class="field" name="imposto" inputmode="decimal" value="{{ tax_text }}" placeholder="0"></label>
-      <label>Publicidade (% do preço)<input class="field" name="publicidade" inputmode="decimal" value="{{ ads_text }}" placeholder="0"></label>
-      <label>Outros custos (% do preço)<input class="field" name="outros_pct" inputmode="decimal" value="{{ other_pct_text }}" placeholder="0"></label>
-      <label>Outros custos por unidade (R$)<input class="field" name="outros_valor" inputmode="decimal" value="{{ other_cents_text }}" placeholder="embalagem, etiqueta…"></label>
-    </div>
-  </section>
+          <label class="calc-label"><span class="lt">Custo total do produto <span class="muted">(unidade)</span></span>
+            <span class="input-prefix"><span>R$</span><input class="field" name="custo" inputmode="decimal" value="{{ form.custo }}" placeholder="0,00"></span></label>
 
-  <section class="card">
-    <div class="card-head"><h2 class="card-title">3. Marketplaces para comparar</h2></div>
-    <p class="muted small">A comissão e a taxa fixa mudam com a categoria, o tipo de anúncio e a faixa de preço: confira no marketplace. Coluna sem comissão fica de fora.</p>
-    <div class="calc-columns">
-      {% for col in columns %}{% set i = loop.index0 %}
-      <fieldset class="calc-col">
-        <legend class="sr-only">Marketplace {{ loop.index }}</legend>
-        <label>Nome<input class="field" name="nome{{ i }}" value="{{ col.name }}"></label>
-        <label>Comissão (%)<input class="field" name="comissao{{ i }}" inputmode="decimal" value="{{ col.commission }}" placeholder="ex.: 14"></label>
-        <label>Taxa fixa por venda (R$)<input class="field" name="taxa{{ i }}" inputmode="decimal" value="{{ col.fixed_fee }}" placeholder="0,00"></label>
-        <label>Frete pago por você (R$)<input class="field" name="frete{{ i }}" inputmode="decimal" value="{{ col.shipping }}" placeholder="0,00"></label>
-        {% if col.source %}<p class="muted small">{{ col.source }}.</p>{% endif %}
-      </fieldset>
-      {% endfor %}
-    </div>
-  </section>
+          <div class="calc-label"><span class="lt">Custo fixo <span class="muted">(rateio)</span></span>
+            <div class="calc-inline">
+              <input class="field" name="rateio" inputmode="decimal" value="{{ form.rateio }}" aria-label="Custo fixo">
+              <select class="field" name="rateio_tipo" aria-label="Como aplicar o custo fixo">
+                <option value="pct" {% if form.rateio_tipo == 'pct' %}selected{% endif %}>% sobre o preço de venda</option>
+                <option value="reais" {% if form.rateio_tipo == 'reais' %}selected{% endif %}>R$ por unidade</option>
+              </select>
+            </div>
+          </div>
 
-  <section class="card">
-    <div class="card-head"><h2 class="card-title">4. O que você quer saber</h2></div>
-    <div class="calc-target">
-      <div class="segmented" role="radiogroup" aria-label="Tipo de cálculo">
-        {% for value, label in modes %}
-        <label class="seg{% if mode == value %} is-active{% endif %}"><input type="radio" name="modo" value="{{ value }}" {% if mode == value %}checked{% endif %} class="sr-only">{{ label }}</label>
-        {% endfor %}
+          <div class="calc-label">
+            <span class="segmented segmented-mini" role="radiogroup" aria-label="Meta">
+              <label class="seg{% if form.modo == 'margem' %} is-active{% endif %}"><input class="sr-only" type="radio" name="modo" value="margem" {% if form.modo == 'margem' %}checked{% endif %}>Margem de lucro desejada</label>
+              <label class="seg{% if form.modo == 'lucro' %} is-active{% endif %}"><input class="sr-only" type="radio" name="modo" value="lucro" {% if form.modo == 'lucro' %}checked{% endif %}>Lucro por venda</label>
+            </span>
+            <div class="chips" data-chips="margem">
+              {% for c in margin_chips %}<button type="button" class="chip-btn{% if form.margem == c %} is-active{% endif %}" data-fill="margem" data-value="{{ c }}">{{ c }}%</button>{% endfor %}
+              <button type="button" class="chip-btn{% if form.margem not in margin_chips %} is-active{% endif %}" data-fill="margem" data-value="">Personalizado</button>
+              <input class="field chip-input" id="margem" name="margem" inputmode="decimal" value="{{ form.margem }}" aria-label="Margem desejada (%)">%
+            </div>
+            <span class="input-prefix calc-profit"><span>R$</span><input class="field" name="lucro" inputmode="decimal" value="{{ form.lucro }}" placeholder="lucro por venda (se escolher 'Lucro por venda')" aria-label="Lucro por venda desejado"></span>
+          </div>
+
+          <div class="calc-label"><span class="lt">Impostos <span class="muted">(se aplicável)</span></span>
+            <div class="chips">
+              <button type="button" class="chip-btn{% if form.regime == 'mei' %} is-active{% endif %}" data-fill="imposto" data-value="0" data-regime="mei">MEI</button>
+              <button type="button" class="chip-btn{% if form.regime == 'simples' %} is-active{% endif %}" data-fill="imposto" data-value="{{ store_tax }}" data-regime="simples">Simples Nacional</button>
+              <button type="button" class="chip-btn{% if form.regime == 'pf' %} is-active{% endif %}" data-fill="imposto" data-value="0" data-regime="pf">Pessoa física (CPF)</button>
+              <button type="button" class="chip-btn{% if form.regime == 'naosei' %} is-active{% endif %}" data-fill="imposto" data-value="{{ store_tax }}" data-regime="naosei">Não sei</button>
+              <input type="hidden" name="regime" id="regime" value="{{ form.regime }}">
+            </div>
+            <div class="calc-inline calc-inline-sm"><span class="muted small">% do imposto</span>
+              <input class="field chip-input" id="imposto" name="imposto" inputmode="decimal" value="{{ form.imposto }}" aria-label="Imposto (%)">%</div>
+            <p class="muted small">MEI paga um valor fixo por mês (não por venda). Simples Nacional: use a alíquota que a contabilidade informou.</p>
+          </div>
+
+          <div class="calc-label"><span class="lt">Anúncios pagos <span class="muted">(opcional)</span></span>
+            <div class="chips">
+              {% for value, label in ads_chips %}<button type="button" class="chip-btn{% if form.ads == value %} is-active{% endif %}" data-fill="ads" data-value="{{ value }}">{{ label }}</button>{% endfor %}
+              <button type="button" class="chip-btn{% if form.ads not in ['0', '5', '10'] %} is-active{% endif %}" data-fill="ads" data-value="">Personalizado</button>
+              <input class="field chip-input" id="ads" name="ads" inputmode="decimal" value="{{ form.ads }}" aria-label="Anúncios pagos (% do preço)">%
+            </div>
+          </div>
+        </div>
+
+        <div class="calc-col-right">
+          <fieldset class="calc-label calc-mks">
+            <legend>Marketplaces</legend>
+            {% for key in order %}
+            <label class="check"><input type="checkbox" name="mk" value="{{ key }}" {% if key in form.mk %}checked{% endif %} data-mk> {{ fees[key].name }}</label>
+            {% endfor %}
+            <button type="button" class="link-btn" data-select-all="mk">Selecionar todos</button>
+          </fieldset>
+          <label class="check"><input type="checkbox" name="devolucao" value="1" {% if form.devolucao %}checked{% endif %}> Taxa de devolução da Shopee <span class="muted small">({{ fees.shopee.return_fee|brl }} por venda)</span></label>
+          <label class="calc-label"><span class="lt">Frete pago por você no Mercado Livre <span class="muted">(opcional)</span></span>
+            <span class="input-prefix"><span>R$</span><input class="field" name="frete_ml" inputmode="decimal" value="{{ form.frete_ml }}" placeholder="0,00"></span></label>
+
+          <details class="calc-more" {% if form.desconto not in ['', '0'] or form.afiliados not in ['', '0'] %}open{% endif %}>
+            <summary class="t-strong">Mais ajustes: desconto, afiliados e preço final</summary>
+            <label class="calc-label"><span class="lt">Desconto <span class="muted">(opcional)</span></span>
+              <span class="input-suffix"><input class="field" name="desconto" inputmode="decimal" value="{{ form.desconto }}"><span>%</span></span></label>
+            <label class="calc-label">Comissão de afiliados
+              <span class="input-suffix"><input class="field" name="afiliados" inputmode="decimal" value="{{ form.afiliados }}"><span>%</span></span></label>
+          </details>
+          <label class="check"><input type="checkbox" name="final90" value="1" {% if form.final90 %}checked{% endif %}> Preço atrativo no final <span class="muted small">(com ,90)</span></label>
+          {% if not ml_connected %}<p class="muted small">Mercado Livre não conectado: a tarifa do ML será uma estimativa.</p>{% endif %}
+        </div>
       </div>
-      <label class="calc-target-value"><span class="sr-only">Valor</span>
-        <input class="field" name="alvo" inputmode="decimal" value="{{ target_text }}" placeholder="{{ '20 (%)' if mode == 'margem' else '0,00 (R$)' }}"></label>
-      <label class="small"><input type="checkbox" name="final90" value="1" {% if ending_90 %}checked{% endif %}> Arredondar o preço para terminar em ,90</label>
-      <button class="btn btn-primary" type="submit">Calcular</button>
-    </div>
-    <p class="muted small">Margem = lucro ÷ preço de venda. Com "Vou vender a", o painel mostra a margem real desse preço.</p>
+      <div class="calc-actions">
+        <button class="btn btn-primary btn-lg" type="submit">Calcular preço →</button>
+        <a class="small link-muted" href="/precificacao">Começar de novo</a>
+      </div>
+    </form>
   </section>
-</form>
 
-{% if errors %}<div class="card qcard-reason">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+  <section class="card calc-results" aria-labelledby="res-title">
+    <h2 id="res-title" class="card-title">Resultado</h2>
+    {% if errors %}<div class="qcard-reason">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+    {% if cards %}
+      {% if best %}<p class="small"><span class="badge badge-ok">Mais lucro: {{ best }}</span></p>{% endif %}
+      {% for c in cards %}{% set r = c.result %}
+      <article class="calc-card">
+        <div class="calc-card-head"><span class="t-strong">{{ c.name }}</span>
+          {% if r %}<span class="calc-price">{{ r.listed_cents|brl }}</span>{% else %}<span class="badge badge-erro">impossível</span>{% endif %}</div>
+        {% if r %}
+        <p class="small">Lucro <strong class="{{ 'text-danger' if r.profit_cents < 0 }}">{{ r.profit_cents|brl }}</strong> · margem <strong>{{ r.margin_pct|pct }}</strong> · você recebe {{ r.received_cents|brl }}</p>
+        <details><summary class="small">Ver a conta</summary>
+          <table class="table calc-breakdown"><tbody>
+            {% if r.listed_cents != r.price_cents %}<tr><td>Preço anunciado</td><td class="num">{{ r.listed_cents|brl }}</td></tr><tr><td>Comprador paga (com desconto)</td><td class="num">{{ r.price_cents|brl }}</td></tr>
+            {% else %}<tr><td>Preço de venda</td><td class="num">{{ r.price_cents|brl }}</td></tr>{% endif %}
+            <tr><td class="indent">Comissão ({{ ('%.2f'|format(r.commission_pct))|replace('.', ',') }}%)</td><td class="num">− {{ r.commission_cents|brl }}</td></tr>
+            {% if r.fixed_fee_cents %}<tr><td class="indent">Taxa fixa</td><td class="num">− {{ r.fixed_fee_cents|brl }}</td></tr>{% endif %}
+            {% if r.shipping_cents %}<tr><td class="indent">Frete</td><td class="num">− {{ r.shipping_cents|brl }}</td></tr>{% endif %}
+            {% if r.extra_cents %}<tr><td class="indent">Taxa de devolução</td><td class="num">− {{ r.extra_cents|brl }}</td></tr>{% endif %}
+            <tr class="sale-sub"><td>Você recebe</td><td class="num">{{ r.received_cents|brl }}</td></tr>
+            <tr><td class="indent">Custo do produto</td><td class="num">− {{ r.cost_cents|brl }}</td></tr>
+            {% if r.tax_cents %}<tr><td class="indent">Imposto</td><td class="num">− {{ r.tax_cents|brl }}</td></tr>{% endif %}
+            {% if r.ads_cents %}<tr><td class="indent">Anúncios pagos</td><td class="num">− {{ r.ads_cents|brl }}</td></tr>{% endif %}
+            {% if r.affiliate_cents %}<tr><td class="indent">Afiliados</td><td class="num">− {{ r.affiliate_cents|brl }}</td></tr>{% endif %}
+            {% if r.other_cents %}<tr><td class="indent">Custo fixo (rateio)</td><td class="num">− {{ r.other_cents|brl }}</td></tr>{% endif %}
+            <tr class="sale-total"><td>Lucro</td><td class="num">{{ r.profit_cents|brl }}</td></tr>
+            <tr><td>Preço mínimo sem prejuízo</td><td class="num">{{ c.floor|brl if c.floor else '—' }}</td></tr>
+          </tbody></table>
+        </details>
+        {% endif %}
+        <p class="muted small">Taxa: {{ c.source }}.{% for n in c.notes %} {{ n }}.{% endfor %}</p>
+      </article>
+      {% endfor %}
+    {% elif not errors %}
+      <div class="calc-empty">
+        <svg class="icon calc-empty-icon" aria-hidden="true"><use href="#i-calc"/></svg>
+        <p class="t-strong">Tudo pronto? Clique em Calcular</p>
+        <p class="muted small">Preencha o custo, escolha a margem e os marketplaces.</p>
+      </div>
+    {% endif %}
+  </section>
+</div>
 
-{% if results %}
-<section class="card" aria-labelledby="res-title">
-  <div class="card-head"><h2 id="res-title" class="card-title">Resultado</h2>{% if best %}<span class="badge badge-ok">Mais lucro: {{ best }}</span>{% endif %}</div>
-  <div class="table-wrap">
-    <table class="table calc-result">
-      <thead><tr><th></th>{% for x in results %}<th class="num">{{ x.col.name }}</th>{% endfor %}</tr></thead>
-      <tbody>
-        {% macro row(label, attr, minus=True, strong=False) %}
-        <tr{% if strong %} class="sale-sub"{% endif %}><td{% if not strong %} class="indent"{% endif %}>{{ label }}</td>
-          {% for x in results %}<td class="num">{% if x.r %}{{ '− ' if minus }}{{ x.r[attr]|brl }}{% else %}—{% endif %}</td>{% endfor %}</tr>
-        {% endmacro %}
-        <tr class="sale-total"><td>Preço de venda</td>{% for x in results %}<td class="num">{{ x.r.price_cents|brl if x.r else 'impossível' }}</td>{% endfor %}</tr>
-        {{ row('Comissão', 'commission_cents') }}
-        {{ row('Taxa fixa', 'fixed_fee_cents') }}
-        {{ row('Frete', 'shipping_cents') }}
-        {{ row('Você recebe do marketplace', 'received_cents', minus=False, strong=True) }}
-        {{ row('Custo do produto', 'cost_cents') }}
-        {{ row('Imposto', 'tax_cents') }}
-        {{ row('Publicidade', 'ads_cents') }}
-        {{ row('Outros custos', 'other_cents') }}
-        <tr class="sale-total"><td>Lucro por venda</td>{% for x in results %}<td class="num {{ 'text-danger' if x.r and x.r.profit_cents < 0 }}">{% if x.r %}{{ x.r.profit_cents|brl }}{% else %}—{% endif %}</td>{% endfor %}</tr>
-        <tr><td>Margem</td>{% for x in results %}<td class="num">{{ x.r.margin_pct|pct if x.r else '—' }}</td>{% endfor %}</tr>
-        <tr><td>Markup (preço ÷ custo)</td>{% for x in results %}<td class="num">{% if x.r and x.r.markup %}{{ ('%.2f'|format(x.r.markup))|replace('.', ',') }}×{% else %}—{% endif %}</td>{% endfor %}</tr>
-        <tr><td>Preço mínimo sem prejuízo</td>{% for x in results %}<td class="num">{{ x.floor|brl if x.floor else '—' }}</td>{% endfor %}</tr>
-      </tbody>
-    </table>
-  </div>
-  {% if results|selectattr('r', 'none')|list %}<p class="muted small">"Impossível": a soma das porcentagens (comissão, imposto, publicidade, outros e margem) chega a 100% do preço.</p>{% endif %}
-</section>
-{% endif %}
+<h2 class="section-title">Simule cenários e acompanhe suas precificações</h2>
+<p class="section-sub">Veja como cada ajuste muda o lucro e volte às suas últimas {{ 10 }} simulações quando quiser.</p>
+<div class="calc-layout calc-layout-even">
+  <section class="card">
+    <h2 class="card-title">Simuladores</h2>
+    {% if cards %}
+      <p class="muted small">E se você vender a outro preço? Digite o preço anunciado e veja o lucro.</p>
+      {% for c in cards %}{% if c.result %}
+      <form method="get" action="/precificacao" class="sim-row">
+        {% for k, v in base_query %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+        <label class="sim-name" for="sim-{{ c.key }}">{{ c.name }}</label>
+        <span class="input-prefix"><span>R$</span><input class="field" id="sim-{{ c.key }}" name="sim_{{ c.key }}" inputmode="decimal" value="{{ c.sim_text }}" placeholder="{{ ('%.2f'|format(c.result.listed_cents / 100))|replace('.', ',') }}"></span>
+        <button class="btn btn-secondary" type="submit">Simular</button>
+        {% if c.simulated %}{% set s = c.simulated %}
+        <span class="small">Lucro <strong class="{{ 'text-danger' if s.profit_cents < 0 }}">{{ s.profit_cents|brl }}</strong> · margem {{ s.margin_pct|pct }}</span>
+        {% endif %}
+      </form>
+      {% endif %}{% endfor %}
+    {% else %}
+      <div class="calc-empty calc-empty-sm"><svg class="icon calc-empty-icon" aria-hidden="true"><use href="#i-calc"/></svg>
+        <p class="muted small">Faça uma simulação de preço para usar os simuladores.</p></div>
+    {% endif %}
+  </section>
+  <section class="card">
+    <h2 class="card-title">Últimas 10 simulações</h2>
+    {% if history %}
+    <ul class="history">
+      {% for h in history %}
+      <li><a href="/precificacao?{{ h.query }}">{{ h.title }}</a>
+        <span class="muted small">{{ h.created_at|localdate }} · {% for s in h.summary %}{{ s.name }} {{ s.price_cents|brl }}{% if not loop.last %} · {% endif %}{% endfor %}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted small">Suas simulações aparecem aqui.</p>{% endif %}
+  </section>
+</div>
 {% endblock %}

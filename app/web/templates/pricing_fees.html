@@ -1,0 +1,51 @@
+{% extends "app_layout.html" %}
+{% block title %}Taxas dos marketplaces{% endblock %}
+{% block page_title %}Taxas dos marketplaces{% endblock %}
+{% block page_subtitle %}<p class="muted">Usadas pela calculadora de preços. <a class="link-light" href="/precificacao">← Voltar para Precificação</a></p>{% endblock %}
+{% block content %}
+<section class="card">
+  <p class="small"><strong>Mercado Livre:</strong> a calculadora consulta a <strong>tarifa oficial</strong> do Mercado Livre para cada preço (API "Custos por vender"), com a sua logística e a categoria do anúncio. A porcentagem abaixo só é usada se o Mercado Livre não estiver conectado.</p>
+  <p class="small"><strong>Shopee e TikTok Shop:</strong> os valores vieram de fontes públicas de 2026 consultadas em {{ checked }} — <strong>elas divergem em alguns pontos</strong>. Confira na Central do Vendedor de cada marketplace e corrija aqui.</p>
+</section>
+
+<form method="post" action="/precificacao/taxas">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  {% for key in ['shopee', 'tiktok'] %}{% set f = fees[key] %}
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">{{ f.name }}</h2></div>
+    <p class="muted small">{{ f.note }}</p>
+    <div class="table-wrap">
+      <table class="table fee-table">
+        <thead><tr><th>Preço até (R$)</th><th>Comissão (%)</th><th>Taxa fixa por item (R$)</th></tr></thead>
+        <tbody>
+        {% for i in range(6) %}{% set b = f.bands[i] if i < f.bands|length else none %}
+          <tr>
+            <td><input class="field" name="{{ key }}_max{{ i }}" inputmode="decimal" value="{{ fmt_money(b.max) if b and b.max is not none else '' }}" placeholder="{{ 'sem limite' if b else '' }}" aria-label="Preço até, faixa {{ i + 1 }}"></td>
+            <td><input class="field" name="{{ key }}_pct{{ i }}" inputmode="decimal" value="{{ fmt_pct(b.pct) if b else '' }}" aria-label="Comissão, faixa {{ i + 1 }}"></td>
+            <td><input class="field" name="{{ key }}_fixed{{ i }}" inputmode="decimal" value="{{ fmt_money(b.fixed) if b else '' }}" aria-label="Taxa fixa, faixa {{ i + 1 }}"></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="muted small">Deixe o "Preço até" da última faixa em branco (vale para qualquer preço acima). Linhas sem comissão são ignoradas.</p>
+    <label class="calc-label">Taxa de devolução por venda (R$, opcional na calculadora)
+      <input class="field fee-small" name="{{ key }}_return" inputmode="decimal" value="{{ fmt_money(f.return_fee) }}"></label>
+  </section>
+  {% endfor %}
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">Mercado Livre — reserva (sem conexão)</h2></div>
+    <div class="calc-inline">
+      {% for key in ['ml_classico', 'ml_premium'] %}
+      <label class="calc-label">{{ fees[key].name }} (%)<input class="field fee-small" name="{{ key }}_fallback" inputmode="decimal" value="{{ fmt_pct(fees[key].fallback_pct) }}"></label>
+      {% endfor %}
+    </div>
+  </section>
+  <div class="calc-actions"><button class="btn btn-primary" type="submit">Salvar tabela</button></div>
+</form>
+
+<section class="card">
+  <h2 class="card-title">Fontes consultadas</h2>
+  <ul class="small">{% for label, url in sources %}<li><a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ label }}</a></li>{% endfor %}</ul>
+</section>
+{% endblock %}
