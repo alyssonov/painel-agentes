@@ -470,3 +470,18 @@ details > summary { cursor: pointer; }
 /* Logo do menu: robô do selo "Gerente do Ano" (círculo com fundo próprio). */
 .brand-logo { width: 40px; height: 40px; border-radius: 50%; flex: none;
   box-shadow: 0 0 0 1px rgba(255,255,255,.22), 0 2px 8px rgba(0,0,0,.25); }
+
+/* --- Precificação (calculadora) ---------------------------------------------- */
+.calc-form { display: contents; }
+.calc-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.calc-fields label, .calc-col label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; }
+.calc-fields .field, .calc-col .field, .calc-target .field { font: inherit; font-weight: 400; padding: 9px 11px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.calc-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.calc-col { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px; margin: 0;
+  display: flex; flex-direction: column; gap: 10px; }
+.calc-target { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.calc-target .segmented label { cursor: pointer; }
+.calc-target-value .field { width: 140px; }
+.pick-list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.calc-result td.indent { padding-left: 24px; color: var(--muted); }

@@ -1,0 +1,107 @@
+{% extends "app_layout.html" %}
+{% block title %}Precificação{% endblock %}
+{% block page_title %}Precificação{% endblock %}
+{% block page_subtitle %}<p class="muted">Calculadora de preço: descubra o preço para a margem que você quer, ou a margem real de um preço — e compare marketplaces lado a lado. Só faz contas: nada é alterado nos anúncios.</p>{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head"><h2 class="card-title">1. Produto</h2></div>
+  {% if product %}
+  <p><span class="t-strong">{{ product.name }}</span> <span class="muted small">· {{ product.sku }} · custo no Olist {{ product.cost_cents|brl if product.cost_cents else 'não cadastrado' }}</span>
+    <a class="small" href="/precificacao">trocar</a></p>
+  {% else %}
+  <form method="get" action="/precificacao" class="sale-search" role="search">
+    <label class="sr-only" for="busca">Buscar produto</label>
+    <input id="busca" name="busca" class="field" value="{{ busca }}" placeholder="SKU ou nome do produto (opcional: preenche o custo e as taxas do Mercado Livre)">
+    <button class="btn btn-secondary" type="submit">Buscar</button>
+  </form>
+  {% if busca and not matches %}<p class="muted small">Nenhum produto encontrado. Você pode digitar o custo direto abaixo.</p>{% endif %}
+  {% if matches %}
+  <ul class="pick-list">
+    {% for p in matches %}<li><a href="/precificacao?produto={{ p.id }}">{{ p.name }}</a> <span class="muted small">{{ p.sku }} · custo {{ p.cost_cents|brl if p.cost_cents else '—' }}</span></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% endif %}
+</section>
+
+<form method="get" action="/precificacao" class="calc-form">
+  <input type="hidden" name="calcular" value="1">
+  {% if product %}<input type="hidden" name="produto" value="{{ product.id }}">{% endif %}
+
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">2. Custos</h2></div>
+    <div class="calc-fields">
+      <label>Custo do produto (R$)<input class="field" name="custo" inputmode="decimal" value="{{ cost_text }}" placeholder="0,00" required></label>
+      <label>Imposto (% do preço)<input class="field" name="imposto" inputmode="decimal" value="{{ tax_text }}" placeholder="0"></label>
+      <label>Publicidade (% do preço)<input class="field" name="publicidade" inputmode="decimal" value="{{ ads_text }}" placeholder="0"></label>
+      <label>Outros custos (% do preço)<input class="field" name="outros_pct" inputmode="decimal" value="{{ other_pct_text }}" placeholder="0"></label>
+      <label>Outros custos por unidade (R$)<input class="field" name="outros_valor" inputmode="decimal" value="{{ other_cents_text }}" placeholder="embalagem, etiqueta…"></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">3. Marketplaces para comparar</h2></div>
+    <p class="muted small">A comissão e a taxa fixa mudam com a categoria, o tipo de anúncio e a faixa de preço: confira no marketplace. Coluna sem comissão fica de fora.</p>
+    <div class="calc-columns">
+      {% for col in columns %}{% set i = loop.index0 %}
+      <fieldset class="calc-col">
+        <legend class="sr-only">Marketplace {{ loop.index }}</legend>
+        <label>Nome<input class="field" name="nome{{ i }}" value="{{ col.name }}"></label>
+        <label>Comissão (%)<input class="field" name="comissao{{ i }}" inputmode="decimal" value="{{ col.commission }}" placeholder="ex.: 14"></label>
+        <label>Taxa fixa por venda (R$)<input class="field" name="taxa{{ i }}" inputmode="decimal" value="{{ col.fixed_fee }}" placeholder="0,00"></label>
+        <label>Frete pago por você (R$)<input class="field" name="frete{{ i }}" inputmode="decimal" value="{{ col.shipping }}" placeholder="0,00"></label>
+        {% if col.source %}<p class="muted small">{{ col.source }}.</p>{% endif %}
+      </fieldset>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2 class="card-title">4. O que você quer saber</h2></div>
+    <div class="calc-target">
+      <div class="segmented" role="radiogroup" aria-label="Tipo de cálculo">
+        {% for value, label in modes %}
+        <label class="seg{% if mode == value %} is-active{% endif %}"><input type="radio" name="modo" value="{{ value }}" {% if mode == value %}checked{% endif %} class="sr-only">{{ label }}</label>
+        {% endfor %}
+      </div>
+      <label class="calc-target-value"><span class="sr-only">Valor</span>
+        <input class="field" name="alvo" inputmode="decimal" value="{{ target_text }}" placeholder="{{ '20 (%)' if mode == 'margem' else '0,00 (R$)' }}"></label>
+      <label class="small"><input type="checkbox" name="final90" value="1" {% if ending_90 %}checked{% endif %}> Arredondar o preço para terminar em ,90</label>
+      <button class="btn btn-primary" type="submit">Calcular</button>
+    </div>
+    <p class="muted small">Margem = lucro ÷ preço de venda. Com "Vou vender a", o painel mostra a margem real desse preço.</p>
+  </section>
+</form>
+
+{% if errors %}<div class="card qcard-reason">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+
+{% if results %}
+<section class="card" aria-labelledby="res-title">
+  <div class="card-head"><h2 id="res-title" class="card-title">Resultado</h2>{% if best %}<span class="badge badge-ok">Mais lucro: {{ best }}</span>{% endif %}</div>
+  <div class="table-wrap">
+    <table class="table calc-result">
+      <thead><tr><th></th>{% for x in results %}<th class="num">{{ x.col.name }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% macro row(label, attr, minus=True, strong=False) %}
+        <tr{% if strong %} class="sale-sub"{% endif %}><td{% if not strong %} class="indent"{% endif %}>{{ label }}</td>
+          {% for x in results %}<td class="num">{% if x.r %}{{ '− ' if minus }}{{ x.r[attr]|brl }}{% else %}—{% endif %}</td>{% endfor %}</tr>
+        {% endmacro %}
+        <tr class="sale-total"><td>Preço de venda</td>{% for x in results %}<td class="num">{{ x.r.price_cents|brl if x.r else 'impossível' }}</td>{% endfor %}</tr>
+        {{ row('Comissão', 'commission_cents') }}
+        {{ row('Taxa fixa', 'fixed_fee_cents') }}
+        {{ row('Frete', 'shipping_cents') }}
+        {{ row('Você recebe do marketplace', 'received_cents', minus=False, strong=True) }}
+        {{ row('Custo do produto', 'cost_cents') }}
+        {{ row('Imposto', 'tax_cents') }}
+        {{ row('Publicidade', 'ads_cents') }}
+        {{ row('Outros custos', 'other_cents') }}
+        <tr class="sale-total"><td>Lucro por venda</td>{% for x in results %}<td class="num {{ 'text-danger' if x.r and x.r.profit_cents < 0 }}">{% if x.r %}{{ x.r.profit_cents|brl }}{% else %}—{% endif %}</td>{% endfor %}</tr>
+        <tr><td>Margem</td>{% for x in results %}<td class="num">{{ x.r.margin_pct|pct if x.r else '—' }}</td>{% endfor %}</tr>
+        <tr><td>Markup (preço ÷ custo)</td>{% for x in results %}<td class="num">{% if x.r and x.r.markup %}{{ ('%.2f'|format(x.r.markup))|replace('.', ',') }}×{% else %}—{% endif %}</td>{% endfor %}</tr>
+        <tr><td>Preço mínimo sem prejuízo</td>{% for x in results %}<td class="num">{{ x.floor|brl if x.floor else '—' }}</td>{% endfor %}</tr>
+      </tbody>
+    </table>
+  </div>
+  {% if results|selectattr('r', 'none')|list %}<p class="muted small">"Impossível": a soma das porcentagens (comissão, imposto, publicidade, outros e margem) chega a 100% do preço.</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

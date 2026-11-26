@@ -95,7 +95,7 @@ espera da sua confirmação.
 
 | Etapa | Entrega | Depende de |
 |---|---|---|
-| **1. Precificação — calculadora** | preço a partir da margem e margem a partir do preço, por marketplace (ML Clássico/Premium, Shopee), com taxas oficiais, frete, impostos, publicidade e custos; comparação lado a lado; usa custo do Olist ou digitado | nada (B1 só para ajustar ao NorteUp) |
+| **1. Precificação — calculadora** ✅ 26/11 (em teste) | preço a partir da margem e margem a partir do preço, por marketplace (ML Clássico/Premium, Shopee), com taxas oficiais, frete, impostos, publicidade e custos; comparação lado a lado; usa custo do Olist ou digitado | nada (B1 só para ajustar ao NorteUp) |
 | **2. Fundação visual** | design system novo (cores, tipografia, componentes, tema escuro/claro), menu reorganizado nos novos módulos, dashboard com mais indicadores e gráficos | A1 |
 | **3. Estrutura e segurança** | empresas (multiempresa), papéis e permissões granulares, auditoria com antes/depois e histórico por registro, tela de equipe | A4 |
 | **4. Operação** | central de pedidos (filtros, picking, etiquetas), central de anúncios (filtros, ações em massa com aprovação), precificação em massa, produtos com cadastro complementar e compatibilidade | A2, A3, B7 |

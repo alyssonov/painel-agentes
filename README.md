@@ -209,6 +209,17 @@ vendidos, perguntas, o que pede atenção e o que cada agente fez. Se o
 computador estiver desligado no horário, sai assim que o painel ligar (até o
 fim do dia), e nunca duas vezes. Falha no envio vira alerta. Sem custo de IA.
 
+## Precificação (calculadora)
+
+No menu **Precificação**: informe o custo (ou busque o produto pelo SKU/nome —
+o custo vem do Olist e, se o produto tem anúncio no Mercado Livre, a taxa e o
+frete vêm do próprio Mercado Livre), imposto, publicidade e outros custos, e
+até 3 marketplaces com comissão, taxa fixa e frete. Escolha:
+**"Quero uma margem de"** (calcula o preço), **"Quero um lucro por venda de"**
+ou **"Vou vender a"** (mostra a margem real). O resultado compara os
+marketplaces lado a lado, com quanto você recebe, lucro, margem, markup e o
+preço mínimo sem prejuízo. Só faz contas: nada muda nos anúncios.
+
 ## Anúncios (Fase 7 — agente Criador e otimizador de anúncios)
 
 No menu **Anúncios**: a nota de qualidade de cada anúncio no Mercado Livre

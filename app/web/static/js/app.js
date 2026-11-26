@@ -66,3 +66,15 @@ document.addEventListener("click", function (event) {
   });
   document.addEventListener("focusout", hide);
 })();
+
+// Botões de opção com visual de "segmentos" (ex.: Precificação → tipo de cálculo).
+document.addEventListener("change", function (event) {
+  var radio = event.target;
+  if (radio.type !== "radio") return;
+  var group = radio.closest(".segmented");
+  if (!group) return;
+  group.querySelectorAll("label").forEach(function (label) {
+    var input = label.querySelector("input");
+    label.classList.toggle("is-active", !!(input && input.checked));
+  });
+});

@@ -41,6 +41,7 @@ NAV_ITEMS = [
     ("/perguntas", "Perguntas", "chat"),
     ("/anuncios", "Anúncios", "tag"),
     ("/estoque-precos", "Estoque e preços", "box"),
+    ("/precificacao", "Precificação", "calc"),
     ("/pos-venda", "Pós-venda", "truck"),
     ("/margem", "Margem real", "chart"),
     ("/relatorios", "Relatórios", "file"),

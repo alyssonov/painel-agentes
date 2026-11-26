@@ -654,3 +654,15 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   com `title`. Texto limpo de emojis e `< >`.
 - **Painel**: menu **Anúncios** — sugestões (descrição/título editáveis,
   descrição atual para comparar) e a tabela de qualidade com o que o ML pede.
+
+## 27. Precificação — calculadora (etapa 1 do plano de evolução)
+
+`app/services/pricing_calc.py` (sem IA, sem rede) + `/precificacao`.
+Preço → resultado: recebe = P − P×comissão − taxa fixa − frete; lucro = recebe −
+custo − outros R$ − P×(imposto + publicidade + outros %). Margem/lucro → preço:
+P = (custo + taxa fixa + frete + outros R$ + lucro) ÷ (1 − Σ% − margem).
+Arredondamento opcional para ,90; preço mínimo sem prejuízo. Produto opcional:
+custo do Olist e, se houver referência de preço do anúncio no ML, comissão
+(taxa ÷ preço sugerido) e frete que o próprio ML informa. Não há tabela de
+taxas "oficiais" embutida: as taxas mudam por categoria/tipo/faixa — a pessoa
+confere e digita. Formulário GET (não altera nada).

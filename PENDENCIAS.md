@@ -33,9 +33,9 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 - **Como conseguir:** entre no NorteUp, abra cada menu, aperte `Win + Shift + S`
   para recortar a tela e mande as imagens aqui.
 - **Depende disso:** reproduzir no Gerente do Ano tudo que vocês usam lá.
-- **Alternativa enquanto isso:** já dá para construir a **calculadora de preço
-  por marketplace** (o que o nome "calculadora fácil" indica) com as taxas
-  oficiais do Mercado Livre — ver plano, etapa 1.
+- **Enquanto isso:** a **calculadora de preço** já está pronta (menu
+  Precificação, 26/11). Com os prints, ajusto o que faltar para ficar igual
+  ao que vocês usam na NorteUp.
 
 ### B2. Onix (loja física, fonte dos custos) — 🔴
 - **O que preciso:**

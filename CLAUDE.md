@@ -161,8 +161,9 @@ automáticas, nada manual).
 > "Pi ERP", tema claro opcional), na etapa 2 de `docs/DIAGNOSTICO_E_PLANO.md`.
 > Até lá, telas novas seguem os componentes atuais.
 
-- Menu lateral: Visão geral, Perguntas, Anúncios, Estoque e preços, Pós-venda,
-  Margem real, Relatórios, Agentes. Abaixo do menu: contas conectadas
+- Menu lateral: Visão geral, Perguntas, Anúncios, Estoque e preços,
+  Precificação, Pós-venda, Margem real, Relatórios, Agentes (será reorganizado
+  nos módulos de `docs/VISAO_PRODUTO.md` na etapa 2). Abaixo do menu: contas conectadas
   (Mercado Livre, Shopee, Olist ERP) com status.
 - Identidade visual (definida pelo usuário a partir de uma referência):
   **fundo azul-marinho em degradê** (`#1F3243` → `#344D66`) em TODAS as
