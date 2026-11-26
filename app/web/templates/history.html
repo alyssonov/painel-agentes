@@ -1,0 +1,66 @@
+{% extends "app_layout.html" %}
+{% block title %}Histórico{% endblock %}
+{% block page_title %}Histórico{% endblock %}
+{% block page_subtitle %}<p class="muted">Quem fez o quê e quando — pessoas, agentes e o sistema. Nada aqui pode ser apagado ou alterado.</p>{% endblock %}
+{% block content %}
+
+<form class="card hist-filters" method="get" action="/historico" role="search">
+  <label class="field"><span>Período</span>
+    <select name="dias">{% for k, label in periods.items() %}<option value="{{ k }}" {% if f.dias == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <label class="field"><span>Quem</span>
+    <select name="quem">
+      <option value="">Todos</option>
+      {% for pid, name in people.items() %}<option value="user:{{ pid }}" {% if f.quem == 'user:' ~ pid %}selected{% endif %}>{{ name }}</option>{% endfor %}
+      <option value="agentes" {% if f.quem == 'agentes' %}selected{% endif %}>Agentes</option>
+      <option value="sistema" {% if f.quem == 'sistema' %}selected{% endif %}>Sistema</option>
+    </select></label>
+  <label class="field"><span>O quê</span>
+    <select name="tipo">
+      <option value="">Tudo</option>
+      {% for k, label in groups.items() %}<option value="{{ k }}" {% if f.tipo == k %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></label>
+  {% if f.registro %}<input type="hidden" name="registro" value="{{ f.registro }}">{% endif %}
+  <div class="actions"><button class="btn btn-primary" type="submit">Filtrar</button>
+    <a class="btn btn-ghost" href="/historico">Limpar</a></div>
+</form>
+
+{% if registro_label %}
+<p class="hist-scope">Mostrando só: <strong>{{ registro_label }}</strong> · <a class="link" href="/historico?dias={{ f.dias }}">ver tudo</a></p>
+{% endif %}
+
+<section class="card" aria-labelledby="hist-title">
+  <div class="card-head"><h2 id="hist-title" class="card-title">{{ total }} registro(s)</h2>
+    {% if pages > 1 %}<span class="muted small">página {{ page }} de {{ pages }}</span>{% endif %}</div>
+  {% if entries %}
+  <ol class="hist-list">
+    {% for e in entries %}
+    <li class="hist-item">
+      <div class="hist-when">{{ e.at }}</div>
+      <div class="hist-body">
+        <p class="hist-line"><span class="badge badge-{{ 'info' if e.kind == 'agente' else ('pausado' if e.kind == 'sistema' else 'ok') }}">{{ e.who }}</span>
+          <span class="t-strong">{{ e.event }}</span>
+          {% if e.simulated %}<span class="muted small">(simulação)</span>{% endif %}
+          {% if e.target %}· <a class="link" href="/historico?dias={{ f.dias }}&registro={{ e.target.filter|urlencode }}" title="Ver o histórico só deste registro">{{ e.target.label }}</a>{% endif %}</p>
+        {% if e.changes %}
+        <table class="hist-changes">
+          {% for field, before, after in e.changes %}
+          <tr><th scope="row">{{ field }}</th><td class="hist-before">{{ before }}</td><td aria-hidden="true">→</td><td class="hist-after">{{ after }}</td></tr>
+          {% endfor %}
+        </table>
+        {% endif %}
+        {% if e.extra %}<p class="muted small">{% for k, v in e.extra %}{{ k }}: {{ v }}{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% if pages > 1 %}
+  <div class="actions hist-pager">
+    {% if page > 1 %}<a class="btn btn-secondary" href="/historico?dias={{ f.dias }}&quem={{ f.quem }}&tipo={{ f.tipo }}&registro={{ f.registro|urlencode }}&pagina={{ page - 1 }}">← Mais novos</a>{% endif %}
+    {% if page < pages %}<a class="btn btn-secondary" href="/historico?dias={{ f.dias }}&quem={{ f.quem }}&tipo={{ f.tipo }}&registro={{ f.registro|urlencode }}&pagina={{ page + 1 }}">Mais antigos →</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="muted">Nada registrado com esses filtros.</p>
+  {% endif %}
+</section>
+{% endblock %}

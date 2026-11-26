@@ -547,3 +547,19 @@ form > .card { margin-bottom: 16px; }
 .team-perms .check .muted { white-space: normal; }
 .team-password { flex-direction: row; align-items: flex-end; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line); }
 .team-password .field { flex: 1 1 260px; }
+
+/* Histórico ------------------------------------------------------------------ */
+.hist-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; align-items: end; }
+.hist-scope { margin: 0 0 12px; }
+.hist-list { list-style: none; margin: 0; padding: 0; }
+.hist-item { display: grid; grid-template-columns: 130px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.hist-item:last-child { border-bottom: 0; }
+.hist-when { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.hist-line { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.hist-changes { margin-top: 8px; border-collapse: collapse; font-size: 13.5px; }
+.hist-changes th { text-align: left; font-weight: 600; color: var(--muted); padding: 3px 12px 3px 0; vertical-align: top; }
+.hist-changes td { padding: 3px 8px 3px 0; vertical-align: top; }
+.hist-before { color: var(--muted); text-decoration: line-through; }
+.hist-after { color: var(--ink); font-weight: 600; }
+.hist-pager { margin-top: 12px; justify-content: space-between; }
+@media (max-width: 640px) { .hist-item { grid-template-columns: 1fr; gap: 4px; } }

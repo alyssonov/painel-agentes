@@ -36,3 +36,14 @@ def record(
     )
     db.add(entry)
     return entry
+
+
+def changes(before: dict[str, Any], after: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Só o que mudou, no formato do histórico: {"antes": {...}, "depois": {...}}.
+
+    Use em toda alteração de configuração/cadastro para o histórico mostrar
+    "valor anterior → valor novo".
+    """
+    keys = [k for k in dict.fromkeys([*before, *after]) if before.get(k) != after.get(k)
+            and k.lower() not in _FORBIDDEN_KEYS]
+    return {"antes": {k: before.get(k) for k in keys}, "depois": {k: after.get(k) for k in keys}}

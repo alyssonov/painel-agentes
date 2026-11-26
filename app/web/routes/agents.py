@@ -76,9 +76,11 @@ def toggle_enabled(request: Request, slug: str, enabled: str = Form(...), db: Se
     if agent is None or slug not in IMPLEMENTED:
         flash(request, "Este agente ainda não está disponível.", "erro")
         return RedirectResponse("/agentes", status_code=303)
+    before = agent.enabled
     agent.enabled = enabled == "1"
     audit.record(db, actor=f"user:{user.id}", event="agente.ativado" if agent.enabled else "agente.pausado",
-                 target_type="agente", target_id=slug)
+                 target_type="agente", target_id=slug,
+                 details=audit.changes({"ativo": before}, {"ativo": agent.enabled}))
     db.commit()
     flash(request, f"{agent.name}: {'ativo' if agent.enabled else 'pausado'}.")
     return RedirectResponse("/agentes", status_code=303)
@@ -91,9 +93,10 @@ def set_mode(request: Request, slug: str, mode: str = Form(...), db: Session = D
     if agent is None or slug not in IMPLEMENTED or mode not in (AgentMode.MANUAL, AgentMode.AUTO):
         flash(request, "Opção inválida.", "erro")
         return RedirectResponse("/agentes", status_code=303)
+    before = agent.mode
     agent.mode = mode
     audit.record(db, actor=f"user:{user.id}", event="agente.modo_alterado", target_type="agente",
-                 target_id=slug, details={"modo": mode})
+                 target_id=slug, details=audit.changes({"modo": before}, {"modo": mode}))
     db.commit()
     flash(request, f"{agent.name}: modo {'automático' if mode == AgentMode.AUTO else 'manual'}.")
     return RedirectResponse("/agentes", status_code=303)
@@ -102,14 +105,17 @@ def set_mode(request: Request, slug: str, mode: str = Form(...), db: Session = D
 @router.post("/perguntas/regras", dependencies=[Depends(verify_csrf)])
 async def save_rules(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
     form = await request.form()
-    changed = {}
+    changed, before = {}, {}
     for key, (_label, size) in RULE_FIELDS.items():
         value = str(form.get(key, "")).strip()[:size]
-        if value and value != get_setting(db, key):
+        old = get_setting(db, key)
+        if value and value != old:
+            before[key] = old
             set_setting(db, key, value)
             changed[key] = value
     if changed:
-        audit.record(db, actor=f"user:{user.id}", event="loja.regras_alteradas", details=changed)
+        audit.record(db, actor=f"user:{user.id}", event="loja.regras_alteradas",
+                     details=audit.changes(before, changed))
     db.commit()
     flash(request, "Regras salvas." if changed else "Nada mudou.")
     return RedirectResponse("/agentes", status_code=303)
@@ -140,9 +146,10 @@ async def save_config(request: Request, slug: str, db: Session = Depends(get_db)
     if errors:
         flash(request, "Valor fora do permitido em: " + "; ".join(errors), "erro")
         return RedirectResponse("/agentes", status_code=303)
+    before = dict(agent.config or {})
     agent.config = config
     audit.record(db, actor=f"user:{user.id}", event="agente.regras_alteradas", target_type="agente",
-                 target_id=slug, details=config)
+                 target_id=slug, details=audit.changes(before, config))
     db.commit()
     flash(request, f"{agent.name}: regras salvas.")
     return RedirectResponse("/agentes", status_code=303)

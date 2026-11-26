@@ -186,12 +186,15 @@ def approve(db: Session, action: Action, *, actor: str, edited_payload: dict | N
     if action.status not in (ActionStatus.PENDING, ActionStatus.FAILED):
         raise ActionNotAllowed("Esta ação já foi resolvida.")
     edited = edited_payload is not None and edited_payload != action.payload
+    details: dict = {"acao": action.id}
+    if edited:
+        details.update(audit.changes(dict(action.payload or {}), dict(edited_payload)))  # sugerido → enviado
     if edited_payload is not None:
         action.payload = dict(edited_payload)
     action.decided_by = actor
     action.decided_at = utcnow()
     audit.record(db, actor=actor, event="acao.aprovada_editada" if edited else "acao.aprovada",
-                 target_type=action.target_type, target_id=action.target_id, details={"acao": action.id})
+                 target_type=action.target_type, target_id=action.target_id, details=details)
     return _execute(db, action)
 
 

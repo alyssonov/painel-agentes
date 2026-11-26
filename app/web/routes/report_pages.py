@@ -9,6 +9,7 @@ from app.agents.config import agent_rules
 from app.config import get_settings
 from app.core import audit
 from app.core.db import get_db
+from app.core.security import mask_email
 from app.core.timeutil import local_today, to_local
 from app.models import Agent, Report
 from app.models.user import User
@@ -65,8 +66,11 @@ def save_recipients(request: Request, recipients: str = Form(""), db: Session = 
     if len(emails) > 10:
         flash(request, "Cadastre no máximo 10 e-mails.", "erro")
         return RedirectResponse("/relatorios", status_code=303)
+    old = [e for e in str(get_setting(db, "report_recipients") or "").split(",") if e.strip()]
     set_setting(db, "report_recipients", ", ".join(emails))
-    audit.record(db, actor=f"user:{user.id}", event="relatorio.destinatarios", details={"emails": len(emails)})
+    # Só a quantidade e os e-mails mascarados (dado pessoal não vai inteiro para o histórico).
+    audit.record(db, actor=f"user:{user.id}", event="relatorio.destinatarios", details=audit.changes(
+        {"destinatarios": [mask_email(e.strip()) for e in old]}, {"destinatarios": [mask_email(e) for e in emails]}))
     db.commit()
     flash(request, f"Destinatários salvos ({len(emails)}).")
     return RedirectResponse("/relatorios", status_code=303)

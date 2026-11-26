@@ -15,11 +15,19 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 
 | # | Decisão | Por que importa | Situação |
 |---|---|---|---|
-| A1 | **Nova identidade visual** — as imagens novas (layout claro do "Qo_Shop" + paleta escura do "Pi ERP") substituem a identidade atual? | Muda TODAS as telas. | ✅ 26/11: **sim, tema escuro** (estrutura da Foto 1 + cores da Foto 2), tema claro opcional — etapa 2 entregue em 26/11, **aguardando sua aprovação** |
+| A1 | **Nova identidade visual** — as imagens novas (layout claro do "Qo_Shop" + paleta escura do "Pi ERP") substituem a identidade atual? | Muda TODAS as telas. | ✅ 26/11: **sim, tema escuro** (estrutura da Foto 1 + cores da Foto 2), tema claro opcional — etapa 2 entregue em 26/11 |
 | A2 | **Cadastro de produtos no Gerente do Ano** — hoje o Olist é a fonte da verdade e o painel só LÊ. O Gerente do Ano pode ter cadastro próprio *complementar* (compatibilidade com motos, fornecedor, custo do Onix…) **sem escrever no Olist**? | O documento novo pede cadastro/edição de produtos; a regra proíbe alterar o Olist. | ✅ 26/11: **sim, cadastro complementar**; o Olist continua sem nenhuma escrita |
 | A3 | **Estoque nos anúncios** — o painel pode propor (com aprovação) mudar o estoque de um anúncio no Mercado Livre (ex.: pausar quando zera no Onix/Olist)? Ou isso continua só pela integração Olist → Mercado Livre? | Hoje a regra é "o sistema nunca altera estoque". | ✅ 26/11: **não** — estoque continua com o Olist; o painel só avisa divergências |
-| A4 | **Estrutura multiempresa (SaaS) agora** — preparar o banco para várias empresas já na próxima etapa? | É bem mais barato fazer agora (31 tabelas) do que depois. | ✅ 26/11: **sim, agora** — etapa 3 do plano |
+| A4 | **Estrutura multiempresa (SaaS) agora** — preparar o banco para várias empresas já na próxima etapa? | É bem mais barato fazer agora (31 tabelas) do que depois. | ✅ 26/11: **sim, agora** — feito na etapa 3 (aguardando seu teste) |
 | A5 | **Desligar o modo simulação** (`DRY_RUN=false`) | Só então respostas, mensagens, preços e anúncios aprovados saem de verdade. | ⚪ quando você se sentir seguro |
+
+### Etapa 3 — o que conferir (26/11)
+- Ao ligar o painel, ele faz sozinho uma **cópia de segurança do banco** em
+  `data/backups/` e atualiza a estrutura (todos os dados passam a pertencer à
+  empresa "Minha loja"). Confira se tudo continua aparecendo igual.
+- Menu **Administração → Equipe**: se quiser, cadastre o dono ou um
+  funcionário com outro papel e teste entrar com ele.
+- Menu **Administração → Histórico**: mudanças aparecem com "antes → depois".
 
 ## B. Informações e acessos
 

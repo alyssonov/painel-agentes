@@ -188,7 +188,7 @@ def save_tax_rate(request: Request, tax_rate_pct: str = Form(...), db: Session =
     set_setting(db, "tax_rate_pct", value)
     set_setting(db, "tax_rate_is_demo", False)
     audit.record(db, actor=f"user:{user.id}", event="loja.aliquota_alterada",
-                 details={"de": old, "para": value})
+                 details=audit.changes({"aliquota_pct": old}, {"aliquota_pct": value}))
     db.commit()
     flash(request, f"Alíquota de impostos salva: {str(value).replace('.', ',')}%.")
     return RedirectResponse("/integracoes", status_code=303)

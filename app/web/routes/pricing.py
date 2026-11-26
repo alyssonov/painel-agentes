@@ -5,6 +5,7 @@ sendo pelo agente de Preços, com aprovação. A tabela de taxas da Shopee/TikTo
 é editável em /precificacao/taxas.
 """
 
+import copy
 from dataclasses import dataclass, field
 from urllib.parse import urlencode
 
@@ -224,6 +225,7 @@ async def save_fees_page(request: Request, db: Session = Depends(get_db), user: 
     """Salva a tabela de taxas (Shopee/TikTok por faixa; % de reserva do Mercado Livre)."""
     form = await request.form()
     fees = load_fees(db)
+    before = copy.deepcopy(fees)
     errors = []
     for key in ("shopee", "tiktok"):
         bands = []
@@ -247,7 +249,8 @@ async def save_fees_page(request: Request, db: Session = Depends(get_db), user: 
             flash(request, e, "erro")
         return RedirectResponse("/precificacao/taxas", status_code=303)
     save_fees(db, fees)
-    audit.record(db, actor=f"user:{user.id}", event="precificacao.taxas_alteradas", details={"tabela": "marketplaces"})
+    audit.record(db, actor=f"user:{user.id}", event="precificacao.taxas_alteradas",
+                 details=audit.changes(before, fees))
     db.commit()
     flash(request, "Tabela de taxas salva.")
     return RedirectResponse("/precificacao/taxas", status_code=303)

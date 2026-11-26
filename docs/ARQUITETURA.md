@@ -718,3 +718,16 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   abertas). Travas: só pessoas da mesma empresa; ninguém se desativa nem tira de
   si "gerenciar equipe"; sempre fica ao menos uma pessoa ativa que gerencia a
   equipe. Mudanças vão para o `audit_log` com "antes" e "depois" (a senha nunca).
+
+## 30. Etapa 3c — Histórico com "antes → depois"
+
+- `audit.changes(antes, depois)` grava só o que mudou, no formato
+  `{"antes": {...}, "depois": {...}}` (chaves proibidas, como senha e token,
+  nunca entram). Usado em: equipe, alíquota, regras da loja e dos agentes,
+  ligar/pausar e modo dos agentes, tabela de taxas, destinatários do relatório
+  (e-mails mascarados) e aprovação com edição (texto sugerido → texto enviado).
+- Tela **Histórico** (`/historico`, permissão "ver o histórico"): lista o
+  `audit_log` da empresa com filtros por período, quem (pessoa, agentes,
+  sistema), tipo de acontecimento e registro (`?registro=pergunta:55`), 50 por
+  página, com os rótulos em português e a tabela "campo: antes → depois". Só
+  leitura — o `audit_log` continua só de inserção.

@@ -28,6 +28,7 @@ from app.web.routes import (
     agents,
     auth,
     dashboard,
+    history,
     integrations,
     listings,
     postsale,
@@ -90,6 +91,7 @@ def create_app() -> FastAPI:
     app.include_router(reports.router)
     app.include_router(report_pages.router)
     app.include_router(team.router)
+    app.include_router(history.router)
 
     @app.get("/favicon.ico", include_in_schema=False)
     def favicon():

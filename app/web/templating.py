@@ -46,7 +46,8 @@ NAV_GROUPS = [
     ("Financeiro", [("/margem", "Lucro real", "coins"), ("/margem/recebimentos", "Recebimentos", "wallet"),
                     ("/margem/graficos", "Gráficos", "chart"), ("/margem/curva-abc", "Curva ABC", "layers")]),
     ("Inteligência", [("/agentes", "Agentes", "bot"), ("/relatorios", "Relatórios", "file")]),
-    ("Administração", [("/equipe", "Equipe", "users"), ("/integracoes", "Contas conectadas", "plug")]),
+    ("Administração", [("/equipe", "Equipe", "users"), ("/historico", "Histórico", "receipt"),
+                       ("/integracoes", "Contas conectadas", "plug")]),
 ]
 NAV_ITEMS = [item for _title, items in NAV_GROUPS for item in items]
 THEMES = ("dark", "light")
