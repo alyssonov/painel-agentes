@@ -1,5 +1,6 @@
 """Configuração dos templates Jinja2 e dados comuns a todas as páginas."""
 
+import time
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,9 @@ from app.services.dashboard import integrations
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 templates.env.filters["brl"] = format_brl
+# Versão dos arquivos de estilo/JS: muda a cada vez que o painel liga (inclusive
+# depois de uma atualização automática), então o navegador nunca usa CSS/JS antigo.
+templates.env.globals["asset_v"] = str(int(time.time()))
 templates.env.filters["pct"] = format_pct
 # Data (UTC no banco) → dia no fuso da loja, ex.: 03/11/2026
 templates.env.filters["localdate"] = lambda dt: to_local(dt).strftime("%d/%m/%Y") if dt else ""

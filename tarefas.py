@@ -17,7 +17,8 @@ Comandos:
   diagnostico-precos  referências de preço do Mercado Livre para os anúncios (só leitura)
   backup     cópia de segurança do banco (feita sozinha antes de cada atualização)
   atualizar  busca a versão nova no GitHub, instala dependências e atualiza o banco
-  iniciar    atualiza, liga o painel + worker e abre o navegador (é o que o "Iniciar painel.bat" usa)
+  iniciar    atualiza, liga o painel + worker e abre o navegador (é o que o "Iniciar painel.bat" usa);
+             depois, enquanto estiver ligado, se atualiza sozinho quando sai versão nova
 """
 
 import hashlib
@@ -133,33 +134,127 @@ def _open_browser_when_ready() -> None:
         return
 
 
+# De quanto em quanto tempo o painel ligado confere se há versão nova no GitHub.
+AUTO_UPDATE_SECONDS = int(os.environ.get("AUTO_UPDATE_SECONDS", "60"))
+
+
+def _git(*args: str) -> subprocess.CompletedProcess:
+    env = {**os.environ, "GIT_ASK_YESNO": "false", "GIT_TERMINAL_PROMPT": "0"}
+    return subprocess.run(["git", *args], cwd=ROOT, env=env, capture_output=True, text=True, timeout=120)
+
+
+def _git_ok(*args: str) -> bool:
+    try:
+        return _git(*args).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _new_version_available() -> bool:
+    """True se o GitHub tem uma versão nova que dá para puxar sem conflito (só avança)."""
+    if not (ROOT / ".git").exists() or not shutil.which("git"):
+        return False
+    try:
+        if _git("fetch", "--quiet").returncode:
+            return False  # sem internet agora: tenta de novo mais tarde
+        head, upstream = _git("rev-parse", "HEAD").stdout.strip(), _git("rev-parse", "@{u}").stdout.strip()
+        return bool(upstream) and head != upstream and \
+            _git("merge-base", "--is-ancestor", "HEAD", "@{u}").returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _file_hash(path: Path) -> str:
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+def _launch() -> tuple[subprocess.Popen, subprocess.Popen]:
+    """Liga o painel (web) e o worker (agendador), em segundo plano."""
+    worker = subprocess.Popen([venv_python(), "-m", "app.worker"], cwd=ROOT)
+    web = subprocess.Popen([venv_python(), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1",
+                            "--port", "8000"], cwd=ROOT)
+    return web, worker
+
+
+def _stop(*procs: subprocess.Popen) -> None:
+    for proc in procs:
+        if proc.poll() is None:
+            proc.terminate()
+    for proc in procs:
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+
+def serve(open_browser: bool = True) -> int:
+    """Mantém painel + worker ligados e se atualiza sozinho quando sai versão nova.
+
+    A cada AUTO_UPDATE_SECONDS confere o GitHub. Havendo novidade: desliga os dois,
+    puxa a versão nova, faz a cópia do banco + migrações (`_preparar`) e liga de
+    novo. Basta recarregar a página no navegador (F5) para ver a mudança.
+    """
+    print()
+    print("Painel ligando... " + ("O navegador vai abrir sozinho." if open_browser else ""))
+    print("Deixe esta janela aberta enquanto usa o painel. Para desligar: Ctrl+C ou feche a janela.")
+    print("Quando houver versão nova, o painel se atualiza sozinho (é só recarregar a página).")
+    print()
+    if open_browser:
+        threading.Thread(target=_open_browser_when_ready, daemon=True).start()
+    my_hash = _file_hash(Path(__file__))
+    web, worker = _launch()
+    try:
+        next_check = time.monotonic() + AUTO_UPDATE_SECONDS
+        warned = False
+        while True:
+            time.sleep(1)
+            if web.poll() is not None:  # o painel parou (erro ou Ctrl+C): encerra tudo
+                return web.returncode or 0
+            if time.monotonic() < next_check:
+                continue
+            next_check = time.monotonic() + AUTO_UPDATE_SECONDS
+            if not _new_version_available():
+                continue
+            # Baixa primeiro, com o painel ainda ligado: se falhar, nada é desligado.
+            if not _git_ok("pull", "--ff-only"):
+                if not warned:
+                    print("Há versão nova, mas não deu para baixar agora (tentando de novo a cada minuto).")
+                    warned = True
+                continue
+            warned = False
+            print()
+            print(time.strftime("%H:%M") + " - Versão nova baixada. Atualizando o painel (alguns segundos)...")
+            _stop(web, worker)  # desliga antes da cópia do banco e das migrações
+            if run(sys.executable, str(ROOT / "tarefas.py"), "_preparar"):
+                print("Algo deu errado ao preparar a versão nova (veja acima). "
+                      "Se o painel der erro, feche esta janela e abra de novo.")
+            if _file_hash(Path(__file__)) != my_hash:
+                # O próprio inicializador mudou: continua pela versão nova dele.
+                print("Painel atualizado. Recarregue a página no navegador (F5).")
+                return run(sys.executable, str(ROOT / "tarefas.py"), "_servir")
+            web, worker = _launch()
+            print("Painel atualizado. Recarregue a página no navegador (F5).")
+            print()
+    finally:
+        _stop(web, worker)
+
+
 def start() -> int:
     code = update()
     if code:
         print("Algo deu errado na preparação (veja as mensagens acima).")
         return code
-    print()
-    print("Painel ligando... O navegador vai abrir sozinho.")
-    print("Deixe esta janela aberta enquanto usa o painel. Para desligar: Ctrl+C ou feche a janela.")
-    print()
-    threading.Thread(target=_open_browser_when_ready, daemon=True).start()
-    # O worker (agendador: leitura do Olist e, nas próximas fases, os agentes)
-    # roda junto, em segundo plano, e é desligado quando o painel desliga.
-    worker = subprocess.Popen([venv_python(), "-m", "app.worker"], cwd=ROOT)
-    try:
-        return run(venv_python(), "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000")
-    finally:
-        worker.terminate()
-        try:
-            worker.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            worker.kill()
+    return serve()
 
 
 COMMANDS = {
     "atualizar": update,
     "iniciar": start,
     "_preparar": prepare,
+    "_servir": lambda: serve(open_browser=False),
     "install": install,
     "setup": lambda: run(venv_python(), "-m", "app.cli", "init-env"),
     "keys": lambda: run(venv_python(), "-m", "app.cli", "gen-keys"),

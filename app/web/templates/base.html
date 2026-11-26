@@ -8,10 +8,10 @@
   <link rel="icon" type="image/svg+xml" href="/static/img/robo-cabeca.svg">
   <link rel="icon" type="image/png" sizes="64x64" href="/static/img/favicon-64.png">
   <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
-  <link rel="stylesheet" href="/static/css/app.css">
-  <script src="/static/vendor/htmx.min.js" defer></script>
-  <script src="/static/js/app.js" defer></script>
-  <script src="/static/js/assistente.js" defer></script>
+  <link rel="stylesheet" href="/static/css/app.css?v={{ asset_v }}">
+  <script src="/static/vendor/htmx.min.js?v={{ asset_v }}" defer></script>
+  <script src="/static/js/app.js?v={{ asset_v }}" defer></script>
+  <script src="/static/js/assistente.js?v={{ asset_v }}" defer></script>
   {% block head_extra %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}" hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'>

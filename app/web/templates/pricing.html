@@ -1,6 +1,6 @@
 {% extends "app_layout.html" %}
 {% block title %}Precificação{% endblock %}
-{% block head_extra %}<script src="/static/js/calculadora.js" defer></script>{% endblock %}
+{% block head_extra %}<script src="/static/js/calculadora.js?v={{ asset_v }}" defer></script>{% endblock %}
 {% block page_title %}Precificação{% endblock %}
 {% block page_subtitle %}<p class="muted"><strong>Saia do Prejuízo:</strong> cansado de vender muito e receber pouco? Descubra o preço de venda certo ou a margem do preço que você cobra hoje. Só faz contas: nada é alterado nos anúncios.
   <a class="link" href="/precificacao/taxas">Tabela de taxas →</a>{% if can('aprovar_precos_anuncios') %} · <a class="link" href="/precificacao/massa">Preços em massa →</a>{% endif %}</p>{% endblock %}
