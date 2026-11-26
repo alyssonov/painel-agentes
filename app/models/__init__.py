@@ -18,6 +18,7 @@ from app.models.payment import Payment
 from app.models.price import PriceReference
 from app.models.pricing import PricingSimulation
 from app.models.product_extra import ProductExtra
+from app.models.purchase import PurchaseOrder, PurchaseOrderItem, Supplier
 from app.models.postsale import Claim, Conversation, ConversationMessage
 from app.models.question import Question
 from app.models.report import Report
@@ -53,6 +54,8 @@ __all__ = [
     "PriceReference",
     "PricingSimulation",
     "ProductExtra",
+    "PurchaseOrder",
+    "PurchaseOrderItem",
     "Product",
     "ProductInsight",
     "ProductReview",
@@ -61,6 +64,7 @@ __all__ = [
     "StockSnapshot",
     "Shipment",
     "StoreSetting",
+    "Supplier",
     "SyncRun",
     "User",
 ]

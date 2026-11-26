@@ -123,6 +123,15 @@ número, produto, SKU ou cliente e filtros por período, marketplace e situaçã
 produto, tudo que precisa sair até o fim do dia (e o que está atrasado), mostra
 o estoque e tem botão para imprimir.
 
+## Compras e fornecedores
+
+Menu **Operação → Compras**: cadastre os fornecedores (com o prazo de entrega)
+e registre os pedidos de compra — pode começar pela **sugestão de compra**, que
+já vem preenchida. O que está "a caminho" é descontado da sugestão, e o painel
+avisa quando um pedido passa da data prevista. Ao receber, marque como
+recebido (a entrada no estoque continua sendo feita no Olist). Cada pedido tem
+uma planilha para mandar ao fornecedor.
+
 ## Despesas e DRE do mês
 
 Em **Financeiro → Despesas**, lance as despesas da empresa (aluguel, salários,

@@ -41,7 +41,8 @@ templates.env.filters["rep_tone"] = reputation_tone
 NAV_GROUPS = [
     (None, [("/", "Visão geral", "home")]),
     ("Operação", [("/pedidos", "Pedidos", "cart"), ("/produtos", "Produtos", "box"),
-                  ("/anuncios", "Anúncios", "tag"), ("/estoque-precos", "Estoque e compras", "layers"),
+                  ("/anuncios", "Anúncios", "tag"), ("/estoque-precos", "Estoque", "layers"),
+                  ("/compras", "Compras", "clipboard"),
                   ("/precificacao", "Precificação", "calc")]),
     ("Atendimento", [("/perguntas", "Perguntas", "chat"), ("/pos-venda", "Pós-venda", "truck")]),
     ("Financeiro", [("/margem", "Lucro real", "coins"), ("/margem/recebimentos", "Recebimentos", "wallet"),

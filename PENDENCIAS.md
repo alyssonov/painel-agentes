@@ -39,6 +39,12 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 - Ficaram para depois, porque dependem da documentação oficial: **etiquetas**
   de envio e **pausar/reativar/editar anúncios em massa**.
 
+### Etapa 5 (parte sem dependências) — o que conferir (26/11)
+- **Financeiro → Despesas:** lançar as despesas mensais da loja; ver o
+  **DRE do mês** com o lucro líquido.
+- **Operação → Compras:** cadastrar os fornecedores (com prazo) e registrar um
+  pedido usando a sugestão; ver a coluna "A caminho" na sugestão de compra.
+
 ## B. Informações e acessos
 
 ### B1. NorteUp — ✅ (calculadora feita; o resto do app não é necessário por agora — decisão de 26/11)

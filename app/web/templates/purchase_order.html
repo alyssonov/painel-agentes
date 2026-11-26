@@ -1,0 +1,35 @@
+{% extends "app_layout.html" %}
+{% block title %}Pedido de compra nº {{ o.number }}{% endblock %}
+{% block page_title %}Pedido de compra nº {{ o.number }}{% endblock %}
+{% block page_subtitle %}<p class="muted"><a class="link" href="/compras">← Compras</a> · {{ o.supplier.name }} · feito em {{ o.ordered_on.strftime('%d/%m/%Y') }}{% if o.expected_on %} · previsto para {{ o.expected_on.strftime('%d/%m/%Y') }}{% endif %}{% if o.received_on %} · recebido em {{ o.received_on.strftime('%d/%m/%Y') }}{% endif %}</p>{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <p><span class="badge badge-{{ {'aberto': 'info', 'recebido': 'ok', 'cancelado': 'pausado'}[o.status] }}">{{ statuses[o.status] }}</span>
+    {% if o.status == 'aberto' and o.expected_on and o.expected_on < today %} <span class="text-danger">atrasado</span>{% endif %}</p>
+  <div class="actions">
+    <a class="btn btn-ghost" href="/compras/{{ o.id }}.csv">Baixar planilha</a>
+    {% if can('registrar_compras') %}
+      {% for k, label in [('recebido', 'Marcar como recebido'), ('cancelado', 'Cancelar pedido'), ('aberto', 'Voltar para "a caminho"')] %}{% if o.status != k %}
+      <form method="post" action="/compras/{{ o.id }}/situacao"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="status" value="{{ k }}"><button class="btn {{ 'btn-primary' if k == 'recebido' else 'btn-secondary' }}" type="submit">{{ label }}</button></form>
+      {% endif %}{% endfor %}
+    {% endif %}
+  </div>
+</div>
+<section class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Produto</th><th class="num">Quantidade</th>{% if can('ver_financeiro') %}<th class="num">Custo un.</th><th class="num">Total</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for i in o.items %}
+        <tr><td><span class="t-strong">{{ i.name }}</span><br><span class="muted small">{{ i.sku }}</span></td><td class="num">{{ i.quantity }}</td>
+          {% if can('ver_financeiro') %}<td class="num">{{ i.unit_cost_cents|brl if i.unit_cost_cents else '—' }}</td><td class="num">{{ (i.quantity * (i.unit_cost_cents or 0))|brl }}</td>{% endif %}</tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><td><strong>Total</strong></td><td class="num"><strong>{{ o.units }} un.</strong></td>{% if can('ver_financeiro') %}<td></td><td class="num"><strong>{{ o.total_cents|brl }}</strong></td>{% endif %}</tr></tfoot>
+    </table>
+  </div>
+  {% if o.notes %}<p class="muted small">Observações: {{ o.notes }}</p>{% endif %}
+  {% if o.status == 'recebido' %}<p class="muted small">Lembrete: a entrada da mercadoria no estoque é feita no Olist (o painel não mexe no estoque).</p>{% endif %}
+</section>
+{% endblock %}

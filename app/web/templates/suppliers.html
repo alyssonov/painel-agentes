@@ -1,0 +1,44 @@
+{% extends "app_layout.html" %}
+{% block title %}Fornecedores{% endblock %}
+{% block page_title %}Fornecedores{% endblock %}
+{% block page_subtitle %}<p class="muted"><a class="link" href="/compras">← Compras</a> · O prazo de entrega de cada fornecedor entra na sugestão de compra (o prazo marcado no produto vale mais).</p>{% endblock %}
+{% block content %}
+{% macro supplier_form(s=none) %}
+<form method="post" action="/compras/fornecedores" class="team-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  {% if s %}<input type="hidden" name="supplier_id" value="{{ s.id }}">{% endif %}
+  <div class="team-fields">
+    <label class="field"><span>Nome</span><input type="text" name="name" value="{{ s.name if s else '' }}" maxlength="120" required></label>
+    <label class="field"><span>Vendedor / contato</span><input type="text" name="contact" value="{{ s.contact or '' if s else '' }}" maxlength="120"></label>
+    <label class="field"><span>Telefone / WhatsApp</span><input type="text" name="phone" value="{{ s.phone or '' if s else '' }}" maxlength="40"></label>
+    <label class="field"><span>E-mail</span><input type="email" name="email" value="{{ s.email or '' if s else '' }}" maxlength="160"></label>
+    <label class="field"><span>Prazo de entrega (dias)</span><input type="text" inputmode="numeric" name="lead_time_days" value="{{ s.lead_time_days if s and s.lead_time_days is not none else '' }}"></label>
+  </div>
+  <label class="field"><span>Observações</span><input type="text" name="notes" value="{{ s.notes or '' if s else '' }}" maxlength="1000" placeholder="ex.: pedido mínimo, forma de pagamento"></label>
+  <div class="actions"><button class="btn btn-primary" type="submit">{{ 'Salvar' if s else 'Cadastrar fornecedor' }}</button></div>
+</form>
+{% endmacro %}
+
+<section class="card">
+  {% if suppliers %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Fornecedor</th><th>Contato</th><th class="num">Prazo</th><th class="num">Produtos</th></tr></thead>
+      <tbody>
+      {% for s in suppliers %}
+        <tr><td><span class="t-strong">{{ s.name }}</span>{% if s.notes %}<br><span class="muted small">{{ s.notes }}</span>{% endif %}</td>
+          <td class="small">{{ s.contact or '' }}{% if s.phone %}<br>{{ s.phone }}{% endif %}{% if s.email %}<br>{{ s.email }}{% endif %}</td>
+          <td class="num">{{ s.lead_time_days ~ ' dias' if s.lead_time_days else '—' }}</td>
+          <td class="num"><a class="link" href="/produtos?busca={{ s.name|urlencode }}">{{ products.get(s.name.lower(), 0) }}</a></td></tr>
+        {% if can('registrar_compras') %}<tr><td colspan="4"><details class="team-edit"><summary class="link">Editar {{ s.name }}</summary>{{ supplier_form(s) }}</details></td></tr>{% endif %}
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="muted">Nenhum fornecedor cadastrado.</p>{% endif %}
+  <p class="muted small">"Produtos" = produtos com esse fornecedor no cadastro complementar (Produtos → fornecedor, ou pela planilha).</p>
+</section>
+{% if can('registrar_compras') %}
+<section class="card"><h2 class="card-title">Cadastrar fornecedor</h2>{{ supplier_form() }}</section>
+{% endif %}
+{% endblock %}

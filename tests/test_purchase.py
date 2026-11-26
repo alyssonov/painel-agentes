@@ -40,7 +40,7 @@ def test_pagina_e_planilha(logged_client, db):
     assert response.status_code == 200 and "attachment" in response.headers["content-disposition"]
     text = response.content.decode("utf-8-sig")
     assert text.splitlines()[0].startswith("SKU;Produto;")
-    assert "CAN-01;Produto CAN-01;3;1,0;3;37;R$ 25,00;R$ 925,00;Comprar já" in text
+    assert "CAN-01;Produto CAN-01;3;0;1,0;3;37;R$ 25,00;R$ 925,00;Comprar já;" in text
 
 
 def test_planilha_exige_login(client):

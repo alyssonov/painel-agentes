@@ -1,0 +1,26 @@
+{% extends "app_layout.html" %}
+{% block title %}Novo pedido de compra{% endblock %}
+{% block page_title %}Novo pedido de compra{% endblock %}
+{% block page_subtitle %}<p class="muted"><a class="link" href="/compras">← Compras</a> · Registre o que foi pedido ao fornecedor. Nada é enviado ao fornecedor nem ao Olist: depois você pode baixar a planilha do pedido.</p>{% endblock %}
+{% block content %}
+{% if not suppliers %}
+<div class="notice"><p>Cadastre o fornecedor primeiro: <a class="link" href="/compras/fornecedores">Fornecedores</a>.</p></div>
+{% endif %}
+<section class="card">
+  <form method="post" action="/compras/novo" class="team-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="team-fields">
+      <label class="field"><span>Fornecedor</span>
+        <select name="supplier_id" required><option value="">Escolha…</option>
+          {% for s in suppliers %}<option value="{{ s.id }}" {% if chosen and chosen.id == s.id %}selected{% endif %}>{{ s.name }}{% if s.lead_time_days %} ({{ s.lead_time_days }} dias){% endif %}</option>{% endfor %}</select></label>
+      <label class="field"><span>Chega em quantos dias? <span class="muted small">(vazio = prazo do fornecedor)</span></span><input type="text" inputmode="numeric" name="expected"></label>
+    </div>
+    <label class="field"><span>Itens — um por linha: <code>SKU; quantidade</code>{% if can('ver_financeiro') %} <span class="muted small">(e, se quiser, <code>; custo unitário</code>; sem custo, usa o do Olist)</span>{% endif %}</span>
+      <textarea name="lines" rows="10" placeholder="Exemplo:&#10;PAST-CG160; 20&#10;RET-01; 50; 3,20">{{ lines }}</textarea></label>
+    {% if lines %}<p class="muted small">Preenchido com a <strong>sugestão de compra</strong>{% if chosen %} dos produtos de {{ chosen.name }}{% endif %}. Ajuste as quantidades antes de registrar.</p>{% endif %}
+    <label class="field"><span>Observações</span><input type="text" name="notes" maxlength="1000"></label>
+    <div class="actions"><button class="btn btn-primary" type="submit">Registrar pedido</button>
+      <a class="btn btn-ghost" href="/compras/novo?sugestao=1{% if chosen %}&fornecedor={{ chosen.id }}{% endif %}">Preencher com a sugestão de compra</a></div>
+  </form>
+</section>
+{% endblock %}

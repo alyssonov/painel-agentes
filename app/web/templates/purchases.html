@@ -1,0 +1,42 @@
+{% extends "app_layout.html" %}
+{% block title %}Compras{% endblock %}
+{% block page_title %}Compras{% endblock %}
+{% block page_subtitle %}<p class="muted">Pedidos feitos aos fornecedores. O que está "a caminho" é descontado da sugestão de compra. Receber um pedido não mexe no estoque: a entrada continua no Olist.</p>{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <div class="segmented segmented-light" role="group" aria-label="Situação">
+    {% for k, label in statuses.items() %}<a class="seg{% if situacao == k %} is-active{% endif %}" href="/compras?situacao={{ k }}">{{ label }} ({{ counts.get(k, 0) }})</a>{% endfor %}
+    <a class="seg{% if situacao not in statuses %} is-active{% endif %}" href="/compras?situacao=todos">Todos</a>
+  </div>
+  <div class="actions">
+    <a class="btn btn-ghost" href="/compras/fornecedores">Fornecedores</a>
+    {% if can('registrar_compras') %}<a class="btn btn-secondary" href="/compras/novo?sugestao=1">Novo pedido com a sugestão</a>
+    <a class="btn btn-primary" href="/compras/novo">Novo pedido</a>{% endif %}
+  </div>
+</div>
+{% if late %}<p class="notice small"><strong>{{ late }} pedido(s) atrasado(s)</strong>: passou da data prevista de entrega e ainda não foi marcado como recebido.</p>{% endif %}
+
+<section class="card">
+  {% if orders %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Nº</th><th>Fornecedor</th><th>Feito em</th><th>Previsto</th><th class="num">Itens</th>{% if can('ver_financeiro') %}<th class="num">Total</th>{% endif %}<th>Situação</th></tr></thead>
+      <tbody>
+      {% for o in orders %}
+        {% set atrasado = o.status == 'aberto' and o.expected_on and o.expected_on < today %}
+        <tr>
+          <td><a class="link t-strong" href="/compras/{{ o.id }}">{{ o.number }}</a></td>
+          <td>{{ o.supplier.name }}</td>
+          <td class="small">{{ o.ordered_on.strftime('%d/%m/%Y') }}</td>
+          <td class="small {{ 'text-danger' if atrasado }}">{{ o.expected_on.strftime('%d/%m/%Y') if o.expected_on else '—' }}{% if atrasado %} (atrasado){% endif %}</td>
+          <td class="num">{{ o.units }} un.<br><span class="muted small">{{ o.items|length }} produto(s)</span></td>
+          {% if can('ver_financeiro') %}<td class="num">{{ o.total_cents|brl }}</td>{% endif %}
+          <td><span class="badge badge-{{ {'aberto': 'info', 'recebido': 'ok', 'cancelado': 'pausado'}[o.status] }}">{{ statuses[o.status] }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="muted">Nenhum pedido de compra {{ 'nesta situação' if situacao in statuses else '' }}.</p>{% endif %}
+</section>
+{% endblock %}

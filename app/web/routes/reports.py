@@ -86,14 +86,14 @@ def purchase_csv(db: Session = Depends(get_db), user: User = Depends(current_use
     lead, coverage = _purchase_rules(rules)
     out = io.StringIO()
     writer = csv.writer(out, delimiter=";")
-    writer.writerow(["SKU", "Produto", "Disponível no Olist", "Vendas por dia", "Dura (dias)",
-                     "Comprar (unidades)", "Custo unitário", "Custo total", "Urgência"])
+    writer.writerow(["SKU", "Produto", "Disponível no Olist", "A caminho", "Vendas por dia", "Dura (dias)",
+                     "Comprar (unidades)", "Custo unitário", "Custo total", "Urgência", "Fornecedor"])
     for item in purchase_suggestions(db, rows, lead_days=lead, coverage_days=coverage):
-        writer.writerow([item.sku, item.name, item.available, f"{item.avg_daily:.1f}".replace(".", ","),
-                         f"{item.days_left:.0f}", item.quantity,
+        writer.writerow([item.sku, item.name, item.available, item.on_order, f"{item.avg_daily:.1f}".replace(".", ","),
+                         f"{item.days_left:.0f}" if item.days_left is not None else "", item.quantity,
                          format_brl(item.unit_cost_cents) if item.unit_cost_cents else "sem custo no Olist",
                          format_brl(item.total_cost_cents) if item.unit_cost_cents else "",
-                         URGENCY_LABELS[item.urgency][0]])
+                         URGENCY_LABELS[item.urgency][0], item.supplier or ""])
     filename = f"sugestao-de-compra-{local_today():%Y-%m-%d}.csv"
     return Response("\ufeff" + out.getvalue(), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="{filename}"'})

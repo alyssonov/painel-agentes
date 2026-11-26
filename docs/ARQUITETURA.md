@@ -825,3 +825,20 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   com antes → depois (`financeiro.despesa_*`).
 - Mercado Ads ainda não entra sozinho (PENDENCIAS B5): por enquanto, lançar
   publicidade como despesa.
+
+## 36. Etapa 5b — Fornecedores e pedidos de compra
+
+- Tabelas `suppliers`, `purchase_orders` (nº sequencial por empresa, situação
+  aberto/recebido/cancelado, datas de pedido, previsão e recebimento) e
+  `purchase_order_items` (SKU, nome, quantidade, custo unitário) — migração
+  0020. Só no Gerente do Ano: receber um pedido **não** mexe no estoque (a
+  entrada continua no Olist; a tela lembra disso).
+- **Sugestão de compra** (`app/services/purchase.py`) agora considera: o que
+  está "a caminho" (pedidos em aberto), o **estoque mínimo** e o **prazo** do
+  produto (cadastro complementar) ou do fornecedor (pelo nome do fornecedor no
+  produto). Produto sem vendas mas abaixo do mínimo também entra.
+- Telas: `/compras` (filtro por situação, atrasados), `/compras/fornecedores`,
+  `/compras/novo` (itens "SKU; quantidade; custo", pode vir preenchido com a
+  sugestão), `/compras/{id}` (marcar recebido/cancelado, planilha para mandar
+  ao fornecedor). Permissão nova **registrar_compras** (Administrador, Gerente,
+  Operação); custos só para quem vê o financeiro. Histórico em `compras.*`.

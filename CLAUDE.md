@@ -175,7 +175,7 @@ automáticas, nada manual).
 - Precificação: calculadora "Saia do Prejuízo" (do dono), em
   `app/web/static/js/calculadora.js` — ver `docs/ARQUITETURA.md` §34.
 - Menu lateral em **grupos** (`NAV_GROUPS` em `app/web/templating.py`): Visão
-  geral; Operação (Pedidos, Produtos, Anúncios, Estoque e compras, Precificação); Atendimento
+  geral; Operação (Pedidos, Produtos, Anúncios, Estoque, Compras, Precificação); Atendimento
   (Perguntas, Pós-venda); Financeiro (Lucro real, Recebimentos, DRE do mês,
   Despesas, Gráficos, Curva ABC); Inteligência (Agentes, Relatórios); Administração (Equipe, Contas
   conectadas). O menu só mostra o que a pessoa pode abrir. O item ativo é o endereço mais
