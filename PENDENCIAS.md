@@ -76,22 +76,21 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   produtos de uma vez (ou só os alterados desde uma data) deixaria a leitura
   bem mais rápida que um produto por vez.
 
-### B3. Shopee — 🟡
-- **26/11:** cadastro enviado na Open Platform — **em análise pela Shopee até
-  29/11** (o aviso chega por e-mail). A conexão já está pronta no painel
-  (Contas conectadas → Shopee), feita com a documentação oficial de autorização.
-- **Quando aprovar:**
-  1. Console → App List → **Create App** (tipo "Seller In House System").
-  2. No app, **Live Redirect URL Domain** = `alyssonov.github.io`.
-  3. No `.env`: `SHOPEE_PARTNER_ID` e `SHOPEE_PARTNER_KEY` (de produção).
-     **Não cole as chaves no chat.**
-  4. Desligar e ligar o painel → **Conectar a Shopee** → escolher 365 dias.
+### B3. Shopee — 🟡 (aguardando a liberação do app, até 24 h)
+- **26/11:** perfil de desenvolvedor **aprovado**; app "Atacadao" criado (tipo
+  Seller In House System, domínio de retorno `https://alyssonov.github.io`, sem
+  dados pessoais de compradores) e **enviado para liberação (Go Live)**. O
+  resultado chega por e-mail em até 24 h.
+- **Quando liberar:** a Shopee entrega o **Partner ID e a Key de produção**
+  (os de hoje no `.env` são os de **teste**). Trocar `SHOPEE_PARTNER_ID` e
+  `SHOPEE_PARTNER_KEY` no `.env` (Mac e/ou Windows), desligar e ligar o painel
+  → **Conectar a Shopee** → 365 dias. **Não cole a Key no chat.**
+- **Lista de IPs liberados (IP Whitelist):** a Shopee exige para dados
+  sensíveis. No computador o IP da internet pode mudar; no servidor (B4) é fixo.
 - **Para a próxima etapa (ler pedidos, taxas e envios):** o texto destas
   páginas oficiais (copiar do navegador e colar no chat):
-  `v2.order.get_order_list`, `v2.order.get_order_detail`,
-  `v2.payment.get_escrow_detail` e `v2.shop.get_shop_info`.
-- **Observação:** o uso real (Go Live) pode exigir o domínio com HTTPS e o IP
-  fixo do servidor (B4).
+  `v2.order.get_order_detail`, `v2.payment.get_escrow_detail` e
+  `v2.shop.get_shop_info` (a `get_order_list` já veio).
 
 ### B4. Domínio e servidor — 🟡 (tudo pronto no projeto; falta comprar)
 - **Pronto (26/11):** o painel já roda em servidor (PostgreSQL + HTTPS + cópia
