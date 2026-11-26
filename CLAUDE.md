@@ -156,30 +156,32 @@ automáticas, nada manual).
 
 ## Visual do painel
 
-> **Em transição (decisão de 26/11/2026):** a identidade abaixo será trocada por
-> um **tema escuro** (estrutura da referência "Qo_Shop" + cores da referência
-> "Pi ERP", tema claro opcional), na etapa 2 de `docs/DIAGNOSTICO_E_PLANO.md`.
-> Até lá, telas novas seguem os componentes atuais.
-
-- Menu lateral: Visão geral, Perguntas, Anúncios, Estoque e preços,
-  Precificação, Pós-venda, Margem real, Relatórios, Agentes (será reorganizado
-  nos módulos de `docs/VISAO_PRODUTO.md` na etapa 2). Abaixo do menu: contas conectadas
-  (Mercado Livre, Shopee, Olist ERP) com status.
-- Identidade visual (definida pelo usuário a partir de uma referência):
-  **fundo azul-marinho em degradê** (`#1F3243` → `#344D66`) em TODAS as
-  páginas (login e internas), com **cards e opções brancos** por cima (item
-  ativo do menu em branco, texto do menu em branco translúcido), destaque
-  `#1F3243` (hover `#2C4459`) nos botões, cards com cantos de 16px, botões
-  retangulares com cantos de 8px, fonte do sistema (Segoe UI no Windows).
+- Identidade visual (decisão de 26/11/2026, etapa 2): **tema escuro** como
+  padrão (estrutura da referência "Qo_Shop" + cores da referência "Pi ERP") e
+  **tema claro opcional** (botão sol/lua no topo; rota `POST /tema`, cookie
+  `tema`). Fundo `--bg #0A101C`, cards `--card #111A2B` com borda `--line`,
+  destaque azul `--accent #3B82F6`, cantos 12px (cards) / 8px (botões), fonte do
+  sistema (Segoe UI no Windows). Todas as cores são variáveis em
+  `:root, :root[data-theme="dark"]` e `:root[data-theme="light"]` no
+  `app/web/static/css/app.css` — **nunca usar cor fixa** fora delas.
+- Menu lateral em **grupos** (`NAV_GROUPS` em `app/web/templating.py`): Visão
+  geral; Operação (Anúncios, Estoque e compras, Precificação); Atendimento
+  (Perguntas, Pós-venda); Financeiro (Lucro real, Recebimentos, Gráficos, Curva
+  ABC); Inteligência (Agentes, Relatórios). O item ativo é o endereço mais
+  específico (`active_nav`). Abaixo do menu: contas conectadas (Mercado Livre,
+  Shopee, Olist ERP) com status.
 - **Cores de status, com significado fixo** (variáveis `--ok`, `--warn`,
   `--danger`, `--info` e versões `-soft`): verde = tudo certo; âmbar = atenção
   / precisa de você; vermelho = problema / urgente; azul = informação / em
   andamento. Usar pouco, só para sinalizar; sempre junto com texto ou ícone
-  (nunca só a cor); texto colorido sobre fundo claro com contraste ≥ 4,5:1. Cores ficam como
+  (nunca só a cor); texto colorido com contraste ≥ 4,5:1 nos dois temas. Cores ficam como
   variáveis em `:root` no `app/web/static/css/app.css`.
-- Visão geral: 4 cards (faturamento hoje, margem média real, perguntas
-  respondidas, reputação, com faixa lateral na cor da situação); faixa "O que pede atenção" (um pouco mais clara que o fundo, alertas com borda na cor da gravidade); lista
-  "Agentes agora"; kanban **"Envios de hoje"** (A separar, Embalado, Enviado,
+- Visão geral: saudação; 4 cards de hoje (faturamento, margem média real,
+  perguntas respondidas, reputação, com faixa superior na cor da situação e
+  variação em relação a ontem); faixa "O que pede atenção hoje"; 4 cards
+  "Este mês" (faturamento, lucro real, pedidos, ticket médio, comparados com o
+  mesmo período do mês passado — `app/services/month.py`); gráfico de
+  faturamento dos últimos 30 dias + "Por marketplace"; "Agentes agora"; kanban **"Envios de hoje"** (A separar, Embalado, Enviado,
   Com problema) com filtro Todos / Mercado Livre / Shopee. Regra do dono:
   **"Faturamento hoje" = o que foi VENDIDO hoje**; o quadro = o que **precisa
   ser DESPACHADO hoje** (prazo de despacho/SLA do marketplace, tabela

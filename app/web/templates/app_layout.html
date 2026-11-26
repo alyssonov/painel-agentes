@@ -8,11 +8,16 @@
       <span class="brand-name">Gerente <span class="brand-sub">do Ano</span></span>
     </a>
     <nav class="nav" aria-label="Menu principal">
-      {% for href, label, icon in nav_items %}
-      <a href="{{ href }}" class="nav-item{% if current_path == href %} is-active{% endif %}"
-         {% if current_path == href %}aria-current="page"{% endif %}>
-        <svg class="icon"><use href="#i-{{ icon }}"/></svg><span>{{ label }}</span>
-      </a>
+      {% for title, items in nav_groups %}
+      <div class="nav-group">
+        {% if title %}<p class="nav-group-title">{{ title }}</p>{% endif %}
+        {% for href, label, icon in items %}
+        <a href="{{ href }}" class="nav-item{% if active_nav == href %} is-active{% endif %}"
+           {% if active_nav == href %}aria-current="page"{% endif %}>
+          <svg class="icon"><use href="#i-{{ icon }}"/></svg><span>{{ label }}</span>
+        </a>
+        {% endfor %}
+      </div>
       {% endfor %}
     </nav>
     <a class="accounts{% if current_path.startswith('/integracoes') %} is-active{% endif %}" href="/integracoes"
@@ -35,7 +40,14 @@
         {% block page_subtitle %}{% endblock %}
       </div>
       <div class="topbar-user">
-        {% if user %}<span class="muted">{{ user.name }}</span>{% endif %}
+        <form method="post" action="/tema">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="icon-btn" type="submit" title="{{ 'Usar tema claro' if theme != 'light' else 'Usar tema escuro' }}"
+                  aria-label="{{ 'Usar tema claro' if theme != 'light' else 'Usar tema escuro' }}">
+            <svg class="icon"><use href="#i-{{ 'sun' if theme != 'light' else 'moon' }}"/></svg>
+          </button>
+        </form>
+        {% if user %}<span class="user-chip"><span class="avatar" aria-hidden="true">{{ user.name[:1]|upper }}</span><span>{{ user.name }}</span></span>{% endif %}
         <form method="post" action="/logout">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="btn btn-ghost" type="submit" title="Sair">
@@ -49,5 +61,6 @@
     {% endif %}
     {% block content %}{% endblock %}
   </main>
+  <div class="chart-tip" id="chart-tip" role="status" hidden></div>
 </div>
 {% endblock %}

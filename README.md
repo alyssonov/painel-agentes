@@ -102,6 +102,18 @@ python tarefas.py worker
 Na Fase 1 o worker só renova os dados de simulação quando o dia vira. O próprio
 painel também faz isso ao iniciar.
 
+## O painel (menu e tema)
+
+O menu lateral é organizado por área: **Operação** (Anúncios, Estoque e
+compras, Precificação), **Atendimento** (Perguntas, Pós-venda),
+**Financeiro** (Lucro real, Recebimentos, Gráficos, Curva ABC) e
+**Inteligência** (Agentes, Relatórios). A Visão geral mostra o dia, o mês
+comparado com o mês passado, o gráfico dos últimos 30 dias, a divisão por
+marketplace, os envios de hoje e os agentes.
+
+O painel abre no **tema escuro**. O botão de sol/lua no topo troca para o
+**tema claro** (a escolha fica guardada no navegador).
+
 ## Conectar o Olist ERP (somente leitura)
 
 1. No Olist: **Menu > Configurações > aba Geral > Aplicativos > + novo

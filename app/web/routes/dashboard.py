@@ -16,8 +16,17 @@ CHANNEL_FILTERS = [("", "Todos"), ("ml", "Mercado Livre"), ("shopee", "Shopee")]
 
 @router.get("/")
 def overview(request: Request, db: Session = Depends(get_db), _user: User = Depends(current_user)):
+    from app.agents.config import has_real_data
+    from app.services.charts import bar_chart, daily_points
+    from app.services.month import month_summary
+    from app.services.store_settings import get_setting
+
+    points = daily_points(db, 30, float(get_setting(db, "tax_rate_pct") or 0), demo=not has_real_data(db))
     return render(request, "overview.html", {
         "ov": dashboard.overview(db),
+        "month": month_summary(db),
+        "revenue_chart": bar_chart(points, "revenue", height=220),
+        "chart_total": sum(p.revenue for p in points),
         "columns": dashboard.kanban(db),
         "channel": "",
         "channel_filters": CHANNEL_FILTERS,

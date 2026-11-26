@@ -1,63 +1,53 @@
 {% extends "app_layout.html" %}
 {% block title %}Visão geral{% endblock %}
-{% block page_title %}Visão geral{% endblock %}
+{% block page_title %}{% if user %}Olá, {{ user.name.split(' ')[0] }}{% else %}Visão geral{% endif %}{% endblock %}
 {% block page_subtitle %}
-<p class="muted">{{ ov.orders_today }} vendas hoje{% if ov.dispatch %} · {{ ov.dispatch.to_ship }} para enviar hoje{% if ov.dispatch.late %} · {{ ov.dispatch.late }} atrasado(s){% endif %}{% endif %} · Gasto com IA hoje: {{ ov.ai_cost_today_cents|brl }} de {{ ov.ai_budget_cents|brl }}</p>
+<p class="muted">Sua operação sob controle · {{ ov.orders_today }} venda(s) hoje{% if ov.dispatch %} · {{ ov.dispatch.to_ship }} para enviar hoje{% if ov.dispatch.late %} · {{ ov.dispatch.late }} atrasado(s){% endif %}{% endif %} · IA hoje: {{ ov.ai_cost_today_cents|brl }} de {{ ov.ai_budget_cents|brl }}</p>
 {% endblock %}
 {% block content %}
 
-<section class="stats" aria-label="Resumo do dia">
+{% macro delta_pill(value) %}
+  {% if value is none %}<span class="delta flat" title="Sem base de comparação">—</span>
+  {% else %}<span class="delta {{ 'up' if value >= 0 else 'down' }}">{{ '↗' if value >= 0 else '↘' }} {{ value|abs|pct(0) }}</span>{% endif %}
+{% endmacro %}
+
+<section class="stats" aria-label="Resumo de hoje">
   {% set rev_diff = ((ov.revenue_today_cents - ov.revenue_yesterday_cents) / ov.revenue_yesterday_cents * 100) if ov.revenue_yesterday_cents else none %}
   <article class="card stat {{ 'tone-info' if rev_diff is none else ('tone-ok' if rev_diff >= 0 else 'tone-warn') }}">
+    <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-cart"/></svg></span>{{ delta_pill(rev_diff) }}</div>
     <p class="stat-label">Faturamento hoje</p>
     <p class="stat-value">{{ ov.revenue_today_cents|brl }}</p>
-    {% if ov.revenue_yesterday_cents %}
-      {% set diff = (ov.revenue_today_cents - ov.revenue_yesterday_cents) / ov.revenue_yesterday_cents * 100 %}
-      <p class="stat-foot {{ 'up' if diff >= 0 else 'down' }}">
-        {{ '▲' if diff >= 0 else '▼' }} {{ diff|abs|pct(0) }} em relação a ontem neste horário
-      </p>
-    {% else %}
-      <p class="stat-foot muted">Sem vendas ontem até este horário</p>
-    {% endif %}
+    <p class="stat-foot">{% if ov.revenue_yesterday_cents %}em relação a ontem neste horário{% else %}sem vendas ontem até este horário{% endif %}</p>
   </article>
 
   <article class="card stat {{ 'tone-bad' if ov.loss_orders else ('tone-warn' if not ov.tax_configured or ov.avg_margin_pct is none else 'tone-ok') }}">
-    <p class="stat-label">Margem média real</p>
+    <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-trend"/></svg></span></div>
+    <p class="stat-label">Margem média real (hoje)</p>
     <p class="stat-value">{{ ov.avg_margin_pct|pct }}</p>
-    {% if ov.loss_orders %}
-      <p class="stat-foot down">{{ ov.loss_orders }} venda{{ 's' if ov.loss_orders > 1 }} com prejuízo</p>
-    {% elif ov.avg_margin_pct is not none %}
-      <p class="stat-foot up">Nenhuma venda com prejuízo</p>
-    {% endif %}
-    {% if ov.fees_missing %}
-      <p class="stat-foot muted">Algumas vendas ainda sem a taxa do marketplace (a margem fica maior que a real)</p>
-    {% endif %}
-    {% if not ov.tax_configured %}
-      <p class="stat-foot warn"><a class="link" href="/integracoes#imposto">Informe a alíquota de impostos</a></p>
-    {% endif %}
+    {% if ov.loss_orders %}<p class="stat-foot down">{{ ov.loss_orders }} venda{{ 's' if ov.loss_orders > 1 }} com prejuízo</p>
+    {% elif ov.avg_margin_pct is not none %}<p class="stat-foot up">Nenhuma venda com prejuízo</p>{% endif %}
+    {% if ov.fees_missing %}<p class="stat-foot">Algumas vendas com taxa ainda não conferida</p>{% endif %}
+    {% if not ov.tax_configured %}<p class="stat-foot warn"><a class="link" href="/integracoes#imposto">Informe a alíquota de impostos</a></p>{% endif %}
   </article>
 
   <article class="card stat {{ 'tone-warn' if ov.questions_waiting else 'tone-ok' }}">
+    <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-chat"/></svg></span></div>
     <p class="stat-label">Perguntas respondidas</p>
     <p class="stat-value">{{ ov.questions_answered }}<span class="stat-of"> de {{ ov.questions_today }}</span></p>
-    {% if ov.questions_waiting %}
-      <p class="stat-foot warn">{{ ov.questions_waiting }} aguardando você</p>
-    {% else %}
-      <p class="stat-foot up">Nenhuma pendente</p>
-    {% endif %}
+    {% if ov.questions_waiting %}<p class="stat-foot warn"><a class="link" href="/perguntas">{{ ov.questions_waiting }} aguardando você</a></p>
+    {% else %}<p class="stat-foot up">Nenhuma pendente</p>{% endif %}
   </article>
 
   <article class="card stat tone-{{ ov.reputation_ml|rep_tone }}">
+    <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-star"/></svg></span></div>
     <p class="stat-label">Reputação</p>
     <p class="stat-value stat-value-sm">{{ ov.reputation_ml or '—' }}</p>
-    <p class="stat-foot muted">Mercado Livre{% if ov.reputation_shopee %} · Shopee {{ ov.reputation_shopee }}{% endif %}</p>
+    <p class="stat-foot">Mercado Livre{% if ov.reputation_shopee %} · Shopee {{ ov.reputation_shopee }}{% endif %}</p>
   </article>
 </section>
 
 <section class="attention" aria-labelledby="attention-title">
-  <h2 id="attention-title" class="attention-title">
-    <svg class="icon"><use href="#i-alert"/></svg> O que pede atenção
-  </h2>
+  <h2 id="attention-title" class="attention-title"><svg class="icon"><use href="#i-alert"/></svg> O que pede atenção hoje</h2>
   {% if ov.alerts %}
   <ul class="attention-list">
     {% for alert in ov.alerts %}
@@ -75,21 +65,76 @@
   {% endif %}
 </section>
 
-<div class="overview-grid">
-  <section class="card" aria-labelledby="orders-title">
-    <div class="card-head">
-      <h2 id="orders-title" class="card-title">{{ 'Envios de hoje' if ov.dispatch else 'Pedidos de hoje' }}</h2>
-      {% if ov.dispatch %}<span class="muted small">pelo prazo de despacho do Mercado Livre</span>{% endif %}
-    </div>
-    {% include "partials/kanban.html" %}
-  </section>
+{% set m = month.current %}{% set p = month.previous %}
+<div class="toolbar">
+  <h2 class="section-title">Este mês <span class="muted small">({{ month.month_label }}, comparado com o mesmo período do mês passado)</span></h2>
+  <a class="link" href="/margem?periodo=30">Ver lucro real →</a>
+</div>
+<section class="stats" aria-label="Resumo do mês">
+  <article class="card stat">
+    <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-coins"/></svg></span>{{ delta_pill(month.delta(m.revenue, p.revenue)) }}</div>
+    <p class="stat-label">Faturamento do mês</p>
+    <p class="stat-value">{{ m.revenue|brl }}</p>
+    <p class="stat-foot">mês passado até hoje: {{ p.revenue|brl }}</p>
+  </article>
+  <article class="card stat {{ 'tone-bad' if m.profit < 0 }}">
+    <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-trend"/></svg></span>{{ delta_pill(month.delta(m.profit, p.profit)) }}</div>
+    <p class="stat-label">Lucro real do mês</p>
+    <p class="stat-value {{ 'text-danger' if m.profit < 0 }}">{{ m.profit|brl }}</p>
+    <p class="stat-foot">margem {{ m.margin_pct|pct }}{% if m.unconfirmed %} · {{ m.unconfirmed }} venda(s) com taxa a conferir{% endif %}</p>
+  </article>
+  <article class="card stat">
+    <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-receipt"/></svg></span>{{ delta_pill(month.delta(m.orders, p.orders)) }}</div>
+    <p class="stat-label">Pedidos do mês</p>
+    <p class="stat-value">{{ m.orders }}</p>
+    <p class="stat-foot">{{ m.units }} unidade(s) vendida(s)</p>
+  </article>
+  <article class="card stat">
+    <div class="stat-top"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-tag"/></svg></span>{{ delta_pill(month.delta(m.ticket or 0, p.ticket) if p.ticket else none) }}</div>
+    <p class="stat-label">Ticket médio</p>
+    <p class="stat-value">{{ m.ticket|brl if m.ticket else '—' }}</p>
+    <p class="stat-foot">mês passado: {{ p.ticket|brl if p.ticket else '—' }}</p>
+  </article>
+</section>
 
-  <section class="card" aria-labelledby="agents-title">
+<div class="overview-grid">
+  <section class="card" aria-labelledby="chart-title">
     <div class="card-head">
-      <h2 id="agents-title" class="card-title">Agentes agora</h2>
-      <a class="link" href="/agentes">Ver todos</a>
+      <h2 id="chart-title" class="card-title">Faturamento — últimos 30 dias</h2>
+      <span class="muted small">{{ chart_total|brl }} no período · <a class="link" href="/margem/graficos">mais gráficos</a></span>
     </div>
-    {% include "partials/agents.html" %}
+    {% with c = revenue_chart, aria = "Faturamento por dia nos últimos 30 dias" %}{% include "partials/bar_chart.html" %}{% endwith %}
+  </section>
+  <section class="card" aria-labelledby="mk-title">
+    <div class="card-head"><h2 id="mk-title" class="card-title">Por marketplace</h2><span class="muted small">este mês</span></div>
+    {% if month.channels %}
+    <ul class="mk-list">
+      {% for c in month.channels %}
+      <li class="mk-row">
+        <span class="mk-name"><span class="chip chip-{{ c.channel }}">{{ c.label }}</span></span>
+        <span class="mk-value">{{ c.totals.revenue|brl }}</span>
+        <progress class="abc-bar" max="100" value="{{ '%.0f'|format(c.share_pct) }}">{{ '%.0f'|format(c.share_pct) }}%</progress>
+        <span class="mk-meta">{{ '%.0f'|format(c.share_pct) }}% do faturamento · {{ c.totals.orders }} pedido(s) · lucro {{ c.totals.profit|brl }} ({{ c.totals.margin_pct|pct }})</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Nenhuma venda neste mês ainda.</p>{% endif %}
   </section>
 </div>
+
+<section class="card" aria-labelledby="orders-title">
+  <div class="card-head">
+    <h2 id="orders-title" class="card-title">{{ 'Envios de hoje' if ov.dispatch else 'Pedidos de hoje' }}</h2>
+    {% if ov.dispatch %}<span class="muted small">pelo prazo de despacho do Mercado Livre</span>{% endif %}
+  </div>
+  {% include "partials/kanban.html" %}
+</section>
+
+<section class="card agents-wide" aria-labelledby="agents-title">
+  <div class="card-head">
+    <h2 id="agents-title" class="card-title">Agentes agora</h2>
+    <a class="link" href="/agentes">Ver todos</a>
+  </div>
+  {% include "partials/agents.html" %}
+</section>
 {% endblock %}

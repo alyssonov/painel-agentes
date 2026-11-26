@@ -1,6 +1,7 @@
 """Telas de entrar e sair."""
 
 from datetime import timedelta
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
@@ -12,7 +13,7 @@ from app.core import audit
 from app.core.db import get_db, utcnow
 from app.core.security import get_or_create_csrf_token, mask_email, verify_password
 from app.models.user import User
-from app.web.auth import SESSION_AUTH_VERSION_KEY, SESSION_USER_KEY, auth_version, verify_csrf
+from app.web.auth import SESSION_AUTH_VERSION_KEY, SESSION_USER_KEY, auth_version, current_user, verify_csrf
 from app.web.templating import render
 
 router = APIRouter()
@@ -79,3 +80,20 @@ def logout(request: Request, db: Session = Depends(get_db)):
         db.commit()
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
+
+
+@router.post("/tema", dependencies=[Depends(verify_csrf)])
+def toggle_theme(request: Request, user: User = Depends(current_user)):
+    """Alterna entre o tema escuro (padrão) e o claro; a escolha fica guardada no navegador por 1 ano."""
+    from app.web.templating import THEME_COOKIE
+
+    new = "dark" if request.cookies.get(THEME_COOKIE) == "light" else "light"
+    # Volta para a mesma página (só endereços do próprio painel).
+    referer = request.headers.get("referer") or "/"
+    path = urlsplit(referer).path or "/"
+    if not path.startswith("/") or path.startswith("//"):
+        path = "/"
+    response = RedirectResponse(path, status_code=303)
+    response.set_cookie(THEME_COOKIE, new, max_age=365 * 24 * 3600, httponly=True, samesite="lax",
+                        secure=get_settings().session_cookie_secure)
+    return response
