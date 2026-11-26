@@ -32,8 +32,12 @@ loja: precisa ser **confiável, seguro e fácil para quem não é técnico**.
 2. **O Olist é a fonte da verdade.**
    - O cliente do Olist é **somente leitura**. Ele não deve ter nenhum método que
      escreva no Olist.
-   - O sistema **nunca altera estoque** e **nunca emite, cancela ou altera notas
-     fiscais**. Isso continua sendo feito no Olist.
+   - O sistema **nunca altera estoque** (nem no Olist nem nos anúncios: o Olist
+     sincroniza o estoque com os marketplaces; o painel só avisa divergências) e
+     **nunca emite, cancela ou altera notas fiscais**. Isso continua no Olist.
+   - O Gerente do Ano pode ter **cadastro complementar** próprio (compatibilidade
+     com motos, fornecedor, custo do Onix, estoque mínimo…), guardado só no seu
+     banco — decisão do dono em 26/11/2026.
 3. **Humano no controle.**
    - Toda ação que fala com cliente (resposta, mensagem) ou muda preço/anúncio
      vira uma **Ação proposta** que espera aprovação manual.
@@ -151,6 +155,11 @@ automáticas, nada manual).
   em `app/web/static/`.
 
 ## Visual do painel
+
+> **Em transição (decisão de 26/11/2026):** a identidade abaixo será trocada por
+> um **tema escuro** (estrutura da referência "Qo_Shop" + cores da referência
+> "Pi ERP", tema claro opcional), na etapa 2 de `docs/DIAGNOSTICO_E_PLANO.md`.
+> Até lá, telas novas seguem os componentes atuais.
 
 - Menu lateral: Visão geral, Perguntas, Anúncios, Estoque e preços, Pós-venda,
   Margem real, Relatórios, Agentes. Abaixo do menu: contas conectadas

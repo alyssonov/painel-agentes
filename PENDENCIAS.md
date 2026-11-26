@@ -15,10 +15,10 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 
 | # | Decisão | Por que importa | Situação |
 |---|---|---|---|
-| A1 | **Nova identidade visual** — as imagens novas (layout claro do "Qo_Shop" + paleta escura do "Pi ERP") substituem a identidade atual (fundo azul‑marinho com cards brancos, registrada no CLAUDE.md)? | Muda TODAS as telas. Não troco sem confirmação. | 🔴 |
-| A2 | **Cadastro de produtos no Gerente do Ano** — hoje o Olist é a fonte da verdade e o painel só LÊ. O Gerente do Ano pode ter cadastro próprio *complementar* (compatibilidade com motos, fornecedor, custo do Onix…) **sem escrever no Olist**? | O documento novo pede cadastro/edição de produtos e movimentação de estoque; a regra atual proíbe alterar o Olist. | 🔴 |
-| A3 | **Estoque nos anúncios** — o painel pode propor (com aprovação) mudar o estoque de um anúncio no Mercado Livre (ex.: pausar quando zera no Onix/Olist)? Ou isso continua só pela integração Olist → Mercado Livre? | Hoje a regra é "o sistema nunca altera estoque". | 🔴 |
-| A4 | **Estrutura multiempresa (SaaS) agora** — preparar o banco para várias empresas já na próxima etapa? | É bem mais barato fazer agora (31 tabelas) do que depois, mas mexe no banco inteiro. | 🔴 |
+| A1 | **Nova identidade visual** — as imagens novas (layout claro do "Qo_Shop" + paleta escura do "Pi ERP") substituem a identidade atual? | Muda TODAS as telas. | ✅ 26/11: **sim, tema escuro** (estrutura da Foto 1 + cores da Foto 2), tema claro opcional — etapa 2 do plano |
+| A2 | **Cadastro de produtos no Gerente do Ano** — hoje o Olist é a fonte da verdade e o painel só LÊ. O Gerente do Ano pode ter cadastro próprio *complementar* (compatibilidade com motos, fornecedor, custo do Onix…) **sem escrever no Olist**? | O documento novo pede cadastro/edição de produtos; a regra proíbe alterar o Olist. | ✅ 26/11: **sim, cadastro complementar**; o Olist continua sem nenhuma escrita |
+| A3 | **Estoque nos anúncios** — o painel pode propor (com aprovação) mudar o estoque de um anúncio no Mercado Livre (ex.: pausar quando zera no Onix/Olist)? Ou isso continua só pela integração Olist → Mercado Livre? | Hoje a regra é "o sistema nunca altera estoque". | ✅ 26/11: **não** — estoque continua com o Olist; o painel só avisa divergências |
+| A4 | **Estrutura multiempresa (SaaS) agora** — preparar o banco para várias empresas já na próxima etapa? | É bem mais barato fazer agora (31 tabelas) do que depois. | ✅ 26/11: **sim, agora** — etapa 3 do plano |
 | A5 | **Desligar o modo simulação** (`DRY_RUN=false`) | Só então respostas, mensagens, preços e anúncios aprovados saem de verdade. | ⚪ quando você se sentir seguro |
 
 ## B. Informações e acessos
