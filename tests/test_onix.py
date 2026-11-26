@@ -113,3 +113,32 @@ def test_tela_contas_conectadas(logged_client, db, onix_env, monkeypatch):
 
 def test_tela_sem_configurar(logged_client):
     assert "ONIX_API_URL" in logged_client.get("/integracoes").text
+
+
+@respx.mock
+def test_leitura_do_onix_nao_trava_o_banco(db, onix_env, db_url):
+    """Enquanto o Onix responde (devagar), o painel precisa conseguir gravar (ex.: conectar o Olist)."""
+    import sqlite3
+    for i in range(3):
+        db.add(Product(sku=str(500 + i), name=f"P{i}", cost_cents=1))
+    db.commit()
+    path = db_url.split("///", 1)[1]
+    writes = []
+
+    def handler(request):
+        # Outra conexão grava no meio da leitura, sem paciência nenhuma (timeout 0).
+        with sqlite3.connect(path, timeout=0) as other:
+            other.execute("UPDATE products SET name = name WHERE id = 1")
+        writes.append(1)
+        return httpx.Response(200, json=dict(SEMI_KIT, cod_prod=int(request.url.params["id"])))
+
+    respx.get(URL).mock(side_effect=handler)
+    run = run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
+    assert run.status == SyncStatus.OK and len(writes) == 3
+
+
+def test_sqlite_espera_a_vez_e_usa_wal(db, db_url):
+    from sqlalchemy import text
+    from app.core.db import get_engine
+    with get_engine().connect() as conn:
+        assert conn.execute(text("PRAGMA journal_mode")).scalar().lower() == "wal"

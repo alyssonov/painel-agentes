@@ -106,9 +106,16 @@ Na primeira vez leva alguns minutos. Depois, abra `https://app.gerentedoano.com`
 ## 7. Levar os seus dados do computador
 
 1. **Feche o painel no computador** (a janela preta).
-2. No PowerShell do **computador**, na pasta do projeto:
+2. No PowerShell do **computador**, na pasta do projeto, faça uma cópia completa do banco.
+   Ela junta num arquivo só tudo o que o painel gravou, inclusive o que ainda estava no
+   arquivo auxiliar `painel.db-wal`:
    ```
-   scp data\painel.db root@IP_DO_SERVIDOR:/opt/gerente/data/painel-do-computador.db
+   python tarefas.py backup
+   ```
+   O comando mostra onde salvou a cópia, algo como `data\backups\painel-20261215-103000-manual.db`.
+   Envie **esse arquivo** para o servidor (troque pelo nome que apareceu):
+   ```
+   scp data\backups\painel-20261215-103000-manual.db root@IP_DO_SERVIDOR:/opt/gerente/data/painel-do-computador.db
    ```
 3. No PowerShell do **servidor**:
    ```

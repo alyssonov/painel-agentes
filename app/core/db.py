@@ -45,6 +45,9 @@ class TimestampMixin:
     )
 
 
+SQLITE_BUSY_SECONDS = 30
+
+
 def build_engine(url: str) -> Engine:
     """Cria a conexão com o banco a partir da URL."""
     if url.startswith("sqlite"):
@@ -52,13 +55,18 @@ def build_engine(url: str) -> Engine:
         db_path = url.split("///", 1)[-1]
         if db_path and db_path != ":memory:":
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-        engine = create_engine(url, connect_args={"check_same_thread": False})
+        # timeout: quem quer gravar espera até 30 s a vez (o padrão de 5 s dava erro
+        # quando o worker estava gravando ao mesmo tempo que o painel).
+        engine = create_engine(url, connect_args={"check_same_thread": False, "timeout": SQLITE_BUSY_SECONDS})
 
         @event.listens_for(engine, "connect")
         def _ativar_chaves_estrangeiras(dbapi_conn, _record):  # pragma: no cover - trivial
             # SQLite só respeita chaves estrangeiras com este comando.
             cursor = dbapi_conn.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
+            # WAL: leitura e gravação ao mesmo tempo (o painel lê enquanto o worker grava).
+            if db_path and db_path != ":memory:":
+                cursor.execute("PRAGMA journal_mode=WAL")
             cursor.close()
 
         return engine

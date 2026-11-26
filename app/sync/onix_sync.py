@@ -45,6 +45,10 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
         failures = 0
         try:
             products = list(db.scalars(select(Product).where(Product.is_active.is_(True), Product.is_demo.is_(False))))
+            # O Onix leva ~2 s por produto: nunca deixar o banco preso esperando a rede.
+            # Cada produto é gravado e liberado na hora (antes travava o painel inteiro
+            # por minutos, e quem tentasse gravar — ex.: conectar o Olist — dava erro).
+            db.commit()
             for product in products:
                 try:
                     data = client.get_product(product.sku)
@@ -78,8 +82,7 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
                         counts["custos_mudaram"] += 1
                     audit.record(db, actor="system", event="produto.cadastro_alterado", target_type="produto",
                                  target_id=product.id, details={**audit.changes(before, after), "origem": "Onix"})
-                if counts["consultados"] % 100 == 0:
-                    db.commit()
+                db.commit()
             run.status = SyncStatus.OK
         except IntegrationError as exc:
             run.status = SyncStatus.ERROR
