@@ -23,14 +23,12 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 
 ## B. Informações e acessos
 
-### B1. NorteUp — 🟡 (calculadora feita; falta o resto do app)
+### B1. NorteUp — ✅ (calculadora feita; o resto do app não é necessário por agora — decisão de 26/11)
 - **Recebido 26/11:** print da calculadora fácil → reproduzida no menu
   **Precificação** (custo, custo fixo/rateio, margem 10/20/30/personalizada,
   impostos MEI/Simples/CPF, anúncios pagos, Shopee/ML Clássico/ML
   Premium/TikTok Shop, taxa de devolução da Shopee, desconto, afiliados, preço
   final ,90, simuladores e últimas 10 simulações).
-- **O que ainda preciso:** prints das **outras telas** do `app.norteup.com`
-  (menu e cada página), sem senha aparecendo.
 - **Também confira:** a **tabela de taxas** da Shopee e do TikTok Shop
   (Precificação → Tabela de taxas). Os valores vieram de fontes públicas de
   2026 que **divergem** em alguns pontos (ex.: taxa fixa da Shopee até
