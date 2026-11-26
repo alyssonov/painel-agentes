@@ -25,6 +25,7 @@ class ProductExtra(CompanyScoped, TimestampMixin, Base):
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), index=True)
     # Marca escrita à mão (vale mais que a do Olist e a do anúncio).
     brand: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    onix_brand: Mapped[str | None] = mapped_column(String(80), nullable=True)  # marca no Onix (só leitura)
     supplier: Mapped[str | None] = mapped_column(String(120), nullable=True)
     supplier_code: Mapped[str | None] = mapped_column(String(64), nullable=True)  # código do item no fornecedor
     # Custo informado pelo Onix (loja física) ou pela planilha. O lucro continua usando o custo do Olist.

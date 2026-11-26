@@ -199,4 +199,38 @@
       <strong>365 dias</strong> (o máximo). Depois desse prazo, a Shopee pede para conectar de novo.</p>
   {% endif %}
 </section>
+
+<section class="card integration" aria-labelledby="onix-title">
+  <div class="integration-head">
+    <div>
+      <p class="eyebrow">Loja física · sistema Onix (Foxconn) · só leitura</p>
+      <h2 id="onix-title" class="card-title">Onix</h2>
+    </div>
+    {% if onix.configured and onix.last_run and onix.last_run.status == 'ok' %}<span class="badge badge-ok">Conectado</span>
+    {% elif onix.configured and onix.last_run and onix.last_run.status == 'erro' %}<span class="badge badge-erro">Com erro</span>
+    {% elif onix.configured %}<span class="badge badge-info">Configurado</span>
+    {% else %}<span class="badge badge-pausado">Não configurado</span>{% endif %}
+  </div>
+  {% if not onix.configured %}
+    <div class="notice">
+      <p><strong>Falta o endereço da API do Onix.</strong></p>
+      <ol class="steps">
+        <li>No arquivo <code>.env</code>, preencha <code>ONIX_API_URL</code> com o endereço passado pelo fornecedor do Onix, só a parte inicial (ex.: <code>http://servidor:8020</code>).</li>
+        <li>Feche a janela do painel e ligue de novo.</li>
+      </ol>
+    </div>
+  {% else %}
+    <dl class="facts">
+      <div><dt>O que o painel lê</dt><dd>Custo ({{ {'custo_prod': 'custo', 'vlmedio_prod': 'custo médio', 'custoatac_prod': 'custo atacado'}.get(onix.cost_field, onix.cost_field) }}), marca, qtd. mínima, código de fábrica e local de cada produto, pelo mesmo código do Olist. Nada é alterado no Onix.</dd></div>
+      <div><dt>Última leitura</dt><dd>{% if onix.last_run %}{{ onix.last_run_label }} — {% if onix.last_run.status == 'ok' %}deu certo ({{ onix.last_run.counts.get('consultados', 0) }} consultados, {{ onix.last_run.counts.get('atualizados', 0) }} atualizados, {{ onix.last_run.counts.get('nao_encontrados', 0) }} não achados no Onix){% elif onix.last_run.status == 'rodando' %}em andamento…{% else %}não deu certo: {{ onix.last_run.error }}{% endif %}{% else %}nenhuma ainda{% endif %}</dd></div>
+      <div><dt>Frequência</dt><dd>A cada {{ onix.hours }} horas, com o painel ligado</dd></div>
+    </dl>
+    {% if onix.insecure %}<p class="notice small"><strong>Atenção:</strong> a API do Onix está aberta na internet sem criptografia (http). Qualquer pessoa com o endereço consegue ver custos. Peça ao fornecedor para exigir uma senha/chave e usar https, ou liberar só para a rede da loja.</p>{% endif %}
+    <div class="actions">
+      <form method="post" action="/integracoes/onix/sincronizar"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-primary" type="submit">Atualizar custos agora</button></form>
+      <a class="link" href="/produtos?filtro=custo_diferente">Ver produtos com custo diferente do Olist →</a>
+    </div>
+  {% endif %}
+</section>
 {% endblock %}

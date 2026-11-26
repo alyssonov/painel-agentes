@@ -33,7 +33,7 @@ GROUPS: dict[str, tuple[str, tuple[str, ...]]] = {
     "config": ("Configurações da loja", ("loja.", "precificacao.", "relatorio.destinatarios")),
     "produtos": ("Cadastro de produtos", ("produto.",)),
     "financeiro": ("Despesas", ("financeiro.",)),
-    "contas": ("Contas conectadas", ("olist.", "ml.", "shopee.")),
+    "contas": ("Contas conectadas", ("olist.", "ml.", "shopee.", "onix.")),
     "relatorios": ("Relatórios enviados", ("relatorio.",)),
 }
 
@@ -55,7 +55,7 @@ EVENT_LABELS = {
     "financeiro.despesa_excluida": "Excluiu uma despesa",
     "produto.cadastro_alterado": "Mudou o cadastro do produto", "produto.planilha_importada": "Enviou planilha de produtos",
 }
-PROVIDERS = {"olist": "Olist", "ml": "Mercado Livre", "shopee": "Shopee"}
+PROVIDERS = {"olist": "Olist", "ml": "Mercado Livre", "shopee": "Shopee", "onix": "Onix"}
 PROVIDER_EVENTS = {"conectado": "conectado", "desconectado": "desconectado", "conexao.falhou": "conexão falhou",
                    "conexao.recusada": "conexão recusada", "sincronizacao.manual": "atualização pedida",
                    "sincronizacao.ok": "atualizado", "sincronizacao.erro": "atualização falhou"}

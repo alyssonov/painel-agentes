@@ -77,6 +77,7 @@ def integrations_page(request: Request, db: Session = Depends(get_db), user: Use
         "sync_minutes": settings.olist_sync_minutes,
         "ml": _ml_context(db),
         "shopee": _shopee_context(db),
+        "onix": _onix_context(db),
         "tax_rate_pct": float(get_setting(db, "tax_rate_pct") or 0),
         "tax_rate_is_demo": bool(get_setting(db, "tax_rate_is_demo")),
     }, db=db)
@@ -381,4 +382,42 @@ def shopee_disconnect(request: Request, db: Session = Depends(get_db), user: Use
         db.commit()
     flash(request, "Shopee desconectada. Para cancelar também do lado da Shopee: Central do Vendedor → "
                    "Parceiros da plataforma.")
+    return RedirectResponse("/integracoes", status_code=303)
+
+
+# --- Onix (loja física) --------------------------------------------------------------
+
+def _onix_context(db: Session) -> dict:
+    from urllib.parse import urlsplit
+    settings = get_settings()
+    last_run = _last_run(db, "onix")
+    host = urlsplit(settings.onix_api_url).hostname or "" if settings.onix_configured else ""
+    local = host in ("localhost", "127.0.0.1") or host.startswith(("192.168.", "10.", "172."))
+    return {
+        "configured": settings.onix_configured,
+        "insecure": settings.onix_configured and settings.onix_api_url.startswith("http://") and not local,
+        "cost_field": settings.onix_cost_field, "hours": settings.onix_sync_hours,
+        "last_run": last_run,
+        "last_run_label": to_local(last_run.started_at).strftime("%d/%m às %H:%M") if last_run else None,
+    }
+
+
+def _onix_sync_in_background() -> None:
+    from app.sync.onix_sync import run_onix_sync
+    try:
+        run_onix_sync(get_sessionmaker())
+    except Exception:  # noqa: BLE001
+        logger.exception("Falha ao ler o Onix em segundo plano")
+
+
+@router.post("/onix/sincronizar", dependencies=[Depends(verify_csrf)])
+def onix_sync_now(request: Request, background: BackgroundTasks, db: Session = Depends(get_db),
+                  user: User = Depends(current_user)):
+    if not get_settings().onix_configured:
+        flash(request, "Falta o endereço da API do Onix (ONIX_API_URL no .env).", "erro")
+        return RedirectResponse("/integracoes", status_code=303)
+    audit.record(db, actor=f"user:{user.id}", event="onix.sincronizacao.manual")
+    db.commit()
+    background.add_task(_onix_sync_in_background)
+    flash(request, "Leitura do Onix iniciada. Pode levar alguns minutos (um produto por vez); recarregue depois.")
     return RedirectResponse("/integracoes", status_code=303)

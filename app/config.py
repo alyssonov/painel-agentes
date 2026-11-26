@@ -56,6 +56,13 @@ class Settings(BaseSettings):
     # true = ambiente de testes (Sandbox) da Shopee; false = loja de verdade.
     shopee_sandbox: bool = False
 
+    # Onix (sistema da loja física, Foxconn): API de produtos fornecida pelo próprio
+    # fornecedor do Onix (só leitura). Endereço base, ex.: http://servidor:8020 — fica só aqui.
+    onix_api_url: str = Field(default="", repr=False)
+    # Qual custo do Onix usar: custo_prod (custo), vlmedio_prod (custo médio) ou custoatac_prod (atacado).
+    onix_cost_field: str = "custo_prod"
+    onix_sync_hours: int = 6
+
     # E-mail para os relatórios (Gmail: smtp.gmail.com, porta 587, "senha de app").
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
@@ -97,6 +104,10 @@ class Settings(BaseSettings):
     def shopee_configured(self) -> bool:
         """True quando o Partner ID e a Partner Key da Shopee estão no .env."""
         return bool(self.shopee_partner_id.strip().isdigit() and self.shopee_partner_key)
+
+    @property
+    def onix_configured(self) -> bool:
+        return bool(self.onix_api_url.strip())
 
     @property
     def email_configured(self) -> bool:

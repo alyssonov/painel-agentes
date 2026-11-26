@@ -59,29 +59,22 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   R$ 79,99: R$ 4,00 ou R$ 4,50). Compare com a Central do Vendedor e corrija lá
   mesmo. O Mercado Livre usa a tarifa **oficial** pela API (quando conectado).
 
-### B2. Onix (loja física, fonte dos custos) — 🟡
-- **Descoberto em 26/11 (print da tela do Onix):** sistema **Onix, da Foxconn**,
-  versão **1.1.2.5**, instalado no Windows; banco de dados **Firebird**
-  (arquivo `.fdb`) num servidor da rede da loja. Firebird tem conector oficial
-  para Python: o painel pode **ler** os custos direto, com um usuário **só de
-  leitura** — sem nenhuma escrita no Onix.
-- **Perguntar ao suporte da Foxconn:**
-  1. Autorizam outro sistema a **apenas ler** o banco (produtos e custos)?
-  2. Podem criar um **usuário do Firebird só de leitura** (somente SELECT)?
-  3. Qual a **versão do Firebird** no servidor?
-  4. Em quais **tabelas/campos** ficam código do produto, descrição e **custo**
-     (ou um dicionário de dados)?
-- **Respondido em 26/11:** o banco do Onix fica em **outro computador**; o
-  computador do painel tem o Onix instalado e acessa o banco pela rede da loja
-  (o painel pode ler daqui do mesmo jeito). O **código do produto no Onix é
-  igual ao SKU do Olist** — é por ele que os dois se ligam.
-- **Depois, com o painel na internet (B4):** um pequeno conector neste
-  computador lê os custos e envia ao painel (o banco nunca fica exposto).
-- **Usuário e senha do banco:** nunca no chat — vão no `.env` (eu explico onde).
-- **Enquanto isso (já funciona):** exportar do Onix (menu Estoque → relatório de
-  produtos com custo) e enviar em **Produtos → Enviar planilha**.
-- **Depende disso:** custos atualizados sozinhos, recálculo de preços, sugestão
-  de reajuste.
+### B2. Onix (loja física, fonte dos custos) — 🟡 (leitura pronta; falta ligar)
+- **26/11:** o fornecedor do Onix mandou a API de produtos (consulta por
+  código) e a explicação dos campos. O painel já lê custo, marca, qtd. mínima
+  e código de fábrica de cada produto (só leitura, nada muda no Onix).
+- **Para ligar (no computador da loja):** no `.env`, preencha
+  `ONIX_API_URL` com o endereço que o fornecedor passou, **só a parte inicial**
+  (ex.: `http://servidor:8020`, sem `/api-produto/...`). Feche e ligue o painel.
+  Depois: Contas conectadas → Onix → **Atualizar custos agora**.
+- **Confirmar com o dono:** qual custo usar — `custo` (padrão), `custo médio`
+  ou `custo atacado` (`ONIX_COST_FIELD` no `.env`).
+- **⚠️ Segurança (pedir ao fornecedor):** a API está aberta na internet, sem
+  senha e sem criptografia (http): quem tiver o endereço vê os custos. Pedir
+  para exigir uma chave/senha e usar https — ou liberar só para a rede da loja.
+- **Melhoria opcional (pedir ao fornecedor):** uma consulta que liste vários
+  produtos de uma vez (ou só os alterados desde uma data) deixaria a leitura
+  bem mais rápida que um produto por vez.
 
 ### B3. Shopee — 🟡
 - **26/11:** cadastro enviado na Open Platform — **em análise pela Shopee até

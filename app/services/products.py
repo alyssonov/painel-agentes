@@ -88,9 +88,9 @@ class ProductRow:
 
     @property
     def brand(self) -> str | None:
-        """Marca: a escrita no painel > a do Olist > a dos anúncios do Mercado Livre."""
+        """Marca: a escrita no painel > a do Olist > a do Onix > a dos anúncios do Mercado Livre."""
         return (self.extra.brand if self.extra and self.extra.brand else None) or self.product.brand \
-            or self.listing_brand
+            or (self.extra.onix_brand if self.extra else None) or self.listing_brand
 
     @property
     def brand_source(self) -> str | None:
@@ -98,6 +98,8 @@ class ProductRow:
             return "escrita no painel"
         if self.product.brand:
             return "Olist"
+        if self.extra and self.extra.onix_brand:
+            return "Onix"
         return "anúncio do Mercado Livre" if self.listing_brand else None
 
     @property

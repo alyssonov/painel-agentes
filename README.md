@@ -182,6 +182,16 @@ anúncios). Dá para marcar permissões à mão, desativar alguém ou redefinir 
 senha. O painel confere a permissão em toda tela e ação, e cada pessoa só vê no
 menu o que pode abrir. Toda mudança fica no histórico.
 
+## Onix (loja física)
+
+O painel lê do Onix (API passada pelo fornecedor do sistema) o custo, a marca,
+a quantidade mínima e o código de fábrica de cada produto, pelo mesmo código do
+Olist — só leitura. Configure `ONIX_API_URL` no `.env` (só o endereço base) e,
+se quiser, `ONIX_COST_FIELD` (`custo_prod`, `vlmedio_prod` ou
+`custoatac_prod`). A leitura roda ao ligar e a cada `ONIX_SYNC_HOURS`, ou pelo
+botão em **Contas conectadas → Onix**. Estoque mínimo, código e local só são
+preenchidos quando estão vazios no painel.
+
 ## Conectar o Olist ERP (somente leitura)
 
 1. No Olist: **Menu > Configurações > aba Geral > Aplicativos > + novo

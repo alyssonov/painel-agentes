@@ -897,3 +897,23 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   a conversa de outra pessoa. Histórico registra só "pergunta feita" e as
   consultas usadas (não o texto). Permissão nova **usar_assistente** (todos os
   papéis; o administrador pode tirar). Testes com uma IA falsa, sem rede.
+
+## 40. Onix (loja física) — leitura de custos pela API do fornecedor
+
+- API fornecida pelo próprio fornecedor do Onix (Foxconn) em 26/11/2026:
+  `GET {ONIX_API_URL}/api-produto/get-produto-por-id?id={código}` → JSON do
+  produto. O endereço fica só no `.env` (nunca no código/git).
+- `app/integrations/onix/client.py`: só `get_product` (GET), 3 tentativas para
+  erro passageiro, pausa entre consultas. `mapping.py` lê `cod_prod`,
+  `marca_prod`, `custo_prod`/`vlmedio_prod`/`custoatac_prod`
+  (`ONIX_COST_FIELD`), `qtdminima_prod`, `codfab_prod`, `local_prod`.
+- `app/sync/onix_sync.py`: para cada produto ativo do Olist consulta o mesmo
+  código no Onix (código = SKU do Olist, confirmado pelo dono). Grava no
+  cadastro complementar: custo do Onix (sempre, com histórico antes → depois),
+  marca do Onix (`product_extras.onix_brand`, migração 0023; vale depois da do
+  Olist) e — só se estiverem vazios — estoque mínimo, código de fábrica e local.
+  Para depois de 5 produtos seguidos sem resposta (computador desligado).
+  Worker: ao ligar e a cada `ONIX_SYNC_HOURS`; botão em Contas conectadas.
+- O lucro real continua usando o custo do Olist; o do Onix aparece ao lado e o
+  filtro "Custo do Onix diferente do Olist" mostra as diferenças.
+- Aviso na tela quando a API está aberta na internet sem criptografia (http).
