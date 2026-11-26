@@ -225,7 +225,7 @@
       <div><dt>Última leitura</dt><dd>{% if onix.last_run %}{{ onix.last_run_label }} — {% if onix.last_run.status == 'ok' %}deu certo ({{ onix.last_run.counts.get('consultados', 0) }} consultados, {{ onix.last_run.counts.get('atualizados', 0) }} atualizados, {{ onix.last_run.counts.get('nao_encontrados', 0) }} não achados no Onix){% elif onix.last_run.status == 'rodando' %}em andamento…{% else %}não deu certo: {{ onix.last_run.error }}{% endif %}{% else %}nenhuma ainda{% endif %}</dd></div>
       <div><dt>Frequência</dt><dd>A cada {{ onix.hours }} horas, com o painel ligado</dd></div>
     </dl>
-    {% if onix.insecure %}<p class="notice small"><strong>Atenção:</strong> a API do Onix está aberta na internet sem criptografia (http). Qualquer pessoa com o endereço consegue ver custos. Peça ao fornecedor para exigir uma senha/chave e usar https, ou liberar só para a rede da loja.</p>{% endif %}
+    {% if onix.insecure %}<p class="muted small">A API do Onix está aberta na internet sem senha (decisão do dono em 26/11/2026). Guarde o endereço só no <code>.env</code>.</p>{% endif %}
     <div class="actions">
       <form method="post" action="/integracoes/onix/sincronizar"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn btn-primary" type="submit">Atualizar custos agora</button></form>

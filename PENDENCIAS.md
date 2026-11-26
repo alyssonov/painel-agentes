@@ -69,9 +69,9 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   Depois: Contas conectadas → Onix → **Atualizar custos agora**.
 - ✅ **Custo a usar (confirmado em 26/11):** o campo **"Custo"** do Onix
   (`custo_prod`) — já é o padrão; não precisa mexer em `ONIX_COST_FIELD`.
-- **⚠️ Segurança (pedir ao fornecedor):** a API está aberta na internet, sem
-  senha e sem criptografia (http): quem tiver o endereço vê os custos. Pedir
-  para exigir uma chave/senha e usar https — ou liberar só para a rede da loja.
+- **Segurança — decisão do dono (26/11):** a API do Onix fica **sem senha**
+  (aberta na internet, http). Risco aceito: quem tiver o endereço vê os custos.
+  Se mudar de ideia, o painel aceita uma chave quando o fornecedor criar.
 - **Melhoria opcional (pedir ao fornecedor):** uma consulta que liste vários
   produtos de uma vez (ou só os alterados desde uma data) deixaria a leitura
   bem mais rápida que um produto por vez.

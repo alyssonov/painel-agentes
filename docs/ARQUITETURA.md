@@ -916,4 +916,5 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   Worker: ao ligar e a cada `ONIX_SYNC_HOURS`; botão em Contas conectadas.
 - O lucro real continua usando o custo do Olist; o do Onix aparece ao lado e o
   filtro "Custo do Onix diferente do Olist" mostra as diferenças.
-- Aviso na tela quando a API está aberta na internet sem criptografia (http).
+- A API do Onix fica sem senha por decisão do dono (26/11/2026); a tela só
+  registra isso em nota discreta. O endereço fica apenas no `.env`.
