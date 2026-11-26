@@ -15,14 +15,21 @@ ME = {"id": 123456, "nickname": "LOJATESTE",
           "delayed_handling_time": {"period": "60 days", "rate": 0.03, "value": 12},
           "cancellations": {"period": "60 days", "rate": 0.002, "value": 1}}}}
 
+def _recent(hours_ago: float) -> str:
+    """Data no formato do Mercado Livre, relativa a agora (o teste não "envelhece" com o calendário)."""
+    from datetime import datetime, timedelta, timezone
+    moment = datetime.now(timezone(timedelta(hours=-3))) - timedelta(hours=hours_ago)
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.000-03:00")
+
+
 QUESTIONS = [
     {"id": 9001, "item_id": "MLB1", "status": "UNANSWERED", "text": "Serve para bebida gelada?",
-     "date_created": "2026-11-06T10:00:00.000-03:00", "answer": None},
+     "date_created": _recent(2), "answer": None},
     {"id": 9002, "item_id": "MLB2", "status": "ANSWERED", "text": "Tem garantia?",
-     "date_created": "2026-11-06T09:00:00.000-03:00",
-     "answer": {"text": "Sim, 90 dias.", "date_created": "2026-11-06T09:05:00.000-03:00"}},
+     "date_created": _recent(3),
+     "answer": {"text": "Sim, 90 dias.", "date_created": _recent(2.9)}},
     {"id": 9003, "item_id": "MLB1", "status": "BANNED", "text": "",
-     "date_created": "2026-11-06T08:00:00.000-03:00"},
+     "date_created": _recent(4)},
     {"id": 8000, "item_id": "MLB1", "status": "ANSWERED", "text": "Pergunta muito antiga",
      "date_created": "2020-01-01T08:00:00.000-03:00", "answer": {"text": "ok"}},
 ]

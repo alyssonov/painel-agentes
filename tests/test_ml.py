@@ -270,7 +270,7 @@ def test_pergunta_em_analise_volta_quando_liberada(db, ml_env):
     connect_ml(db)
     routes = ml_fake.install(respx.mock)
     review = {"id": 9100, "item_id": "MLB1", "status": "UNDER_REVIEW", "text": "Pergunta em análise",
-              "date_created": "2026-11-06T11:00:00.000-03:00"}
+              "date_created": ml_fake._recent(1)}
 
     def questions(request, state={"status": "UNDER_REVIEW"}):
         q = {**review, "status": state["status"]}
