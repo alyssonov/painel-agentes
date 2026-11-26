@@ -9,7 +9,7 @@ Leia-o inteiro antes de mudar qualquer coisa. A arquitetura detalhada está em
 
 ## O que é o projeto
 
-Nome do produto: **Gerente do Ano** (logo em `app/web/static/img/`, nas cores do tema escuro — azul-noite com destaque `#3B82F6`: selo
+Nome do produto: **Gerente do Ano** (logo em `app/web/static/img/`, nas cores do tema escuro — azul-noite com destaque `#3B82F6`; "GERENTE" em Inter e "do ano" em Orbitron, ambas OFL, convertidas em contornos: selo
 circular completo com o robô no login; só o robô, em círculo, no menu lateral,
 na aba do navegador e no atalho do celular).
 
