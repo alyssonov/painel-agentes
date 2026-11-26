@@ -1,6 +1,7 @@
 """Onix (loja física): leitura de custo, marca, qtd. mínima — só leitura, sem rede real."""
 
 import inspect
+from datetime import datetime
 
 import httpx
 import pytest
@@ -142,3 +143,26 @@ def test_sqlite_espera_a_vez_e_usa_wal(db, db_url):
     from app.core.db import get_engine
     with get_engine().connect() as conn:
         assert conn.execute(text("PRAGMA journal_mode")).scalar().lower() == "wal"
+
+
+@respx.mock
+def test_cartao_mostra_o_andamento_da_leitura(logged_client, db, onix_env):
+    from app.models import SyncRun
+    from app.models.enums import SyncStatus as S
+    for i in range(2):
+        db.add(Product(sku=str(700 + i), name=f"P{i}", cost_cents=1))
+    db.commit()
+    seen = []
+
+    def handler(request):
+        with get_sessionmaker()() as other:  # outra conexão (o painel) vê o andamento no meio da leitura
+            seen.append(other.scalars(select(SyncRun).order_by(SyncRun.id.desc())).first().counts)
+        return httpx.Response(404)
+
+    respx.get(URL).mock(side_effect=handler)
+    run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
+    assert [(c["feitos"], c["total"]) for c in seen] == [(0, 2), (1, 2)]
+    db.add(SyncRun(provider="onix", status=S.RUNNING, started_at=datetime(2026, 11, 26, 20, 0),
+                   counts={"feitos": 320, "total": 1480}))
+    db.commit()
+    assert "320 de 1480 produtos" in logged_client.get("/integracoes").text

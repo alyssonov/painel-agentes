@@ -49,7 +49,11 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
             # Cada produto é gravado e liberado na hora (antes travava o painel inteiro
             # por minutos, e quem tentasse gravar — ex.: conectar o Olist — dava erro).
             db.commit()
-            for product in products:
+            total = len(products)
+            for done, product in enumerate(products):
+                # Andamento para o cartão do Onix ("320 de 1.480 produtos").
+                run.counts = {**counts, "feitos": done, "total": total}
+                db.commit()
                 try:
                     data = client.get_product(product.sku)
                     failures = 0
