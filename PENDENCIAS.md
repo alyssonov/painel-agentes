@@ -50,12 +50,15 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   Onix** (botão "Enviar planilha" no painel) — funciona já.
 
 ### B3. Shopee — 🟡
-- Vincular a loja na Open Platform (código de verificação não chegava). Seguir
-  o roteiro já combinado (região BR, login principal, conferir e-mail/celular no
-  Seller Centre, chamado no suporte).
+- **26/11:** o código de verificação chegava em outro celular (por isso não
+  dava certo). Agora vai: terminar o cadastro na Open Platform e criar o app.
+- **Quando o app existir, me diga (sem colar números):** a situação do app
+  (Developing/Live) e se aparecem Partner ID e Partner Key.
+- **Para eu programar a conexão:** o texto das páginas oficiais de autorização
+  (open.shopee.com não abre deste ambiente) — copiar e colar no chat.
 - **Depende disso:** pedidos/taxas exatas/perguntas/envios da Shopee.
-- **Observação:** o uso real (Go Live) exige o domínio com HTTPS e o IP fixo do
-  servidor (B4).
+- **Observação:** o uso real (Go Live) pode exigir o domínio com HTTPS e o IP
+  fixo do servidor (B4).
 
 ### B4. Domínio e servidor — ⚪ (necessário para colocar no ar e para a Shopee)
 - Comprar `gerentedoano.com` e contratar a VPS (Hostinger KVM 1, Ubuntu 24.04,
