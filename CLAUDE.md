@@ -2,7 +2,10 @@
 
 Este arquivo orienta qualquer sessão do Claude Code neste repositório.
 Leia-o inteiro antes de mudar qualquer coisa. A arquitetura detalhada está em
-`docs/ARQUITETURA.md`.
+`docs/ARQUITETURA.md`. A visão do produto (para onde ele vai) está em
+`docs/VISAO_PRODUTO.md`; o diagnóstico e o plano atuais em
+`docs/DIAGNOSTICO_E_PLANO.md`. Tudo que depende do usuário fica em
+`PENDENCIAS.md` (mantenha atualizado a cada entrega).
 
 ## O que é o projeto
 
