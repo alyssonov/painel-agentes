@@ -5,7 +5,7 @@
   <aside class="sidebar">
     <a class="brand" href="/" title="Gerente do Ano — Visão geral">
       <img class="brand-logo" src="/static/img/robo.svg" width="40" height="40" alt="">
-      <span class="brand-name">Gerente <span class="brand-sub">do Ano</span></span>
+      <span class="brand-name">Gerente <span class="brand-sub">do ano</span></span>
     </a>
     <nav class="nav" aria-label="Menu principal">
       {% for title, items in nav_groups %}
@@ -63,8 +63,8 @@
   </main>
   <div class="chart-tip" id="chart-tip" role="status" hidden></div>
   {% if can('usar_assistente') and not current_path.startswith('/assistente') %}
-  <button type="button" class="asst-fab" data-asst-abrir aria-expanded="false" aria-controls="asst-pop" title="Assistente de IA">
-    <svg class="icon"><use href="#i-bot"/></svg><span>Assistente</span>
+  <button type="button" class="asst-fab" data-asst-abrir aria-expanded="false" aria-controls="asst-pop" aria-label="Abrir o assistente de IA">
+    <svg class="icon"><use href="#i-bot"/></svg><span class="asst-fab-label" aria-hidden="true">Assistente</span>
   </button>
   <div class="card asst-pop" id="asst-pop" role="dialog" aria-label="Assistente de IA" hidden>
     <div class="asst-pop-head"><strong>Assistente</strong>

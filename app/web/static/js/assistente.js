@@ -56,6 +56,39 @@
     });
   }
 
+  // A bolinha cresce e vira o chat (e volta a ser bolinha ao fechar).
+  function openPop() {
+    var pop = document.getElementById("asst-pop");
+    var fab = document.querySelector("[data-asst-abrir]");
+    if (!pop) return;
+    pop.hidden = false;
+    void pop.offsetWidth; // força o navegador a desenhar antes da animação
+    pop.classList.add("is-open");
+    if (fab) { fab.classList.add("is-hidden"); fab.setAttribute("aria-expanded", "true"); }
+    try {
+      var saved = sessionStorage.getItem("asst-conversa");
+      if (saved) pop.querySelector("[data-asst-conversa]").value = saved;
+    } catch (e) { /* sem armazenamento */ }
+    pop.querySelector("textarea").focus();
+  }
+
+  function closePop() {
+    var pop = document.getElementById("asst-pop");
+    var fab = document.querySelector("[data-asst-abrir]");
+    if (!pop || pop.hidden) return;
+    pop.classList.remove("is-open");
+    if (fab) { fab.classList.remove("is-hidden"); fab.setAttribute("aria-expanded", "false"); }
+    var done = false;
+    function hide() { if (!done) { done = true; pop.hidden = true; } }
+    pop.addEventListener("transitionend", hide, { once: true });
+    setTimeout(hide, 350); // sem animação (preferência do sistema): esconde mesmo assim
+    if (fab) fab.focus();
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closePop();
+  });
+
   document.addEventListener("submit", function (event) {
     var box = event.target.closest("[data-asst]");
     if (!box || !event.target.matches("[data-asst-form]") || !window.fetch) return;
@@ -81,19 +114,6 @@
     }
     var open = event.target.closest("[data-asst-abrir]");
     var close = event.target.closest("[data-asst-fechar]");
-    if (!open && !close) return;
-    var pop = document.getElementById("asst-pop");
-    var fab = document.querySelector("[data-asst-abrir]");
-    if (!pop) return;
-    var show = open ? pop.hidden : false;
-    pop.hidden = !show;
-    if (fab) fab.setAttribute("aria-expanded", show ? "true" : "false");
-    if (show) {
-      try {
-        var saved = sessionStorage.getItem("asst-conversa");
-        if (saved) pop.querySelector("[data-asst-conversa]").value = saved;
-      } catch (e) { /* sem armazenamento */ }
-      pop.querySelector("textarea").focus();
-    }
+    if (open) openPop(); else if (close) closePop();
   });
 })();

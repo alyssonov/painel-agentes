@@ -700,17 +700,28 @@ form > .card { margin-bottom: 16px; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .asst-convs a:hover { background: var(--card-2); }
 .asst-convs .is-active a { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
-.asst-fab { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px;
-  border-radius: 999px; border: 0; background: var(--accent); color: #fff; font: inherit; font-weight: 700; cursor: pointer;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, .35); }
+/* Bolinha do assistente: só o robô; ao passar o mouse, abre a palavra "Assistente". */
+.asst-fab { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: inline-flex; align-items: center; height: 56px;
+  min-width: 56px; padding: 0 16px; border-radius: 999px; border: 0; background: var(--accent); color: #fff; font: inherit;
+  font-weight: 700; cursor: pointer; box-shadow: 0 6px 22px rgba(0, 0, 0, .35); transition: filter .15s, transform .2s; }
+.asst-fab .icon { width: 24px; height: 24px; flex-shrink: 0; }
+.asst-fab-label { max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0; transition: max-width .25s ease, opacity .2s, margin .25s; }
+.asst-fab:hover .asst-fab-label, .asst-fab:focus-visible .asst-fab-label { max-width: 120px; opacity: 1; margin-left: 8px; }
 .asst-fab:hover { filter: brightness(1.08); }
-.asst-pop { position: fixed; right: 20px; bottom: 80px; z-index: 41; width: min(440px, calc(100vw - 32px)); height: min(600px, calc(100vh - 120px));
-  display: flex; flex-direction: column; gap: 10px; box-shadow: 0 12px 40px rgba(0, 0, 0, .45); }
+.asst-fab.is-hidden { transform: scale(0); pointer-events: none; }
+/* A bolinha "cresce" e vira o chat: o painel nasce do canto dela, redondo, e se abre. */
+.asst-pop { position: fixed; right: 20px; bottom: 20px; z-index: 41; width: min(440px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 40px)); display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .45); transform-origin: bottom right;
+  transform: scale(.12); border-radius: 28px; opacity: 0; transition: transform .28s cubic-bezier(.2, .9, .3, 1.1),
+  border-radius .28s, opacity .18s; }
+.asst-pop.is-open { transform: scale(1); border-radius: var(--radius-lg, 12px); opacity: 1; }
 .asst-pop[hidden] { display: none; }
 .asst-pop .asst { flex: 1; } .asst-pop .asst-log { flex: 1; }
+@media (prefers-reduced-motion: reduce) { .asst-pop, .asst-fab, .asst-fab-label { transition: none; } }
 .asst-pop-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .asst-pop-head span { display: inline-flex; gap: 8px; align-items: center; }
-@media (max-width: 860px) { .asst-page { grid-template-columns: 1fr; } .asst-fab span { display: none; } }
+@media (max-width: 860px) { .asst-page { grid-template-columns: 1fr; } }
 @media print { .asst-fab, .asst-pop { display: none !important; } }
 .asst-side { min-width: 0; overflow: hidden; }
 .asst-side .btn { width: 100%; box-sizing: border-box; justify-content: center; }
