@@ -50,15 +50,19 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   Onix** (botão "Enviar planilha" no painel) — funciona já.
 
 ### B3. Shopee — 🟡
-- **26/11:** cadastro enviado na Open Platform (o código ia para outro
-  celular; resolvido). **Em análise pela Shopee até 29/11** — o aviso chega
-  por e-mail. Depois: Console → App List → Create App (uso próprio da loja,
-  retorno `https://alyssonov.github.io/painel-retorno/shopee/`).
-- **Quando o app existir, me diga (sem colar números):** a situação do app
-  (Developing/Live) e se aparecem Partner ID e Partner Key.
-- **Para eu programar a conexão:** o texto das páginas oficiais de autorização
-  (open.shopee.com não abre deste ambiente) — copiar e colar no chat.
-- **Depende disso:** pedidos/taxas exatas/perguntas/envios da Shopee.
+- **26/11:** cadastro enviado na Open Platform — **em análise pela Shopee até
+  29/11** (o aviso chega por e-mail). A conexão já está pronta no painel
+  (Contas conectadas → Shopee), feita com a documentação oficial de autorização.
+- **Quando aprovar:**
+  1. Console → App List → **Create App** (tipo "Seller In House System").
+  2. No app, **Live Redirect URL Domain** = `alyssonov.github.io`.
+  3. No `.env`: `SHOPEE_PARTNER_ID` e `SHOPEE_PARTNER_KEY` (de produção).
+     **Não cole as chaves no chat.**
+  4. Desligar e ligar o painel → **Conectar a Shopee** → escolher 365 dias.
+- **Para a próxima etapa (ler pedidos, taxas e envios):** o texto destas
+  páginas oficiais (copiar do navegador e colar no chat):
+  `v2.order.get_order_list`, `v2.order.get_order_detail`,
+  `v2.payment.get_escrow_detail` e `v2.shop.get_shop_info`.
 - **Observação:** o uso real (Go Live) pode exigir o domínio com HTTPS e o IP
   fixo do servidor (B4).
 

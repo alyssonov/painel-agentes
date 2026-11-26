@@ -56,6 +56,11 @@ class AccountTokenProvider:
         self._provider = provider
         self._refresh_fn = refresh_fn
 
+    def _refresh(self, account: IntegrationAccount, refresh_token: str) -> TokenSet:
+        """Pede tokens novos. Integrações que precisam de dados da conta (ex.: shop_id
+        da Shopee) sobrescrevem este método."""
+        return self._refresh_fn(refresh_token)
+
     def _not_connected(self) -> NotConnected:
         return NotConnected(f"{PROVIDER_LABELS.get(self._provider, self._provider)} ainda não foi conectado.")
 
@@ -77,7 +82,7 @@ class AccountTokenProvider:
                 if not force_refresh and account.expires_at and account.expires_at - REFRESH_MARGIN > utcnow():
                     return read_access_token(account)
                 try:
-                    tokens = self._refresh_fn(read_refresh_token(account))
+                    tokens = self._refresh(account, read_refresh_token(account))
                 except AuthExpired as exc:
                     account.status = IntegrationStatus.ERROR
                     account.last_error = str(exc)

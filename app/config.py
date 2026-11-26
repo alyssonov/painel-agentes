@@ -47,6 +47,15 @@ class Settings(BaseSettings):
     ml_redirect_uri: str = "https://alyssonov.github.io/painel-retorno/mercadolivre/"
     ml_sync_minutes: int = 5
 
+    # Shopee Open Platform (API v2 oficial). Chaves do app criado no Console
+    # (open.shopee.com → App List). O endereço de retorno é a página de repasse
+    # (GitHub Pages); o domínio dela precisa estar declarado no app.
+    shopee_partner_id: str = Field(default="", repr=False)
+    shopee_partner_key: str = Field(default="", repr=False)
+    shopee_redirect_uri: str = "https://alyssonov.github.io/painel-retorno/shopee/"
+    # true = ambiente de testes (Sandbox) da Shopee; false = loja de verdade.
+    shopee_sandbox: bool = False
+
     # E-mail para os relatórios (Gmail: smtp.gmail.com, porta 587, "senha de app").
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
@@ -83,6 +92,11 @@ class Settings(BaseSettings):
     def ml_configured(self) -> bool:
         """True quando as chaves do aplicativo do Mercado Livre estão no .env."""
         return bool(self.ml_client_id and self.ml_client_secret)
+
+    @property
+    def shopee_configured(self) -> bool:
+        """True quando o Partner ID e a Partner Key da Shopee estão no .env."""
+        return bool(self.shopee_partner_id.strip().isdigit() and self.shopee_partner_key)
 
     @property
     def email_configured(self) -> bool:

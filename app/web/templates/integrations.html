@@ -150,9 +150,53 @@
   {% endif %}
 </section>
 
-<section class="card integration">
-  <p class="eyebrow">Marketplace</p>
-  <h2 class="card-title">Shopee</h2>
-  <p class="muted">A conexão chega na próxima etapa da fase 3.</p>
+<section class="card integration" aria-labelledby="shopee-title">
+  <div class="integration-head">
+    <div>
+      <p class="eyebrow">Marketplace · conexão oficial (Shopee Open Platform){% if shopee.sandbox %} · AMBIENTE DE TESTE{% endif %}</p>
+      <h2 id="shopee-title" class="card-title">Shopee</h2>
+    </div>
+    {% if shopee.connected and shopee.account.status == 'ok' %}
+      <span class="badge badge-ok">Conectado</span>
+    {% elif shopee.connected %}
+      <span class="badge badge-erro">Com erro</span>
+    {% else %}
+      <span class="badge badge-pausado">Não conectado</span>
+    {% endif %}
+  </div>
+
+  {% if not shopee.configured %}
+    <div class="notice">
+      <p><strong>Falta configurar as chaves do app da Shopee.</strong></p>
+      <ol class="steps">
+        <li>Em open.shopee.com → Console → App List, abra o app e veja o <strong>Partner ID</strong> e a <strong>Partner Key</strong> (de produção).</li>
+        <li>No arquivo <code>.env</code>, preencha <code>SHOPEE_PARTNER_ID</code> e <code>SHOPEE_PARTNER_KEY</code>.</li>
+        <li>No app, confira se o domínio de retorno (Live Redirect URL Domain) é <code>alyssonov.github.io</code>. O endereço completo usado é: <code>{{ shopee.redirect_uri }}</code></li>
+        <li>Feche a janela do painel e ligue de novo.</li>
+      </ol>
+    </div>
+  {% else %}
+    <dl class="facts">
+      {% if shopee.connected %}
+      <div><dt>Loja</dt><dd>{{ shopee.account.account_name }}</dd></div>
+      <div><dt>Acesso renovado</dt><dd>{{ shopee.last_ok_label or '—' }} (o painel renova sozinho a cada poucas horas)</dd></div>
+      {% endif %}
+      <div><dt>O que o painel lê</dt><dd>Por enquanto só a conexão. Pedidos, taxas, perguntas e envios da Shopee chegam na próxima etapa.</dd></div>
+    </dl>
+    {% if shopee.connected and shopee.account.last_error %}
+      <p class="form-error">{{ shopee.account.last_error }}</p>
+    {% endif %}
+    <div class="actions">
+      <a class="btn btn-primary" href="/integracoes/shopee/conectar">{{ 'Conectar de novo' if shopee.connected else 'Conectar a Shopee' }}</a>
+      {% if shopee.connected %}
+      <form method="post" action="/integracoes/shopee/desconectar" class="push-right">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-ghost" type="submit">Desconectar</button>
+      </form>
+      {% endif %}
+    </div>
+    <p class="muted small">Entre com a conta <strong>principal da loja</strong> na Shopee e, na tela de prazo, escolha
+      <strong>365 dias</strong> (o máximo). Depois desse prazo, a Shopee pede para conectar de novo.</p>
+  {% endif %}
 </section>
 {% endblock %}

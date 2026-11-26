@@ -33,6 +33,7 @@ from app.config import get_settings
 from app.core.db import get_sessionmaker
 from app.fake_data.seed import refresh_demo_if_stale
 from app.sync.ml_sync import run_ml_sync
+from app.sync.shopee_sync import keep_shopee_alive
 from app.sync.olist_sync import run_olist_sync
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -62,6 +63,14 @@ def job_sync_ml() -> None:
     run = run_ml_sync(get_sessionmaker())
     if run is not None:
         logger.info("Mercado Livre: sincronização %s %s", run.status, run.counts)
+
+
+def job_shopee_token() -> None:
+    """Shopee: renova o acesso antes de vencer (vale 4 h; o refresh, 30 dias)."""
+    try:
+        keep_shopee_alive(get_sessionmaker())
+    except Exception:  # noqa: BLE001 - o worker nunca pode cair
+        logger.exception("Erro ao renovar o acesso da Shopee")
 
 
 def job_agent_questions() -> None:
@@ -117,6 +126,8 @@ def main() -> None:
                       max_instances=1, coalesce=True)
     scheduler.add_job(job_sync_ml, "interval", minutes=settings.ml_sync_minutes, id="sync_ml",
                       max_instances=1, coalesce=True)
+    scheduler.add_job(job_shopee_token, "interval", minutes=20, id="shopee_token",
+                      max_instances=1, coalesce=True)
     scheduler.add_job(job_agent_questions, "interval", minutes=settings.agent_questions_minutes,
                       id="agent_questions", max_instances=1, coalesce=True)
     scheduler.add_job(job_agent_postsale, "interval", minutes=5, id="agent_postsale",
@@ -128,6 +139,7 @@ def main() -> None:
     try:
         job_sync_olist()
         job_sync_ml()
+        job_shopee_token()
         job_checks()
         job_margin()
         job_daily_report()

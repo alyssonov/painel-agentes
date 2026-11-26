@@ -11,13 +11,14 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.core import audit
-from app.core.db import get_db, get_sessionmaker
+from app.core.db import get_db, get_sessionmaker, utcnow
 from app.core.timeutil import to_local
 from app.fake_data.seed import clear_demo
 from app.integrations.errors import IntegrationError
 from app.integrations import oauth
 from app.integrations.mercadolivre import auth as ml_auth
 from app.integrations.olist import auth as olist_auth
+from app.integrations.shopee import auth as shopee_auth
 from app.integrations.olist.client import OlistClient
 from app.integrations.tokens import clear_tokens, store_tokens
 from app.models import IntegrationAccount, Product, SyncRun
@@ -35,6 +36,7 @@ router = APIRouter(prefix="/integracoes")
 _STATE_KEY = "olist_oauth_state"
 _ML_STATE_KEY = "ml_oauth_state"
 _ML_VERIFIER_KEY = "ml_oauth_verifier"
+_SHOPEE_STATE_KEY = "shopee_oauth_state"
 
 
 def _sync_in_background() -> None:
@@ -74,6 +76,7 @@ def integrations_page(request: Request, db: Session = Depends(get_db), user: Use
         "products_count": products,
         "sync_minutes": settings.olist_sync_minutes,
         "ml": _ml_context(db),
+        "shopee": _shopee_context(db),
         "tax_rate_pct": float(get_setting(db, "tax_rate_pct") or 0),
         "tax_rate_is_demo": bool(get_setting(db, "tax_rate_is_demo")),
     }, db=db)
@@ -287,4 +290,95 @@ def ml_disconnect(request: Request, db: Session = Depends(get_db), user: User = 
                      target_id="ml")
         db.commit()
     flash(request, "Mercado Livre desconectado. Os dados já importados continuam no painel.")
+    return RedirectResponse("/integracoes", status_code=303)
+
+
+# --- Shopee ----------------------------------------------------------------------
+
+def _shopee_context(db: Session) -> dict:
+    settings = get_settings()
+    account = shopee_auth.get_shopee_account(db)
+    return {
+        "configured": settings.shopee_configured,
+        "redirect_uri": settings.shopee_redirect_uri,
+        "sandbox": settings.shopee_sandbox,
+        "account": account,
+        "connected": bool(account and account.access_token_enc),
+        "last_ok_label": to_local(account.last_ok_at).strftime("%d/%m às %H:%M")
+        if account and account.last_ok_at else None,
+        "valid_until": to_local(account.refresh_expires_at).strftime("%d/%m/%Y")
+        if account and account.refresh_expires_at else None,
+    }
+
+
+@router.get("/shopee/conectar")
+def shopee_connect(request: Request, user: User = Depends(current_user)):
+    """Leva para a tela de autorização da Shopee."""
+    if not get_settings().shopee_configured:
+        flash(request, "Faltam o Partner ID e a Partner Key da Shopee no arquivo .env.", "erro")
+        return RedirectResponse("/integracoes", status_code=303)
+    state = secrets.token_urlsafe(32)
+    request.session[_SHOPEE_STATE_KEY] = state
+    return RedirectResponse(shopee_auth.authorize_url(state), status_code=303)
+
+
+def _int_or_none(value: str | None) -> int | None:
+    return int(value) if value and value.strip().isdigit() else None
+
+
+@router.get("/shopee/retorno")
+def shopee_callback(request: Request, code: str | None = None, shop_id: str | None = None,
+                    main_account_id: str | None = None, state: str | None = None,
+                    db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """A Shopee volta para cá (passando pela página de repasse) depois da autorização."""
+    expected = request.session.pop(_SHOPEE_STATE_KEY, None)
+    if not expected or not state or not hmac.compare_digest(expected, state):
+        audit.record(db, actor=f"user:{user.id}", event="shopee.conexao.recusada", details={"motivo": "state"})
+        db.commit()
+        flash(request, "Não foi possível confirmar a conexão. Clique em “Conectar” de novo.", "erro")
+        return RedirectResponse("/integracoes", status_code=303)
+    if not code:
+        flash(request, "A autorização na Shopee foi cancelada.", "erro")
+        return RedirectResponse("/integracoes", status_code=303)
+
+    try:
+        tokens, shop = shopee_auth.exchange_code(code, shop_id=_int_or_none(shop_id),
+                                                 main_account_id=_int_or_none(main_account_id))
+    except IntegrationError as exc:
+        audit.record(db, actor=f"user:{user.id}", event="shopee.conexao.falhou", details={"erro": str(exc)})
+        db.commit()
+        flash(request, str(exc), "erro")
+        return RedirectResponse("/integracoes", status_code=303)
+
+    account = shopee_auth.get_shopee_account(db)
+    if account is None:
+        account = IntegrationAccount(provider=Provider.SHOPEE, account_name="Shopee", is_demo=False, extra={})
+        db.add(account)
+    if account.external_id and account.external_id != str(shop):
+        account.extra = {}  # outra loja: recomeça a leitura do zero
+    store_tokens(account, tokens)
+    account.external_id = str(shop)
+    account.account_name = f"Loja Shopee nº {shop}"
+    account.status = IntegrationStatus.OK
+    account.last_error = None
+    account.last_ok_at = utcnow()
+    clear_demo(db, pause_agents=True)
+    audit.record(db, actor=f"user:{user.id}", event="shopee.conectado", target_type="integracao",
+                 target_id="shopee", details={"loja": str(shop), "teste": get_settings().shopee_sandbox})
+    db.commit()
+    flash(request, "Shopee conectada! A leitura de pedidos, taxas e envios chega na próxima etapa.")
+    return RedirectResponse("/integracoes", status_code=303)
+
+
+@router.post("/shopee/desconectar", dependencies=[Depends(verify_csrf)])
+def shopee_disconnect(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    account = shopee_auth.get_shopee_account(db)
+    if account:
+        clear_tokens(account)
+        account.status = IntegrationStatus.DISCONNECTED
+        audit.record(db, actor=f"user:{user.id}", event="shopee.desconectado", target_type="integracao",
+                     target_id="shopee")
+        db.commit()
+    flash(request, "Shopee desconectada. Para cancelar também do lado da Shopee: Central do Vendedor → "
+                   "Parceiros da plataforma.")
     return RedirectResponse("/integracoes", status_code=303)

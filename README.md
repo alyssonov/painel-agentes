@@ -8,7 +8,7 @@ Olist e nunca mexe em estoque ou nota fiscal.
 > **Situação atual: Fase 5.** Olist (somente leitura), Mercado Livre,
 > Respondedor de perguntas, Vigia de estoque, Conferência de NF-e, Margem
 > real e Relatório diário por e-mail. WhatsApp e PDFs semanal/mensal vêm a
-> seguir; a Shopee entra quando o cadastro de desenvolvedor for aprovado.
+> seguir; a Shopee já conecta (a leitura dos dados dela vem na próxima etapa).
 
 ## Requisitos
 
@@ -153,6 +153,24 @@ Bom saber:
 
 O painel passa a ler, a cada 5 minutos: perguntas, reputação e a taxa de cada
 venda (que entra na margem real). Nesta etapa **nada é respondido**.
+
+## Conectar a Shopee
+
+Usa a **Shopee Open Platform** (API v2 oficial). Por enquanto o painel só faz a
+conexão e mantém o acesso renovado; a leitura de pedidos, taxas, perguntas e
+envios da Shopee vem na próxima etapa.
+
+1. Com o cadastro aprovado, em **open.shopee.com → Console → App List**, abra o
+   app (tipo "Seller In House System").
+2. No app, em **Live Redirect URL Domain**, coloque `alyssonov.github.io`.
+3. No `.env` do painel, preencha `SHOPEE_PARTNER_ID` e `SHOPEE_PARTNER_KEY`
+   (chaves de produção). Feche a janela do painel e ligue de novo.
+4. Em **Contas conectadas**, clique em **Conectar a Shopee**, entre com a conta
+   principal da loja, digite o código do celular e confirme. Escolha **365
+   dias** de validade.
+
+O acesso dura 4 horas e o painel renova sozinho (a renovação vale 30 dias, e a
+autorização, até 365). Passou disso, é só clicar em **Conectar de novo**.
 
 ## Respondedor de perguntas (Agente 1)
 
