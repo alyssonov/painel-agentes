@@ -124,7 +124,7 @@ python tarefas.py diagnostico-recebimentos  # de onde prever os recebimentos (se
 python tarefas.py diagnostico-precos  # referências de preço do ML para os anúncios (só leitura)
 python tarefas.py backup     # cópia de segurança do banco (data/backups/)
 python tarefas.py atualizar  # git pull + dependências novas + cópia do banco + migrações
-python tarefas.py iniciar    # atualizar + liga o painel + abre o navegador
+python tarefas.py iniciar    # atualizar + liga o painel + abre o navegador; depois se atualiza sozinho (git a cada minuto)
 ```
 
 O usuário liga o painel com dois cliques em `Iniciar painel.bat`, que só chama

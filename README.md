@@ -74,6 +74,11 @@ Ele faz tudo sozinho:
 Deixe a janela preta aberta enquanto usa o painel. Para desligar, feche a
 janela (ou `Ctrl+C`).
 
+**Atualização automática:** com o painel ligado, ele confere o GitHub a cada
+minuto. Quando sai versão nova, ele baixa, faz a cópia do banco, atualiza o
+banco e religa sozinho em poucos segundos (a janela preta avisa "Painel
+atualizado"). Não precisa fechar nada: é só recarregar a página (F5).
+
 Dica: clique com o botão direito em `Iniciar painel.bat` → **Mostrar mais
 opções** → **Enviar para** → **Área de trabalho (criar atalho)**. Assim o
 painel liga direto da área de trabalho.

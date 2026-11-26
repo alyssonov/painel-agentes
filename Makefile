@@ -36,7 +36,7 @@ test:             ## roda os testes
 atualizar:        ## busca a versão nova, instala dependências e atualiza o banco
 	$(PY) tarefas.py atualizar
 
-iniciar:          ## atualiza, liga o painel e abre o navegador
+iniciar:          ## atualiza, liga o painel e abre o navegador (depois se atualiza sozinho)
 	$(PY) tarefas.py iniciar
 
 diagnostico:      ## situação dos envios do Mercado Livre (sem dados de clientes)
