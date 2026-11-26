@@ -114,6 +114,15 @@ marketplace, os envios de hoje e os agentes.
 O painel abre no **tema escuro**. O botão de sol/lua no topo troca para o
 **tema claro** (a escolha fica guardada no navegador).
 
+## Pedidos e lista de separação
+
+Menu **Operação → Pedidos**: todos os pedidos com a situação do envio (a enviar,
+atrasado, enviado, entregue, Full, com problema, cancelado), com busca por
+número, produto, SKU ou cliente e filtros por período, marketplace e situação.
+**Baixar planilha** exporta a lista. **Lista de separação de hoje** soma, por
+produto, tudo que precisa sair até o fim do dia (e o que está atrasado), mostra
+o estoque e tem botão para imprimir.
+
 ## Equipe e permissões
 
 Menu **Administração → Equipe**: adicione pessoas com uma senha provisória e

@@ -173,7 +173,7 @@ automáticas, nada manual).
   `:root, :root[data-theme="dark"]` e `:root[data-theme="light"]` no
   `app/web/static/css/app.css` — **nunca usar cor fixa** fora delas.
 - Menu lateral em **grupos** (`NAV_GROUPS` em `app/web/templating.py`): Visão
-  geral; Operação (Anúncios, Estoque e compras, Precificação); Atendimento
+  geral; Operação (Pedidos, Anúncios, Estoque e compras, Precificação); Atendimento
   (Perguntas, Pós-venda); Financeiro (Lucro real, Recebimentos, Gráficos, Curva
   ABC); Inteligência (Agentes, Relatórios); Administração (Equipe, Contas
   conectadas). O menu só mostra o que a pessoa pode abrir. O item ativo é o endereço mais

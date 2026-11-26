@@ -102,3 +102,8 @@ document.addEventListener("click", function (event) {
     if (form) form.querySelectorAll('input[name="' + all.dataset.selectAll + '"]').forEach(function (c) { c.checked = true; });
   }
 });
+
+// Botão "Imprimir" (lista de separação). Sem script inline por causa da CSP.
+document.addEventListener("click", function (event) {
+  if (event.target.closest("[data-imprimir]")) window.print();
+});

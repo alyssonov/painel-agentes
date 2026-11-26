@@ -563,3 +563,15 @@ form > .card { margin-bottom: 16px; }
 .hist-after { color: var(--ink); font-weight: 600; }
 .hist-pager { margin-top: 12px; justify-content: space-between; }
 @media (max-width: 640px) { .hist-item { grid-template-columns: 1fr; gap: 4px; } }
+
+/* Pedidos e lista de separação -------------------------------------------------- */
+.pick-check { width: 34px; }
+.pick-box { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--muted); border-radius: 4px; }
+.pick-qty { font-size: 18px; }
+@media print {
+  .sidebar, .topbar, .sim-banner, .no-print, .flash { display: none !important; }
+  body, .card { background: #fff !important; color: #000 !important; box-shadow: none !important; border-color: #999 !important; }
+  .main, .content { margin: 0 !important; padding: 0 !important; }
+  .table th, .table td, .muted, .text-danger { color: #000 !important; }
+  .pick-box { border-color: #000; }
+}

@@ -1,0 +1,65 @@
+{% extends "app_layout.html" %}
+{% block title %}Pedidos{% endblock %}
+{% block page_title %}Pedidos{% endblock %}
+{% block page_subtitle %}<p class="muted">Todos os pedidos do Mercado Livre, da Shopee e dos outros canais, com a situação do envio. Só leitura: nada é alterado no Olist nem nos marketplaces.</p>{% endblock %}
+{% block content %}
+
+<form class="card hist-filters" method="get" action="/pedidos" role="search">
+  <label class="field"><span>Buscar</span>
+    <input type="search" name="busca" value="{{ f.q }}" placeholder="nº do pedido, produto, SKU ou cliente"></label>
+  <label class="field"><span>Período (data da venda)</span>
+    <select name="periodo">{% for k, label in periods.items() %}<option value="{{ k }}" {% if f.period == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <label class="field"><span>Marketplace</span>
+    <select name="canal"><option value="">Todos</option>
+      {% for k, label in channels.items() %}<option value="{{ k }}" {% if f.channel == k %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+  <label class="field"><span>Situação</span>
+    <select name="situacao"><option value="">Todas</option>
+      {% for k, label in situations.items() %}<option value="{{ k }}" {% if f.situation == k %}selected{% endif %}>{{ label }} ({{ r.counts[k] }})</option>{% endfor %}</select></label>
+  <div class="actions"><button class="btn btn-primary" type="submit">Filtrar</button><a class="btn btn-ghost" href="/pedidos">Limpar</a></div>
+</form>
+
+<div class="toolbar">
+  <p class="muted">{{ r.total }} pedido(s){% if r.total %} · {{ r.revenue_cents|brl }} em vendas (sem cancelados){% endif %}
+    {% if r.counts.atrasado %} · <a class="link text-danger" href="/pedidos?periodo=30&situacao=atrasado">{{ r.counts.atrasado }} atrasado(s)</a>{% endif %}</p>
+  <div class="actions">
+    <a class="btn btn-secondary" href="/pedidos/separacao"><svg class="icon"><use href="#i-box"/></svg> Lista de separação de hoje</a>
+    <a class="btn btn-ghost" href="/pedidos.csv?periodo={{ f.period }}&canal={{ f.channel }}&situacao={{ f.situation }}&busca={{ f.q|urlencode }}">Baixar planilha</a>
+  </div>
+</div>
+
+<section class="card">
+  {% if r.rows %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Venda</th><th>Pedido</th><th>Itens</th><th class="num">Valor</th><th>Situação</th><th>Nota</th></tr></thead>
+      <tbody>
+      {% for o in r.rows %}
+        <tr>
+          <td class="small">{{ o.ordered_at.strftime('%d/%m %H:%M') }}</td>
+          <td><span class="chip chip-{{ o.channel }}">{{ o.channel_label }}</span><br>
+            {% if can('ver_financeiro') %}<a class="link t-strong" href="/margem/venda/{{ o.id }}" title="Ver a conta desta venda">{{ o.number }}</a>{% else %}<span class="t-strong">{{ o.number }}</span>{% endif %}
+            <br><span class="muted small">{{ o.customer }}{% if o.olist_number %} · Olist {{ o.olist_number }}{% endif %}</span></td>
+          <td class="small">{% for q, t, s in o.items %}<div>{{ q }}× {{ t }} <span class="muted">{{ s }}</span></div>{% endfor %}</td>
+          <td class="num">{{ o.total_cents|brl }}</td>
+          <td><span class="badge badge-{{ o.tone }}">{{ o.situation_label }}</span>
+            {% if o.deadline and o.situation in ('a_enviar', 'atrasado') %}<br><span class="small {{ 'text-danger' if o.situation == 'atrasado' else 'muted' }}">prazo {{ o.deadline.strftime('%d/%m %H:%M') }}</span>{% endif %}
+            {% if o.problem %}<br><span class="small">{{ o.problem }}</span>{% endif %}</td>
+          <td class="small">{{ 'Emitida' if o.has_invoice else '—' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if r.pages > 1 %}
+  <div class="actions hist-pager">
+    {% set base = '/pedidos?periodo=' ~ f.period ~ '&canal=' ~ f.channel ~ '&situacao=' ~ f.situation ~ '&busca=' ~ (f.q|urlencode) %}
+    {% if f.page > 1 %}<a class="btn btn-secondary" href="{{ base }}&pagina={{ f.page - 1 }}">← Mais novos</a>{% endif %}
+    <span class="muted small">página {{ f.page }} de {{ r.pages }}</span>
+    {% if f.page < r.pages %}<a class="btn btn-secondary" href="{{ base }}&pagina={{ f.page + 1 }}">Mais antigos →</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="muted">Nenhum pedido com esses filtros.</p>
+  {% endif %}
+</section>
+{% endblock %}

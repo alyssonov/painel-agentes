@@ -1,0 +1,32 @@
+{% extends "app_layout.html" %}
+{% block title %}Lista de separação{% endblock %}
+{% block page_title %}Lista de separação{% endblock %}
+{% block page_subtitle %}<p class="muted">Tudo que precisa sair até o fim de hoje (e o que está atrasado), somado por produto. Gerada em {{ now.strftime('%d/%m/%Y às %H:%M') }}.</p>{% endblock %}
+{% block content %}
+<div class="toolbar no-print">
+  <p class="muted">{{ p.orders }} pedido(s) · {{ p.units }} unidade(s){% if p.late %} · <span class="text-danger">{{ p.late }} atrasado(s)</span>{% endif %}</p>
+  <div class="actions"><button class="btn btn-primary" type="button" data-imprimir>Imprimir</button>
+    <a class="btn btn-ghost" href="/pedidos">Voltar para pedidos</a></div>
+</div>
+<section class="card pick-sheet">
+  {% if p.lines %}
+  <table class="table">
+    <thead><tr><th class="pick-check" aria-label="Separado"></th><th class="num">Qtd.</th><th>Produto</th><th>SKU</th><th class="num">Em estoque</th><th>Pedidos</th></tr></thead>
+    <tbody>
+    {% for li in p.lines %}
+      <tr>
+        <td class="pick-check"><span class="pick-box" aria-hidden="true"></span></td>
+        <td class="num t-strong pick-qty">{{ li.quantity }}</td>
+        <td>{{ li.title }}{% if li.location %}<br><span class="muted small">local: {{ li.location }}</span>{% endif %}</td>
+        <td class="small">{{ li.sku }}</td>
+        <td class="num">{% if li.stock is none %}—{% elif li.short %}<span class="text-danger">{{ li.stock }} (falta)</span>{% else %}{{ li.stock }}{% endif %}</td>
+        <td class="small">{{ li.orders|join(', ') }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Nada para separar agora. 🎉</p>
+  {% endif %}
+</section>
+{% endblock %}

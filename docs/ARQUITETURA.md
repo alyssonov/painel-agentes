@@ -731,3 +731,20 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   sistema), tipo de acontecimento e registro (`?registro=pergunta:55`), 50 por
   página, com os rótulos em português e a tabela "campo: antes → depois". Só
   leitura — o `audit_log` continua só de inserção.
+
+## 31. Etapa 4a — Central de pedidos e lista de separação
+
+- `app/services/orders.py` (só leitura). Situação de cada pedido combinando o
+  Olist (`kanban_status`) com o envio do Mercado Livre (`shipments`): a enviar,
+  atrasado (prazo de despacho vencido), enviado (saiu: enviado ou coletado/no
+  centro), entregue, Full, com problema, cancelado.
+- `/pedidos`: filtros por período (data da venda), marketplace, situação e busca
+  (nº do pedido ML/Shopee ou Olist, produto, SKU, cliente abreviado); 50 por
+  página; soma das vendas sem cancelados; link para "Conferir a venda" só para
+  quem vê o financeiro. `/pedidos.csv`: a mesma lista em planilha (separador ;).
+- `/pedidos/separacao`: o que precisa sair até o fim de hoje + atrasados, somado
+  por SKU, com estoque do Olist (avisa falta) e os números dos pedidos; botão
+  Imprimir (CSS de impressão esconde menu e faixas). Pedido sem prazo do
+  marketplace entra se estiver "a separar"/"embalado" no Olist há até 7 dias.
+- Etiquetas de envio: ficam para depois de consultar a documentação oficial de
+  etiquetas do Mercado Livre e da Shopee.
