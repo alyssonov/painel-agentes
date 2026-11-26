@@ -94,6 +94,9 @@ loja: precisa ser **confiável, seguro e fácil para quem não é técnico**.
 - Não adiantar funcionalidades de fases futuras.
 - Toda mudança no banco vem com migração Alembic.
 - Testes nunca fazem chamadas de rede reais (usar clientes falsos ou `respx`).
+- O servidor usa PostgreSQL (`docker-compose.yml`, guia em `docs/IMPLANTACAO.md`):
+  mudança no banco deve passar também com `TEST_POSTGRES_URL=postgresql+psycopg://...`
+  (os testes recriam as tabelas desse banco — use um banco só de teste).
 
 ## Stack
 

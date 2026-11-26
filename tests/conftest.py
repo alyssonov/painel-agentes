@@ -31,12 +31,19 @@ def _clear_caches() -> None:
     db_module.get_sessionmaker.cache_clear()
 
 
+# Para conferir o PostgreSQL (banco de produção): TEST_POSTGRES_URL=postgresql+psycopg://...
+# Os testes recriam as tabelas desse banco a cada teste — use um banco só de teste.
+TEST_POSTGRES_URL = os.environ.get("TEST_POSTGRES_URL", "")
+
+
 @pytest.fixture
 def db_url(tmp_path, monkeypatch):
-    """Cada teste ganha um banco SQLite novo, num arquivo temporário."""
-    url = f"sqlite:///{tmp_path / 'teste.db'}"
+    """Cada teste ganha um banco novo: SQLite num arquivo temporário (ou o PostgreSQL de teste)."""
+    url = TEST_POSTGRES_URL or f"sqlite:///{tmp_path / 'teste.db'}"
     monkeypatch.setenv("DATABASE_URL", url)
     _clear_caches()
+    if TEST_POSTGRES_URL:
+        db_module.Base.metadata.drop_all(db_module.get_engine())
     db_module.Base.metadata.create_all(db_module.get_engine())
     yield url
     db_module.get_engine().dispose()

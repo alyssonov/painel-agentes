@@ -23,6 +23,7 @@ dependencies = [
     "apscheduler>=3.10,<4",
     "tzdata>=2024.1",
     "anthropic>=2.6",
+    "psycopg[binary]>=3.2",  # PostgreSQL (banco do servidor)
 ]
 
 [project.optional-dependencies]

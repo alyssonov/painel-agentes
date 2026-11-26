@@ -1,0 +1,8 @@
+# HTTPS automático: o Caddy pede e renova o certificado sozinho (Let's Encrypt).
+# O endereço vem do DOMAIN do .env (ex.: app.gerentedoano.com).
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:8000
+	header -Server
+}
+

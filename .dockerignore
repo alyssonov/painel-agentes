@@ -1,0 +1,13 @@
+.git
+.venv
+.env
+.env.*
+data
+tests
+docs
+painel-retorno
+*.egg-info
+**/__pycache__
+**/*.pyc
+.pytest_cache
+Iniciar painel.bat

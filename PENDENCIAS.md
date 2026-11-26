@@ -93,9 +93,16 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 - **Observação:** o uso real (Go Live) pode exigir o domínio com HTTPS e o IP
   fixo do servidor (B4).
 
-### B4. Domínio e servidor — ⚪ (necessário para colocar no ar e para a Shopee)
-- Comprar `gerentedoano.com` e contratar a VPS (Hostinger KVM 1, Ubuntu 24.04,
-  Brasil). O endereço do sistema será `app.gerentedoano.com`.
+### B4. Domínio e servidor — 🟡 (tudo pronto no projeto; falta comprar)
+- **Pronto (26/11):** o painel já roda em servidor (PostgreSQL + HTTPS + cópia
+  diária do banco + atualização automática), testado de ponta a ponta. Guia
+  passo a passo: **`docs/IMPLANTACAO.md`**.
+- **Decisão do dono (26/11):** domínio `gerentedoano.com`, comprado em
+  **dezembro/2026**; por enquanto só o dono acessa de fora.
+- **Falta:** comprar o domínio e a VPS (Hostinger KVM 1, São Paulo, Ubuntu
+  24.04) e seguir o guia. O painel fica em `app.gerentedoano.com`.
+- **Resolve:** contas que desconectam (o Olist cai depois de 1 dia com o
+  computador desligado) e acesso pelo celular.
 
 ### B5. Mercado Ads (publicidade) — ⚪ (próximas etapas)
 - No app de desenvolvedor do Mercado Livre, conferir se a permissão de

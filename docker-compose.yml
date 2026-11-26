@@ -1,0 +1,97 @@
+# Gerente do Ano no servidor (Etapa 7). Guia completo: docs/IMPLANTACAO.md
+#
+#   db      PostgreSQL (dados da loja; volume "pgdata")
+#   web     painel (aplica as migrações ao ligar)
+#   worker  agendador: lê Olist/ML/Shopee/Onix, renova os acessos, roda os agentes
+#   caddy   HTTPS automático (Let's Encrypt) para o DOMAIN do .env
+#   backup  cópia do banco todo dia, guardada em ./backups (últimos 14 dias)
+#
+# Tudo lê o mesmo .env (segredos ficam só nele). Comandos:
+#   docker compose up -d --build     liga / aplica uma versão nova
+#   docker compose logs -f web       mostra o que o painel está fazendo
+#   sh deploy/atualizar.sh           busca a versão nova no GitHub e religa
+
+x-app: &app
+  build: .
+  image: gerente-do-ano
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql+psycopg://painel:${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD no .env}@db:5432/painel
+    APP_ENV: production
+    SESSION_COOKIE_SECURE: "true"
+  volumes:
+    - ./data:/app/data
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: painel
+      POSTGRES_USER: painel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD no .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U painel -d painel"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  web:
+    <<: *app
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/saude', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  worker:
+    <<: *app
+    command: ["python", "-m", "app.worker"]
+    depends_on:
+      web:
+        condition: service_healthy  # só depois das migrações
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?falta DOMAIN no .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  backup:
+    image: postgres:16-alpine
+    environment:
+      PGHOST: db
+      PGUSER: painel
+      PGDATABASE: painel
+      PGPASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD no .env}
+      KEEP_DAYS: "14"
+    volumes:
+      - ./backups:/backups
+      - ./deploy/backup.sh:/backup.sh:ro
+    entrypoint: ["sh", "/backup.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

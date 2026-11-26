@@ -337,6 +337,25 @@ def cmd_backup_db(args) -> int:
     return 0
 
 
+def cmd_copy_db(args) -> int:
+    """Copia o banco do computador (SQLite) para o banco configurado no .env (servidor)."""
+    from app.config import get_settings
+    from app.core.dbcopy import CopyError, copy_database
+    src = args.de if "://" in args.de else f"sqlite:///{args.de}"
+    dst = args.para or get_settings().database_url
+    print(f"Copiando de {src.split('?')[0]} para o banco do .env ({dst.split('://')[0]})...")
+    try:
+        counts = copy_database(src, dst, apagar_destino=args.apagar_destino)
+    except CopyError as exc:
+        print(f"Não copiado: {exc}")
+        return 1
+    for name, total in counts.items():
+        if total:
+            print(f"  {name}: {total}")
+    print(f"Pronto: {sum(counts.values())} registros copiados.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description="Administração do painel")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -353,6 +372,12 @@ def main(argv: list[str] | None = None) -> int:
     p_backup = sub.add_parser("backup-db")
     p_backup.add_argument("--sempre", action="store_true", help="copia mesmo sem atualização pendente")
     p_backup.set_defaults(func=cmd_backup_db)
+    p_copy = sub.add_parser("copiar-banco", help="copia o banco do computador (SQLite) para o do servidor")
+    p_copy.add_argument("--de", required=True, help="arquivo .db do computador (ou endereço do banco)")
+    p_copy.add_argument("--para", default="", help="banco de destino (padrão: DATABASE_URL do .env)")
+    p_copy.add_argument("--apagar-destino", action="store_true",
+                        help="apaga o que houver no destino antes (servidor novo, só com a simulação)")
+    p_copy.set_defaults(func=cmd_copy_db)
     args = parser.parse_args(argv)
     return args.func(args)
 

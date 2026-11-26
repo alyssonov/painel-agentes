@@ -89,6 +89,15 @@ Em qualquer sistema, o mesmo pode ser feito com:
 python tarefas.py iniciar
 ```
 
+## Colocar no ar (servidor + domínio)
+
+Para o painel ficar ligado 24 horas, com as contas sempre conectadas e acesso
+de qualquer lugar em `https://app.gerentedoano.com`: siga o guia
+**[docs/IMPLANTACAO.md](docs/IMPLANTACAO.md)**. Ele cobre: comprar a VPS, instalar com
+um comando (`sh deploy/instalar.sh app.gerentedoano.com`), levar os dados do
+computador (`python -m app.cli copiar-banco`), cópia diária do banco e
+atualização automática.
+
 ## Uso (modo desenvolvimento)
 
 ```bash

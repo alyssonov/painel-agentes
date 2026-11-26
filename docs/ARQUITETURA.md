@@ -94,7 +94,7 @@ painel-agentes/
 ├── alembic/                     # migrações do banco
 ├── docs/
 │   ├── ARQUITETURA.md
-│   └── IMPLANTACAO.md           # (Fase 8)
+│   └── IMPLANTACAO.md           # colocar no ar: servidor + domínio (Etapa 7)
 ├── app/
 │   ├── main.py                  # cria o app FastAPI (processo web)
 │   ├── worker.py                # inicia o APScheduler (processo worker)
