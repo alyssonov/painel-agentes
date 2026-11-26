@@ -24,6 +24,7 @@ Comandos:
 import hashlib
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -242,7 +243,30 @@ def serve(open_browser: bool = True) -> int:
         _stop(web, worker)
 
 
+def _panel_already_running() -> bool:
+    """True se já há algo atendendo na porta do painel (outro painel ligado)."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(1)
+        return sock.connect_ex(("127.0.0.1", 8000)) == 0
+
+
+def _explain_already_running() -> None:
+    print()
+    print("O painel já está ligado (provavelmente em outra janela do Terminal/Prompt).")
+    print(f"Use o que já está aberto em {PANEL_URL}, ou feche a outra janela e abra de novo.")
+    print("Se não achar a outra janela, desligue o painel antigo com:")
+    if os.name == "nt":
+        print("  (no PowerShell) Get-CimInstance Win32_Process | Where-Object CommandLine -match "
+              "'uvicorn app.main|app.worker|tarefas.py' | ForEach-Object { Stop-Process -Id $_.ProcessId }")
+    else:
+        print('  pkill -f "uvicorn app.main:app"; pkill -f "app.worker"; pkill -f "tarefas.py iniciar"')
+    print()
+
+
 def start() -> int:
+    if _panel_already_running():
+        _explain_already_running()
+        return 1
     code = update()
     if code:
         print("Algo deu errado na preparação (veja as mensagens acima).")
