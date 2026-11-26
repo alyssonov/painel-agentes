@@ -26,6 +26,7 @@ from app.web.auth import (
 from app.web.middleware import SecurityHeadersMiddleware
 from app.web.routes import (
     agents,
+    assistant,
     bulk_pricing,
     auth,
     dashboard,
@@ -96,6 +97,7 @@ def create_app() -> FastAPI:
     app.include_router(listings.router)
     app.include_router(bulk_pricing.router)
     app.include_router(pricing.router)
+    app.include_router(assistant.router)
     app.include_router(agents.router)
     app.include_router(finance.router)
     app.include_router(reports.router)

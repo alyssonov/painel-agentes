@@ -1,0 +1,27 @@
+{% extends "app_layout.html" %}
+{% block title %}Assistente{% endblock %}
+{% block page_title %}Assistente{% endblock %}
+{% block page_subtitle %}<p class="muted">Tire dúvidas sobre o painel, peça o caminho para qualquer tela, monte relatórios com os dados da loja ou pergunte o que quiser.</p>{% endblock %}
+{% block content %}
+<div class="asst-page">
+  <aside class="card asst-side" aria-label="Conversas">
+    <a class="btn btn-primary" href="/assistente">+ Nova conversa</a>
+    {% if conversations %}
+    <ul class="asst-convs">
+      {% for c in conversations %}
+      <li class="{{ 'is-active' if current and current.id == c.id else '' }}"><a href="/assistente?c={{ c.id }}">{{ c.title }}</a></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted small">Suas conversas aparecem aqui. Cada pessoa vê só as suas.</p>{% endif %}
+    {% if current %}
+    <form method="post" action="/assistente/conversa/{{ current.id }}/apagar">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-ghost" type="submit">Apagar esta conversa</button>
+    </form>
+    {% endif %}
+  </aside>
+  <section class="card asst-main">
+    {% with full=true, conv_id=current.id if current else '' %}{% include "partials/assistant_chat.html" %}{% endwith %}
+  </section>
+</div>
+{% endblock %}

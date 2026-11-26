@@ -114,6 +114,16 @@ marketplace, os envios de hoje e os agentes.
 O painel abre no **tema escuro**. O botão de sol/lua no topo troca para o
 **tema claro** (a escolha fica guardada no navegador).
 
+## Assistente de IA
+
+Menu **Inteligência → Assistente**, ou o botão **Assistente** no canto de
+qualquer página: um chat que tira dúvidas sobre o painel, mostra onde fica cada
+coisa, monta relatórios com os dados da loja (cada tabela pode ser baixada como
+planilha) e responde perguntas gerais. Ele só consulta o que a pessoa já pode
+ver e nunca altera nada — para agir, mostra a tela. Usa a Claude API
+(`ANTHROPIC_API_KEY` no `.env`) e conta no teto diário de IA. Cada pessoa vê só
+as próprias conversas.
+
 ## Pedidos e lista de separação
 
 Menu **Operação → Pedidos**: todos os pedidos com a situação do envio (a enviar,

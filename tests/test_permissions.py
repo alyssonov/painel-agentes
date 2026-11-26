@@ -28,7 +28,7 @@ def test_regras_de_permissao():
     assert required_permission("POST", "/tema") is None
     assert required_permission("POST", "/rota-nova-sem-regra") == VIEW  # padrão: no mínimo ver o painel
     assert permissions_of("admin", []) == ALL  # administrador sempre tem tudo
-    assert permissions_of("atendimento", None) == {VIEW, SUPPORT}
+    assert permissions_of("atendimento", None) == {VIEW, SUPPORT, "usar_assistente"}
     assert permissions_of("atendimento", [FINANCE, "inventada"]) == {FINANCE}
 
 

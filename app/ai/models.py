@@ -32,6 +32,9 @@ TASKS = {
     "melhorar_anuncio": (SONNET, "medium"),
     "analise_semanal": (SONNET, "medium"),
     "analise_avaliacoes": (SONNET, "low"),  # semanal, poucos produtos por vez
+    # Assistente do painel (chat): Haiku com esforço médio escolhe bem as consultas e é o mais
+    # barato. Para respostas mais elaboradas, troque por (SONNET, "medium").
+    "assistente": (HAIKU, "medium"),
 }
 
 

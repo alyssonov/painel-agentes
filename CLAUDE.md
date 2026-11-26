@@ -159,6 +159,10 @@ automáticas, nada manual).
   `app/core/permissions.py` — rota nova: acrescente a regra lá (sem regra, exige
   "ver o painel"). Nos templates, `can("ver_financeiro")` esconde o que a pessoa
   não pode ver (esconder não substitui a conferência no servidor).
+- **Assistente de IA** (`app/ai/assistant.py`, `app/ai/assistant_tools.py`): as
+  consultas dele são SÓ LEITURA e respeitam as permissões de quem pergunta;
+  dado novo para o assistente = nova consulta lá (com teste). Nunca dar a ele
+  ferramenta que escreva ou fale com cliente.
 - **Busca:** toda caixa de busca usa `app/services/search.py` (palavras em
   qualquer ordem, sem acento) — nunca `LIKE '%frase inteira%'`.
 - Sem scripts/estilos inline nem de terceiros (CSP `'self'`): JS e CSS ficam
@@ -179,7 +183,7 @@ automáticas, nada manual).
 - Menu lateral em **grupos** (`NAV_GROUPS` em `app/web/templating.py`): Visão
   geral; Operação (Pedidos, Produtos, Anúncios, Estoque, Compras, Precificação); Atendimento
   (Perguntas, Pós-venda); Financeiro (Lucro real, Recebimentos, DRE do mês,
-  Despesas, Gráficos, Curva ABC); Inteligência (Agentes, Relatórios); Administração (Equipe, Contas
+  Despesas, Gráficos, Curva ABC); Inteligência (Assistente, Agentes, Relatórios); Administração (Equipe, Contas
   conectadas). O menu só mostra o que a pessoa pode abrir. O item ativo é o endereço mais
   específico (`active_nav`). Abaixo do menu: contas conectadas (Mercado Livre,
   Shopee, Olist ERP) com status.

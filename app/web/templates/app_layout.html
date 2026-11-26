@@ -62,5 +62,16 @@
     {% block content %}{% endblock %}
   </main>
   <div class="chart-tip" id="chart-tip" role="status" hidden></div>
+  {% if can('usar_assistente') and not current_path.startswith('/assistente') %}
+  <button type="button" class="asst-fab" data-asst-abrir aria-expanded="false" aria-controls="asst-pop" title="Assistente de IA">
+    <svg class="icon"><use href="#i-bot"/></svg><span>Assistente</span>
+  </button>
+  <div class="card asst-pop" id="asst-pop" role="dialog" aria-label="Assistente de IA" hidden>
+    <div class="asst-pop-head"><strong>Assistente</strong>
+      <span><a class="link small" href="/assistente">abrir em tela cheia</a>
+      <button type="button" class="icon-btn" data-asst-fechar aria-label="Fechar o assistente">×</button></span></div>
+    {% with full=false, conv_id='', messages=[], suggestions=assistant_suggestions %}{% include "partials/assistant_chat.html" %}{% endwith %}
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

@@ -871,3 +871,29 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
 - Tela Produtos: coluna **Marca** (no lugar de Fornecedor; o fornecedor
   continua na ficha e na busca), filtro **Marca** com contagem e "Sem marca",
   busca também pela marca, planilha com a coluna `marca`.
+
+## 39. Assistente de IA (chat do painel) — Etapa 6, primeira parte
+
+- **O que faz:** tira dúvidas sobre o painel, mostra o caminho até as telas
+  (links), monta relatórios com os dados da loja (tabelas que viram planilha) e
+  responde perguntas gerais. Tela `/assistente` (conversas da pessoa à esquerda)
+  e botão flutuante "Assistente" em todas as páginas.
+- **Só leitura, sempre:** 8 consultas em `app/ai/assistant_tools.py`
+  (resumo_vendas, buscar_produtos, buscar_pedidos, estoque, dre_do_mes,
+  pendencias, buscar_anuncios, compras), que reaproveitam os serviços das telas
+  e respeitam as permissões de quem pergunta (sem "ver o financeiro": sem lucro,
+  margem, custo nem DRE). O assistente nunca age: para responder cliente ou
+  mudar preço, indica a tela de aprovação (regra "humano no controle").
+- **Loop** (`app/ai/assistant.py`): Messages API com ferramentas, loop próprio
+  (cada chamada passa pelo teto diário `AI_DAILY_BUDGET_BRL` e é registrada em
+  `ai_usage`), no máximo 8 rodadas por pergunta, últimas 6 mensagens como
+  contexto (só texto), instruções + mapa das telas permitidas com cache de
+  prompt, data de hoje fora do trecho em cache. Modelo em `app/ai/models.py`
+  (`assistente`: Haiku, esforço médio — trocar por Sonnet se quiser respostas
+  mais elaboradas). Recusa (`refusal`) e corte (`max_tokens`) tratados.
+- **Segurança:** a resposta é Markdown convertido por `app/web/markdown_lite.py`
+  (escapa tudo; só links internos ou https). Conversas por pessoa e empresa
+  (`assistant_conversations`/`assistant_messages`, migração 0022); ninguém abre
+  a conversa de outra pessoa. Histórico registra só "pergunta feita" e as
+  consultas usadas (não o texto). Permissão nova **usar_assistente** (todos os
+  papéis; o administrador pode tirar). Testes com uma IA falsa, sem rede.

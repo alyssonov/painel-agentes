@@ -48,12 +48,15 @@ NAV_GROUPS = [
     ("Financeiro", [("/margem", "Lucro real", "coins"), ("/margem/recebimentos", "Recebimentos", "wallet"),
                     ("/financeiro/dre", "DRE do mês", "file"), ("/financeiro/despesas", "Despesas", "receipt"),
                     ("/margem/graficos", "Gráficos", "chart"), ("/margem/curva-abc", "Curva ABC", "star")]),
-    ("Inteligência", [("/agentes", "Agentes", "bot"), ("/relatorios", "Relatórios", "file")]),
+    ("Inteligência", [("/assistente", "Assistente", "chat"), ("/agentes", "Agentes", "bot"),
+                      ("/relatorios", "Relatórios", "file")]),
     ("Administração", [("/equipe", "Equipe", "users"), ("/historico", "Histórico", "receipt"),
                        ("/integracoes", "Contas conectadas", "plug")]),
 ]
 NAV_ITEMS = [item for _title, items in NAV_GROUPS for item in items]
 THEMES = ("dark", "light")
+# Sugestões que aparecem no chat flutuante do Assistente.
+ASSISTANT_SUGGESTIONS = ["Quanto vendi hoje?", "O que está esperando por mim?", "Onde vejo o lucro de uma venda?"]
 THEME_COOKIE = "tema"
 
 
@@ -102,6 +105,7 @@ def render(request: Request, template: str, context: dict[str, Any] | None = Non
         "can": lambda perm: bool(getattr(request.state, "user", None)) and request.state.user.can(perm),
         "integrations": accounts,
         "flash": request.session.pop("flash", None),
+        "assistant_suggestions": ASSISTANT_SUGGESTIONS,
     }
     base.update(context or {})
     return templates.TemplateResponse(request, template, base, status_code=status_code)

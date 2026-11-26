@@ -3,6 +3,7 @@
 from app.models.action import Action
 from app.models.agent import Agent, AgentRun
 from app.models.ai import AiCache, AiUsage
+from app.models.assistant import AssistantConversation, AssistantMessage
 from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.catalog import Product, StockSnapshot
@@ -34,6 +35,8 @@ __all__ = [
     "Agent",
     "AgentRun",
     "AiUsage",
+    "AssistantConversation",
+    "AssistantMessage",
     "Alert",
     "AuditLog",
     "Claim",

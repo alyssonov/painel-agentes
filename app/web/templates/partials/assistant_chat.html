@@ -1,0 +1,23 @@
+{# Chat do Assistente (usado na tela cheia e no botão flutuante). conv_id: conversa atual ou vazio. #}
+<div class="asst{{ ' asst-full' if full else '' }}" data-asst>
+  <div class="asst-log" data-asst-log aria-live="polite">
+    {% for m in messages %}
+    <div class="asst-msg asst-{{ m.role }}">{{ m.html|safe }}{% if m.tools %}<p class="asst-meta">consultou: {{ m.tools }}</p>{% endif %}</div>
+    {% else %}
+    <div class="asst-empty" data-asst-empty>
+      <p><strong>Oi! Sou o assistente do Gerente do Ano.</strong> Pergunte sobre suas vendas, estoque, pedidos, como usar o painel, ou peça um relatório.</p>
+      <div class="asst-sugs">{% for s in suggestions %}<button type="button" class="chip asst-sug" data-asst-sugestao>{{ s }}</button>{% endfor %}</div>
+    </div>
+    {% endfor %}
+    <span id="fim"></span>
+  </div>
+  <form class="asst-form" method="post" action="/assistente/perguntar" data-asst-form>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="conversa" value="{{ conv_id or '' }}" data-asst-conversa>
+    <label class="sr-only" for="asst-q-{{ 'full' if full else 'pop' }}">Sua pergunta</label>
+    <textarea id="asst-q-{{ 'full' if full else 'pop' }}" name="pergunta" rows="2" maxlength="2000" required
+              placeholder="Pergunte qualquer coisa… (Enter envia, Shift+Enter quebra a linha)"></textarea>
+    <button class="btn btn-primary" type="submit">Enviar</button>
+  </form>
+  <p class="asst-foot muted small">Usa IA (conta na cota diária). Só consulta dados que você já pode ver e nunca altera nada: para agir, ele mostra a tela.</p>
+</div>
