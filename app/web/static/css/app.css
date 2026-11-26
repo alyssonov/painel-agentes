@@ -44,7 +44,6 @@
   --chart-1: #3987E5; --chart-neg: #E66767; --chart-grid: #22304A; --chart-base: #3A4A66;
   /* Calculadora (Precificação): cor de cada parte do preço na barra do detalhamento */
   --sdp-k1: #8E9BB1; --sdp-k2: #E5A04A; --sdp-k3: #D283AD; --sdp-k4: #E8C547; --sdp-k5: #3987E5; --sdp-k6: #A78BFA;
-  --sim-bg: #3A2E05; --sim-stripe: #46380A; --sim-ink: #FDE68A;
   --login-glow: rgba(59, 130, 246, .22);
   --radius-lg: 12px; --radius-md: 10px; --radius-sm: 8px;
 }
@@ -77,7 +76,6 @@
   --focus: 0 0 0 3px rgba(37, 99, 235, .35);
   --chart-1: #2A78D6; --chart-neg: #E34948; --chart-grid: #E5E7EB; --chart-base: #B9BCC2;
   --sdp-k1: #6B7A90; --sdp-k2: #C27A1C; --sdp-k3: #B0518A; --sdp-k4: #B8930A; --sdp-k5: #2A78D6; --sdp-k6: #7C5CD6;
-  --sim-bg: #FFE9A8; --sim-stripe: #FFE18A; --sim-ink: #4A3800;
   --login-glow: rgba(37, 99, 235, .14);
 }
 
@@ -106,9 +104,10 @@ code { background: var(--neutral-soft); border-radius: 6px; padding: 1px 6px; fo
 details > summary { cursor: pointer; }
 :focus-visible { outline: none; box-shadow: var(--focus); border-radius: 6px; }
 
-/* Faixa do modo simulação */
-.sim-banner { background: repeating-linear-gradient(135deg, var(--sim-bg) 0 14px, var(--sim-stripe) 14px 28px);
-  color: var(--sim-ink); text-align: center; padding: 7px 16px; font-size: 13px; }
+/* Aviso do modo simulação: etiqueta discreta no topo (detalhe ao passar o mouse). */
+.sim-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  background: var(--warn-soft); color: var(--warn); font-size: 12px; font-weight: 700; white-space: nowrap; cursor: help; }
+.sim-chip .icon { width: 14px; height: 14px; }
 
 /* --- Estrutura: menu lateral + conteúdo ------------------------------------- */
 .shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
@@ -563,7 +562,7 @@ form > .card { margin-bottom: 16px; }
 .pick-box { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--muted); border-radius: 4px; }
 .pick-qty { font-size: 18px; }
 @media print {
-  .sidebar, .topbar, .sim-banner, .no-print, .flash { display: none !important; }
+  .sidebar, .topbar, .no-print, .flash { display: none !important; }
   body, .card { background: #fff !important; color: #000 !important; box-shadow: none !important; border-color: #999 !important; }
   .main, .content { margin: 0 !important; padding: 0 !important; }
   .table th, .table td, .muted, .text-danger { color: #000 !important; }

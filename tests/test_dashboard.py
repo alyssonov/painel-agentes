@@ -11,7 +11,7 @@ from app.services import dashboard
 
 def test_visao_geral_mostra_simulacao(logged_client):
     html = logged_client.get("/").text
-    assert "MODO SIMULAÇÃO" in html
+    assert "Modo simulação" in html and "sim-chip" in html
     for texto in ("Faturamento hoje", "Margem média real", "Perguntas respondidas", "Reputação",
                   "O que pede atenção", "Agentes agora", "Pedidos de hoje",
                   "A separar", "Embalado", "Enviado", "Com problema"):

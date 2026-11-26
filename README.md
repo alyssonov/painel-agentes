@@ -440,7 +440,7 @@ No modo simulação nada é enviado ao comprador.
 ## Modo simulação (`DRY_RUN`)
 
 - Ligado por padrão (`DRY_RUN=true` no `.env`).
-- O painel mostra uma faixa amarela **MODO SIMULAÇÃO** no topo.
+- O painel mostra a etiqueta **Modo simulação** no topo, ao lado do seu nome.
 - **Nenhuma** ação real é enviada a clientes ou lojas.
 - Sem conta conectada, mostra uma loja fictícia. Com o Olist conectado,
   mostra os dados reais (só leitura) e a faixa avisa isso.

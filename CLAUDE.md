@@ -53,7 +53,8 @@ loja: precisa ser **confiável, seguro e fácil para quem não é técnico**.
    - Sem conta conectada, mostra a loja fictícia (`is_demo`). Com conta real
      conectada, **lê dados reais** (leitura é segura: o cliente do Olist não
      tem escrita), e a loja fictícia é apagada.
-   - O painel mostra uma faixa visível "MODO SIMULAÇÃO" enquanto estiver ligado.
+   - O painel mostra a etiqueta "Modo simulação" no topo de toda página enquanto
+     estiver ligado (a faixa amarela foi trocada por ela — decisão do dono em 26/11/2026).
    - Mensagens **internas** (relatórios para a própria loja, por e-mail ou
      WhatsApp) não são ações para clientes: são enviadas também no modo
      simulação, pelo `app/notify/`, e ficam registradas em `reports` e no

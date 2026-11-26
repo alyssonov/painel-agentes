@@ -29,6 +29,13 @@
         {% block page_subtitle %}{% endblock %}
       </div>
       <div class="topbar-user">
+        {% if dry_run %}
+        {% set sim_text = 'mostrando dados reais (só leitura)' if real_data else 'dados fictícios' %}
+        <span class="sim-chip" role="status" title="Modo simulação: {{ sim_text }}. Nada é enviado aos clientes nem alterado nas lojas.">
+          <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>Modo simulação
+          <span class="sr-only">: {{ sim_text }}. Nada é enviado aos clientes nem alterado nas lojas.</span>
+        </span>
+        {% endif %}
         <form method="post" action="/tema">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <button class="icon-btn" type="submit" title="{{ 'Usar tema claro' if theme != 'light' else 'Usar tema escuro' }}"
