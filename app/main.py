@@ -29,6 +29,7 @@ from app.web.routes import (
     bulk_pricing,
     auth,
     dashboard,
+    finance,
     history,
     integrations,
     listings,
@@ -94,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(bulk_pricing.router)
     app.include_router(pricing.router)
     app.include_router(agents.router)
+    app.include_router(finance.router)
     app.include_router(reports.router)
     app.include_router(report_pages.router)
     app.include_router(team.router)

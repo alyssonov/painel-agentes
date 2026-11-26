@@ -45,6 +45,7 @@ NAV_GROUPS = [
                   ("/precificacao", "Precificação", "calc")]),
     ("Atendimento", [("/perguntas", "Perguntas", "chat"), ("/pos-venda", "Pós-venda", "truck")]),
     ("Financeiro", [("/margem", "Lucro real", "coins"), ("/margem/recebimentos", "Recebimentos", "wallet"),
+                    ("/financeiro/dre", "DRE do mês", "file"), ("/financeiro/despesas", "Despesas", "receipt"),
                     ("/margem/graficos", "Gráficos", "chart"), ("/margem/curva-abc", "Curva ABC", "star")]),
     ("Inteligência", [("/agentes", "Agentes", "bot"), ("/relatorios", "Relatórios", "file")]),
     ("Administração", [("/equipe", "Equipe", "users"), ("/historico", "Histórico", "receipt"),

@@ -104,10 +104,12 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   clicar em "Conectar de novo" no painel.
 - **Depende disso:** investimento, ROAS, ACOS, TACOS, campanhas.
 
-### B6. Despesas fixas da empresa — ⚪
-- Lista mensal (aluguel, salários, contador, sistemas, embalagens…).
-- **Depende disso:** lucro **líquido** de verdade (hoje o painel mostra lucro
-  por venda, antes das despesas fixas).
+### B6. Despesas fixas da empresa — 🟡
+- **Pronto no painel (26/11):** Financeiro → **Despesas** (lançar) e **DRE do
+  mês** (lucro líquido de verdade).
+- **Falta:** lançar as despesas mensais da loja (aluguel, salários, contador,
+  sistemas, embalagens, publicidade…). Quem tiver o papel Financeiro ou Gerente
+  também pode lançar.
 
 ### B7. Compatibilidade das motopeças — 🟡
 - **Pronto no painel (26/11):** campo de compatibilidade em cada produto e na

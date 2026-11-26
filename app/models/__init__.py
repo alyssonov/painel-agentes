@@ -7,6 +7,7 @@ from app.models.alert import Alert
 from app.models.audit import AuditLog
 from app.models.catalog import Product, StockSnapshot
 from app.models.company import Company
+from app.models.expense import Expense
 from app.models.fee import MarketplaceFee
 from app.models.integration import IntegrationAccount
 from app.models.invoice import Invoice
@@ -36,6 +37,7 @@ __all__ = [
     "AuditLog",
     "Claim",
     "Company",
+    "Expense",
     "ClaimReason",
     "Conversation",
     "ConversationMessage",

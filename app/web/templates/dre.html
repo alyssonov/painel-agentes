@@ -1,0 +1,66 @@
+{% extends "app_layout.html" %}
+{% block title %}DRE do mês{% endblock %}
+{% block page_title %}DRE do mês{% endblock %}
+{% block page_subtitle %}<p class="muted">Quanto sobrou de verdade: vendas menos taxas, impostos, custo dos produtos e as despesas da empresa. As vendas usam a mesma conta do Lucro real.</p>{% endblock %}
+{% block content %}
+{% set c = current %}
+<div class="toolbar">
+  <form method="get" action="/financeiro/dre" class="actions">
+    <a class="btn btn-ghost" href="/financeiro/dre?mes={{ prev }}" aria-label="Mês anterior">←</a>
+    <label class="field field-inline"><span class="sr-only">Mês</span>
+      <select name="mes">{% for v, label in options %}<option value="{{ v }}" {% if v == month_value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <button class="btn btn-secondary" type="submit">Ver</button>
+    <a class="btn btn-ghost" href="/financeiro/dre?mes={{ next }}" aria-label="Próximo mês">→</a>
+  </form>
+  {% if can('lancar_despesas') %}<a class="btn btn-primary" href="/financeiro/despesas">Lançar despesas</a>{% endif %}
+</div>
+
+<section class="stats" aria-label="Resumo de {{ c.label }}">
+  <article class="card stat"><p class="stat-label">Vendas ({{ c.label }}{% if c.partial %}, até hoje{% endif %})</p>
+    <p class="stat-value">{{ c.revenue|brl }}</p><p class="stat-foot">{{ c.orders }} pedido(s)</p></article>
+  <article class="card stat {{ 'tone-bad' if c.gross_profit < 0 else '' }}"><p class="stat-label">Lucro das vendas</p>
+    <p class="stat-value">{{ c.gross_profit|brl }}</p><p class="stat-foot">{{ c.pct(c.gross_profit)|pct }} das vendas, antes das despesas</p></article>
+  <article class="card stat"><p class="stat-label">Despesas da empresa</p>
+    <p class="stat-value">{{ c.total_expenses|brl }}</p><p class="stat-foot">{% if c.total_expenses %}{{ c.pct(c.total_expenses)|pct }} das vendas{% else %}nenhuma lançada{% endif %}</p></article>
+  <article class="card stat {{ 'tone-bad' if c.net_profit < 0 else 'tone-ok' }}"><p class="stat-label">Lucro líquido</p>
+    <p class="stat-value {{ 'text-danger' if c.net_profit < 0 }}">{{ c.net_profit|brl }}</p>
+    <p class="stat-foot">{% if c.revenue %}{{ c.pct(c.net_profit)|pct }} das vendas{% endif %}{% if c.break_even %} · paga as despesas a partir de {{ c.break_even|brl }} em vendas{% endif %}</p></article>
+</section>
+
+{% if not c.total_expenses %}
+<div class="notice"><p><strong>Nenhuma despesa lançada para {{ c.label }}.</strong> Sem elas, o lucro líquido é igual ao lucro das vendas.
+  {% if can('lancar_despesas') %}<a class="link" href="/financeiro/despesas">Lançar aluguel, salários, contador…</a>{% endif %}</p></div>
+{% endif %}
+{% if c.unconfirmed or c.missing_cost %}
+<p class="muted small">Atenção em {{ c.label }}: {% if c.unconfirmed %}{{ c.unconfirmed }} venda(s) com taxa e frete ainda não conferidos (estimados){% endif %}{% if c.unconfirmed and c.missing_cost %} · {% endif %}{% if c.missing_cost %}{{ c.missing_cost }} venda(s) com produto sem custo no Olist (custo contado como zero){% endif %}.</p>
+{% endif %}
+
+<section class="card" aria-labelledby="dre-title">
+  <h2 id="dre-title" class="card-title">Demonstrativo</h2>
+  <div class="table-wrap">
+    <table class="table dre-table">
+      <thead><tr><th></th>{% for m in months %}<th class="num">{{ m.label }}{% if m.partial %}<br><span class="muted small">até hoje</span>{% endif %}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% macro line(label, attr, minus=false, strong=false, cls='') %}
+        <tr class="{{ cls }}"><td>{% if minus %}<span class="muted">(−)</span> {% endif %}{% if strong %}<strong>{{ label }}</strong>{% else %}{{ label }}{% endif %}</td>
+          {% for m in months %}{% set v = m[attr] %}<td class="num">{% if strong %}<strong class="{{ 'text-danger' if v < 0 }}">{{ v|brl }}</strong>{% else %}{{ ('−' if minus and v else '') }}{{ v|brl }}{% endif %}<br><span class="muted small">{{ m.pct(v)|pct if m.revenue else '' }}</span></td>{% endfor %}</tr>
+        {% endmacro %}
+        {{ line("Vendas (receita bruta)", "revenue", strong=true) }}
+        {{ line("Comissões dos marketplaces", "fees", minus=true) }}
+        {{ line("Frete e tarifas", "shipping", minus=true) }}
+        {{ line("Impostos sobre as vendas", "taxes", minus=true) }}
+        {{ line("Receita líquida", "net_revenue", strong=true, cls='dre-sub') }}
+        {{ line("Custo dos produtos vendidos (Olist)", "cost", minus=true) }}
+        {{ line("Lucro das vendas (margem de contribuição)", "gross_profit", strong=true, cls='dre-sub') }}
+        {% for cat in categories %}
+        <tr><td><span class="muted">(−)</span> {{ category_label(cat) }}</td>
+          {% for m in months %}{% set v = m.expenses.get(cat, 0) %}<td class="num">{{ ('−' if v else '') }}{{ v|brl }}<br><span class="muted small">{{ m.pct(v)|pct if m.revenue and v else '' }}</span></td>{% endfor %}</tr>
+        {% endfor %}
+        {{ line("Total de despesas", "total_expenses", minus=true) }}
+        {{ line("Lucro líquido do mês", "net_profit", strong=true, cls='dre-total') }}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted small">Vendas pela data da venda, sem as canceladas. Despesas lançadas em Financeiro → Despesas. Publicidade do Mercado Ads entra aqui quando a conexão de publicidade estiver ligada (por enquanto, lance como despesa).</p>
+</section>
+{% endblock %}

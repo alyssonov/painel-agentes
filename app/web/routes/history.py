@@ -32,6 +32,7 @@ GROUPS: dict[str, tuple[str, tuple[str, ...]]] = {
     "agentes": ("Agentes", ("agente.",)),
     "config": ("Configurações da loja", ("loja.", "precificacao.", "relatorio.destinatarios")),
     "produtos": ("Cadastro de produtos", ("produto.",)),
+    "financeiro": ("Despesas", ("financeiro.",)),
     "contas": ("Contas conectadas", ("olist.", "ml.", "shopee.")),
     "relatorios": ("Relatórios enviados", ("relatorio.",)),
 }
@@ -50,6 +51,8 @@ EVENT_LABELS = {
     "loja.regras_alteradas": "Mudou as regras da loja", "loja.aliquota_alterada": "Mudou a alíquota de impostos",
     "precificacao.taxas_alteradas": "Mudou a tabela de taxas", "relatorio.destinatarios": "Mudou quem recebe o relatório",
     "simulacao.carregada": "Carregou a loja de simulação",
+    "financeiro.despesa_criada": "Lançou uma despesa", "financeiro.despesa_alterada": "Alterou uma despesa",
+    "financeiro.despesa_excluida": "Excluiu uma despesa",
     "produto.cadastro_alterado": "Mudou o cadastro do produto", "produto.planilha_importada": "Enviou planilha de produtos",
 }
 PROVIDERS = {"olist": "Olist", "ml": "Mercado Livre", "shopee": "Shopee"}
@@ -58,13 +61,15 @@ PROVIDER_EVENTS = {"conectado": "conectado", "desconectado": "desconectado", "co
                    "sincronizacao.ok": "atualizado", "sincronizacao.erro": "atualização falhou"}
 TARGETS = {"pergunta": "Pergunta", "conversa": "Conversa", "anuncio": "Anúncio", "anuncio_texto": "Texto do anúncio",
            "agente": "Agente", "integracao": "Conta", "user": "Pessoa", "relatorio": "Relatório",
-           "sync_run": "Atualização", "pedido": "Pedido", "produto": "Produto"}
+           "sync_run": "Atualização", "pedido": "Pedido", "produto": "Produto",
+           "despesa": "Despesa"}
 FIELD_LABELS = {"ativo": "Ativo", "modo": "Modo", "nome": "Nome", "papel": "Papel", "permissoes": "Permissões",
                 "aliquota_pct": "Alíquota (%)", "destinatarios": "Destinatários", "text": "Texto",
                 "texto": "Texto", "price_cents": "Preço (centavos)", "custo_onix": "Custo do Onix",
                 "estoque_minimo": "Estoque mínimo", "prazo_dias": "Prazo do fornecedor (dias)",
                 "localizacao": "Local", "compatibilidade": "Compatível com", "observacoes": "Observações",
-                "fornecedor": "Fornecedor", "codigo_fornecedor": "Código no fornecedor"}
+                "fornecedor": "Fornecedor", "codigo_fornecedor": "Código no fornecedor", "valor": "Valor",
+                "categoria": "Categoria", "repete": "Repete", "desde": "Desde", "ate": "Até"}
 
 
 def event_label(event: str) -> str:

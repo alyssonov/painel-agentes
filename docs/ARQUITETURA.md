@@ -805,3 +805,23 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   simulações (a tabela `pricing_simulations` continua no banco, sem uso). As
   contas de `app/services/pricing_calc.py` e a tabela de taxas continuam, usadas
   pelos Preços em massa.
+
+## 35. Etapa 5a — Despesas da empresa e DRE do mês
+
+- Tabela `expenses` (migração 0019): nome, categoria (aluguel, pessoal,
+  contador, sistemas, embalagens, publicidade, energia, transporte, taxas,
+  outros), valor, mensal ou única, mês inicial e final (vazio = sem fim).
+- `app/services/dre.py`: por mês (no fuso da loja), soma as vendas não
+  canceladas com a MESMA conta da Margem real (`order_margin`: comissão, frete e
+  tarifas — no ML a partir do valor recebido —, imposto e custo do Olist) e
+  subtrai as despesas que valem no mês. Mostra receita líquida, lucro das vendas
+  (margem de contribuição), despesas por categoria, lucro líquido e o
+  faturamento que paga as despesas (ponto de equilíbrio). Avisa vendas com taxa
+  a conferir e produtos sem custo.
+- Telas: `/financeiro/dre` (mês escolhido + 2 anteriores) e
+  `/financeiro/despesas` (lançar, editar, encerrar pelo mês final, excluir
+  lançamento por engano). Permissões: ver = "ver o financeiro"; lançar = nova
+  **lancar_despesas** (Administrador, Gerente, Financeiro). Tudo no histórico
+  com antes → depois (`financeiro.despesa_*`).
+- Mercado Ads ainda não entra sozinho (PENDENCIAS B5): por enquanto, lançar
+  publicidade como despesa.

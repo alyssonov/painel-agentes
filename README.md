@@ -123,6 +123,15 @@ número, produto, SKU ou cliente e filtros por período, marketplace e situaçã
 produto, tudo que precisa sair até o fim do dia (e o que está atrasado), mostra
 o estoque e tem botão para imprimir.
 
+## Despesas e DRE do mês
+
+Em **Financeiro → Despesas**, lance as despesas da empresa (aluguel, salários,
+contador, sistemas, embalagens…), mensais ou únicas, com mês de início e,
+se acabar, de fim. Em **Financeiro → DRE do mês** o painel mostra, mês a mês:
+vendas, comissões, frete e tarifas, impostos, custo dos produtos, **lucro das
+vendas**, cada despesa e o **lucro líquido** — e quanto é preciso vender para
+pagar as despesas. As vendas usam a mesma conta do Lucro real.
+
 ## Preços em massa
 
 Em **Precificação → Preços em massa** (ou pelo atalho em Estoque e compras):

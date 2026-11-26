@@ -663,3 +663,8 @@ form > .card { margin-bottom: 16px; }
 /* Garante que [hidden] esconda mesmo com display definido acima (calculadora). */
 .sdp-grid [hidden] { display: none !important; }
 .sdp-goal-head label { font-weight: 600; font-size: 14px; }
+
+/* DRE ------------------------------------------------------------------------- */
+.dre-table td:first-child { white-space: normal; }
+.dre-table .dre-sub td { background: var(--card-2); }
+.dre-table .dre-total td { border-top: 2px solid var(--ink); font-size: 15px; }
