@@ -134,7 +134,9 @@ python tarefas.py iniciar    # atualizar + liga o painel + abre o navegador; dep
 O usuário liga o painel com dois cliques em `Iniciar painel.bat`, que só chama
 `tarefas.py iniciar`. **Não altere o .bat** (o Windows lê .bat enquanto
 executa, e o `git pull` poderia trocá-lo no meio): coloque a lógica no
-`tarefas.py`. Toda fase nova deve funcionar só com esse fluxo (migrações
+`tarefas.py`. No Mac, o equivalente é `Iniciar painel.command` (mesma regra:
+só chama `tarefas.py iniciar`; o conteúdo fica entre `{ }` para o bash ler tudo
+antes de rodar). Toda fase nova deve funcionar só com esse fluxo (migrações
 automáticas, nada manual).
 
 ## Convenções de código

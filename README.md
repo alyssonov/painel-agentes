@@ -83,6 +83,11 @@ Dica: clique com o botão direito em `Iniciar painel.bat` → **Mostrar mais
 opções** → **Enviar para** → **Área de trabalho (criar atalho)**. Assim o
 painel liga direto da área de trabalho.
 
+No **Mac**, dê dois cliques em **`Iniciar painel.command`** (na pasta
+`painel-agentes`). Ele abre o Terminal e faz o mesmo que o `.bat`. Dica: clique
+com o botão direito nele → **Criar Alias** e arraste o alias para a Mesa ou
+para o Dock.
+
 Em qualquer sistema, o mesmo pode ser feito com:
 
 ```bash
