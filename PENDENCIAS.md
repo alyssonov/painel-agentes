@@ -65,8 +65,12 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   3. Qual a **versão do Firebird** no servidor?
   4. Em quais **tabelas/campos** ficam código do produto, descrição e **custo**
      (ou um dicionário de dados)?
-- **Me dizer:** o painel roda no mesmo computador do Onix? O **código do produto
-  no Onix é igual ao SKU do Olist**?
+- **Respondido em 26/11:** o banco do Onix fica em **outro computador**; o
+  computador do painel tem o Onix instalado e acessa o banco pela rede da loja
+  (o painel pode ler daqui do mesmo jeito). O **código do produto no Onix é
+  igual ao SKU do Olist** — é por ele que os dois se ligam.
+- **Depois, com o painel na internet (B4):** um pequeno conector neste
+  computador lê os custos e envia ao painel (o banco nunca fica exposto).
 - **Usuário e senha do banco:** nunca no chat — vão no `.env` (eu explico onde).
 - **Enquanto isso (já funciona):** exportar do Onix (menu Estoque → relatório de
   produtos com custo) e enviar em **Produtos → Enviar planilha**.
