@@ -7,6 +7,7 @@ mínimo, local, compatibilidade) fica na tabela product_extras.
 import csv
 import io
 import re
+from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
@@ -15,14 +16,16 @@ from sqlalchemy.orm import Session
 
 from app.core.db import utcnow
 from app.core.money import format_brl
-from app.models import Product, StockSnapshot
+from app.models import Listing, Product, StockSnapshot
 from app.models.product_extra import ProductExtra
 from app.services.pricing_calc import parse_money
-from app.services.search import matches, terms
+from app.services.search import matches, normalize, terms
 
 PAGE = 50
 FILTERS = {"": "Todos", "sem_compat": "Sem compatibilidade", "abaixo_minimo": "Abaixo do estoque mínimo",
-           "custo_diferente": "Custo do Onix diferente do Olist", "sem_fornecedor": "Sem fornecedor"}
+           "custo_diferente": "Custo do Onix diferente do Olist", "sem_marca": "Sem marca",
+           "sem_fornecedor": "Sem fornecedor"}
+NO_BRAND = "__sem__"  # valor do filtro de marca para "sem marca"
 COST_DIFF_PCT = 5.0  # acima disso, avisa que o custo do Onix e o do Olist não batem
 
 # Marcas mais comuns no Brasil, para separar "marca" de "modelo" no texto.
@@ -81,6 +84,21 @@ class ProductRow:
     product: Product
     extra: ProductExtra | None
     stock: int | None
+    listing_brand: str | None = None  # marca mais comum nos anúncios do ML deste produto
+
+    @property
+    def brand(self) -> str | None:
+        """Marca: a escrita no painel > a do Olist > a dos anúncios do Mercado Livre."""
+        return (self.extra.brand if self.extra and self.extra.brand else None) or self.product.brand \
+            or self.listing_brand
+
+    @property
+    def brand_source(self) -> str | None:
+        if self.extra and self.extra.brand:
+            return "escrita no painel"
+        if self.product.brand:
+            return "Olist"
+        return "anúncio do Mercado Livre" if self.listing_brand else None
 
     @property
     def below_min(self) -> bool:
@@ -105,16 +123,30 @@ def latest_stock(db: Session) -> dict[int, int]:
             for s in db.scalars(select(StockSnapshot).where(StockSnapshot.id.in_(latest)))}
 
 
-def list_products(db: Session, q: str = "", flt: str = "") -> list[ProductRow]:
-    """Produtos ativos; a busca acha pelas palavras em qualquer ordem (nome, SKU, moto, fornecedor, local)."""
+def listing_brands(db: Session) -> dict[int, str]:
+    """Marca mais comum nos anúncios de cada produto (atributo "Marca" do Mercado Livre)."""
+    counts: dict[int, Counter] = {}
+    for product_id, brand in db.execute(select(Listing.product_id, Listing.brand).where(
+            Listing.product_id.is_not(None), Listing.brand.is_not(None))):
+        counts.setdefault(product_id, Counter())[brand] += 1
+    return {pid: c.most_common(1)[0][0] for pid, c in counts.items()}
+
+
+def list_products(db: Session, q: str = "", flt: str = "", brand: str = "") -> list[ProductRow]:
+    """Produtos ativos; a busca acha pelas palavras em qualquer ordem (nome, SKU, marca, moto, fornecedor, local)."""
     stmt = select(Product).where(Product.is_active.is_(True)).order_by(Product.name)
     extras = {e.product_id: e for e in db.scalars(select(ProductExtra))}
     stock = latest_stock(db)
-    rows = [ProductRow(p, extras.get(p.id), stock.get(p.id)) for p in db.scalars(stmt)]
+    by_listing = listing_brands(db)
+    rows = [ProductRow(p, extras.get(p.id), stock.get(p.id), by_listing.get(p.id)) for p in db.scalars(stmt)]
     wanted = terms(q)
     if wanted:
-        rows = [r for r in rows if matches(wanted, r.product.name, r.product.sku, *(
+        rows = [r for r in rows if matches(wanted, r.product.name, r.product.sku, r.brand, *(
             (format_compatibility(r.extra.compatibility), r.extra.supplier, r.extra.location) if r.extra else ()))]
+    if brand == NO_BRAND:
+        rows = [r for r in rows if not r.brand]
+    elif brand:
+        rows = [r for r in rows if r.brand and normalize(r.brand) == normalize(brand)]
     if flt == "sem_compat":
         rows = [r for r in rows if not (r.extra and r.extra.compatibility)]
     elif flt == "abaixo_minimo":
@@ -123,7 +155,21 @@ def list_products(db: Session, q: str = "", flt: str = "") -> list[ProductRow]:
         rows = [r for r in rows if r.cost_differs]
     elif flt == "sem_fornecedor":
         rows = [r for r in rows if not (r.extra and r.extra.supplier)]
+    elif flt == "sem_marca":
+        rows = [r for r in rows if not r.brand]
     return rows
+
+
+def brand_options(rows: list[ProductRow]) -> list[tuple[str, int]]:
+    """Marcas para o filtro, com quantos produtos cada uma tem (mais produtos primeiro)."""
+    names: dict[str, str] = {}
+    counts: Counter = Counter()
+    for r in rows:
+        if r.brand:
+            key = normalize(r.brand)
+            names.setdefault(key, r.brand)
+            counts[key] += 1
+    return sorted(((names[k], n) for k, n in counts.items()), key=lambda x: (-x[1], x[0].lower()))
 
 
 def extra_for(db: Session, product: Product) -> ProductExtra:
@@ -136,7 +182,7 @@ def extra_for(db: Session, product: Product) -> ProductExtra:
 
 def snapshot(extra: ProductExtra) -> dict[str, Any]:
     """Para o histórico (antes → depois)."""
-    return {"fornecedor": extra.supplier, "codigo_fornecedor": extra.supplier_code,
+    return {"marca": extra.brand, "fornecedor": extra.supplier, "codigo_fornecedor": extra.supplier_code,
             "custo_onix": format_brl(extra.onix_cost_cents) if extra.onix_cost_cents is not None else None,
             "estoque_minimo": extra.min_stock, "prazo_dias": extra.lead_time_days, "localizacao": extra.location,
             "compatibilidade": format_compatibility(extra.compatibility).replace("\n", "; ") or None,
@@ -159,7 +205,7 @@ def to_int(value: Any, lo: int = 0, hi: int = 1_000_000) -> int | None:
 
 # --- Planilha ---------------------------------------------------------------------
 
-COLUMNS = ["sku", "fornecedor", "codigo_fornecedor", "custo_onix", "estoque_minimo", "prazo_dias", "localizacao",
+COLUMNS = ["sku", "marca", "fornecedor", "codigo_fornecedor", "custo_onix", "estoque_minimo", "prazo_dias", "localizacao",
            "compatibilidade", "observacoes"]
 _ALIASES = {"custo": "custo_onix", "custo onix": "custo_onix", "estoque minimo": "estoque_minimo",
             "estoque mínimo": "estoque_minimo", "minimo": "estoque_minimo", "prazo": "prazo_dias",
@@ -181,7 +227,7 @@ def template_csv() -> str:
     out = io.StringIO()
     w = csv.writer(out, delimiter=";")
     w.writerow(COLUMNS)
-    w.writerow(["PAST-CG160", "Distribuidora Exemplo", "DX-123", "18,90", "5", "7", "A3-02",
+    w.writerow(["PAST-CG160", "Cobreq", "Distribuidora Exemplo", "DX-123", "18,90", "5", "7", "A3-02",
                 "Honda CG 160 2016-2024 | Honda Fan 160 2016-2024", "pastilha dianteira"])
     return "﻿" + out.getvalue()
 
@@ -226,6 +272,8 @@ def import_csv(db: Session, raw: bytes) -> tuple[ImportResult, list[tuple[Produc
             continue
         extra = extra_for(db, product)
         before = snapshot(extra)
+        if data.get("marca"):
+            extra.brand = data["marca"][:80]
         if data.get("fornecedor"):
             extra.supplier = data["fornecedor"][:120]
         if data.get("codigo_fornecedor"):
@@ -268,7 +316,7 @@ def export_csv(rows: list[ProductRow], *, with_costs: bool) -> str:
     w.writerow(["nome", *cols, "estoque_olist", *(["custo_olist"] if with_costs else [])])
     for r in rows:
         e = r.extra
-        values = {"sku": r.product.sku, "fornecedor": e.supplier if e else "", "codigo_fornecedor": e.supplier_code if e else "",
+        values = {"sku": r.product.sku, "marca": r.brand or "", "fornecedor": e.supplier if e else "", "codigo_fornecedor": e.supplier_code if e else "",
                   "custo_onix": format_brl(e.onix_cost_cents).replace("R$", "").strip() if e and e.onix_cost_cents else "",
                   "estoque_minimo": e.min_stock if e and e.min_stock is not None else "",
                   "prazo_dias": e.lead_time_days if e and e.lead_time_days is not None else "",

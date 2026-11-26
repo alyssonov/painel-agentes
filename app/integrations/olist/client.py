@@ -13,6 +13,8 @@ Documentação oficial consultada em 06/11/2026:
 Endpoints usados (todos GET):
   /info              dados da empresa
   /produtos          lista de produtos (paginada)
+  /produtos/{id}     detalhe do produto — usado só para a MARCA (campo "marca": {id, nome}; a lista
+                     não traz a marca). Swagger consultado em 26/11/2026 (ObterProdutoModelResponse).
   /estoque           saldo de estoque dos produtos (paginada)
   /pedidos           lista de pedidos (paginada)
   /pedidos/{id}      detalhe do pedido (itens, frete)
@@ -62,6 +64,10 @@ class OlistClient(ReadOnlyApiClient):
     def iter_products(self, changed_since: datetime | None = None) -> Iterator[dict]:
         """GET /produtos — todos, ou só os alterados desde a data (UTC)."""
         return self._paginate("/produtos", {"dataAlteracao": to_olist_datetime(changed_since)})
+
+    def get_product(self, product_id: int | str) -> dict | None:
+        """GET /produtos/{id} — detalhe do produto (o painel usa a marca)."""
+        return self._get(f"/produtos/{product_id}")
 
     def iter_stock(self, changed_since: datetime | None = None) -> Iterator[dict]:
         """GET /estoque — saldo, reservado e disponível de cada produto."""

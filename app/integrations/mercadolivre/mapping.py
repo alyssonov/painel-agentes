@@ -62,6 +62,14 @@ def _sku_from(entity: dict) -> str | None:
     return str(value).strip() if value else None
 
 
+def brand_from(item: dict) -> str | None:
+    """Marca do anúncio: atributo "BRAND" (Marca) da ficha técnica do item (API /items, campo attributes)."""
+    for attr in item.get("attributes") or []:
+        if attr.get("id") == "BRAND" and attr.get("value_name"):
+            return str(attr["value_name"]).strip()[:80] or None
+    return None
+
+
 def listing_rows(item: dict) -> list[dict]:
     """Uma linha por anúncio — ou uma por variação, cada uma com SKU e estoque próprios."""
     shipping = item.get("shipping") or {}
@@ -72,6 +80,7 @@ def listing_rows(item: dict) -> list[dict]:
         "status": item.get("status") or "",
         "permalink": item.get("permalink"),
         "fulfillment": shipping.get("logistic_type") == "fulfillment",
+        "brand": brand_from(item),
     }
     variations = item.get("variations") or []
     if not variations:

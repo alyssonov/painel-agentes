@@ -73,7 +73,7 @@ def test_planilha_do_onix(logged_client, db):
     assert db.scalars(select(AuditLog).where(AuditLog.event == "produto.planilha_importada")).one()
     csv = logged_client.get("/produtos.csv").text
     assert "Honda CG 160 2016-2024 | Honda Fan 160 2016" in csv and "custo_onix" in csv
-    assert "sku;fornecedor" in logged_client.get("/produtos/modelo.csv").text
+    assert "sku;marca;fornecedor" in logged_client.get("/produtos/modelo.csv").text
 
 
 def test_quem_nao_ve_financeiro_nao_ve_nem_muda_custo(client, db, user):
@@ -109,3 +109,37 @@ def test_historico_do_produto(logged_client, db):
     html = logged_client.get(f"/historico?dias=30&registro=produto:{p.id}").text
     assert "Mudou o cadastro do produto" in html and "Local" in html and "C9" in html
     assert "Produto: Pastilha de freio dianteira" in html
+
+
+def test_marca_do_olist_do_anuncio_ou_escrita(logged_client, db):
+    from app.models import Listing
+    from app.models.enums import Channel
+    olist = _product(db, sku="AMORT-01", name="Amortecedor traseiro Biz")
+    olist.brand = "Cofap"
+    by_ad = _product(db, sku="PROT-BIZ", name="Protetor escapamento Biz")
+    none = _product(db, sku="RET-01", name="Retentor de bengala")
+    db.add(Listing(channel=Channel.ML, external_id="MLB9", item_id="MLB9", title="Protetor", brand="Pro Tork",
+                   product_id=by_ad.id, price_cents=1, status="active", synced_at=utcnow()))
+    db.commit()
+    rows = {r.product.sku: r for r in list_products(db)}
+    assert (rows["AMORT-01"].brand, rows["AMORT-01"].brand_source) == ("Cofap", "Olist")
+    assert (rows["PROT-BIZ"].brand, rows["PROT-BIZ"].brand_source) == ("Pro Tork", "anúncio do Mercado Livre")
+    assert rows["RET-01"].brand is None
+    # Filtro por marca (sem diferenciar maiúsculas/acentos), "sem marca" e busca pela marca
+    assert [r.product.sku for r in list_products(db, brand="cofap")] == ["AMORT-01"]
+    mine = {"AMORT-01", "PROT-BIZ", "RET-01"}
+    assert [r.product.sku for r in list_products(db, brand="__sem__") if r.product.sku in mine] == ["RET-01"]
+    assert [r.product.sku for r in list_products(db, q="pro tork biz")] == ["PROT-BIZ"]
+    html = logged_client.get("/produtos").text
+    assert "Marca" in html and "Cofap (1)" in html and "Pro Tork" in html and "Sem marca (" in html
+    assert "<th>Fornecedor</th>" not in html
+    # Escrita no painel vale mais que a do Olist
+    token = csrf_from(logged_client.get(f"/produtos/{none.id}").text)
+    logged_client.post(f"/produtos/{none.id}", data={"csrf_token": token, "brand": "Sabó"})
+    logged_client.post(f"/produtos/{olist.id}", data={"csrf_token": token, "brand": "Cofap Turbogás"})
+    rows = {r.product.sku: r for r in list_products(db)}
+    assert rows["RET-01"].brand == "Sabó" and rows["AMORT-01"].brand == "Cofap Turbogás"
+    assert rows["AMORT-01"].brand_source == "escrita no painel"
+    db.refresh(olist)
+    assert olist.brand == "Cofap"  # o que veio do Olist continua guardado, sem mexer no Olist
+    assert "Sabó" in logged_client.get("/produtos?marca=sabo").text

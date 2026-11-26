@@ -26,6 +26,7 @@ class Listing(CompanyScoped, TimestampMixin, Base):
     product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"),
                                                    nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(255))
+    brand: Mapped[str | None] = mapped_column(String(80), nullable=True)  # atributo "Marca" (BRAND) do ML
     variation_label: Mapped[str | None] = mapped_column(String(120), nullable=True)
     price_cents: Mapped[int] = mapped_column(BigInteger, default=0)
     available_quantity: Mapped[int] = mapped_column(Integer, default=0)

@@ -27,6 +27,10 @@ STOCK = [
 ]
 
 
+# Marca de cada produto no detalhe do Olist (produto sem marca: não aparece aqui).
+BRANDS = {101: "Cofap", 102: "Vaz"}
+
+
 def order_summary(order_id, situacao, canal, data="2026-11-06 10:15:00"):
     return {"id": order_id, "situacao": situacao, "numeroPedido": 5000 + order_id,
             "ecommerce": {"id": 1, "nome": canal, "numeroPedidoEcommerce": f"EC{order_id}",
@@ -89,6 +93,10 @@ def install(router: respx.Router, *, orders=None, products=None) -> dict[str, re
         "pedido": router.get(url__regex=re.escape(BASE_URL) + r"/pedidos/(?P<oid>\d+)$").mock(
             side_effect=lambda r, oid: httpx.Response(200, json=order_detail(by_id[oid]))
             if oid in by_id else httpx.Response(404, json={})),
+        # Detalhe do produto: só a marca interessa ao painel (a lista não traz a marca).
+        "produto": router.get(url__regex=re.escape(BASE_URL) + r"/produtos/(?P<pid>\d+)$").mock(
+            side_effect=lambda r, pid: httpx.Response(200, json={
+                "id": int(pid), "marca": {"id": 7, "nome": BRANDS.get(int(pid))} if BRANDS.get(int(pid)) else None})),
         "notas": router.get(f"{BASE_URL}/notas").mock(side_effect=lambda r: _page(INVOICES, r)),
     }
     return routes

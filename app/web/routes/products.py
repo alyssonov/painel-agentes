@@ -16,13 +16,16 @@ from app.services.pricing_calc import parse_money
 from app.services.products import (
     COST_DIFF_PCT,
     FILTERS,
+    NO_BRAND,
     PAGE,
+    brand_options,
     export_csv,
     extra_for,
     format_compatibility,
     import_csv,
     latest_stock,
     list_products,
+    listing_brands,
     parse_compatibility,
     set_cost,
     snapshot,
@@ -41,23 +44,27 @@ def _csv(content: str, name: str) -> Response:
 
 
 @router.get("")
-def products_page(request: Request, busca: str = "", filtro: str = "", pagina: int = 1,
+def products_page(request: Request, busca: str = "", filtro: str = "", marca: str = "", pagina: int = 1,
                   db: Session = Depends(get_db), user: User = Depends(current_user)):
     filtro = filtro if filtro in FILTERS else ""
-    rows = list_products(db, busca.strip()[:80], filtro)
+    marca = marca.strip()[:80]
+    everything = list_products(db)
+    rows = list_products(db, busca.strip()[:80], filtro, marca)
     pages = max(1, -(-len(rows) // PAGE))
     pagina = min(max(1, pagina), pages)
-    counts = {"sem_compat": sum(1 for r in list_products(db) if not (r.extra and r.extra.compatibility))}
+    counts = {"sem_compat": sum(1 for r in everything if not (r.extra and r.extra.compatibility)),
+              "sem_marca": sum(1 for r in everything if not r.brand)}
     return render(request, "products.html", {
         "rows": rows[(pagina - 1) * PAGE: pagina * PAGE], "total": len(rows), "page": pagina, "pages": pages,
         "busca": busca, "filtro": filtro, "filters": FILTERS, "counts": counts, "diff_pct": COST_DIFF_PCT,
+        "marca": marca, "brands": brand_options(everything), "no_brand": NO_BRAND,
     }, db=db)
 
 
 @router.get(".csv")
-def products_csv(busca: str = "", filtro: str = "", db: Session = Depends(get_db),
+def products_csv(busca: str = "", filtro: str = "", marca: str = "", db: Session = Depends(get_db),
                  user: User = Depends(current_user)):
-    rows = list_products(db, busca.strip()[:80], filtro if filtro in FILTERS else "")
+    rows = list_products(db, busca.strip()[:80], filtro if filtro in FILTERS else "", marca.strip()[:80])
     return _csv(export_csv(rows, with_costs=user.can(FINANCE)), f"produtos-{local_today():%Y-%m-%d}.csv")
 
 
@@ -104,6 +111,7 @@ def product_page(request: Request, product_id: int, db: Session = Depends(get_db
         return RedirectResponse("/produtos", status_code=303)
     extra = db.scalar(select(ProductExtra).where(ProductExtra.product_id == product.id))
     return render(request, "product.html", {
+        "olist_brand": product.brand, "listing_brand": listing_brands(db).get(product.id),
         "p": product, "e": extra, "stock": latest_stock(db).get(product.id),
         "compat_text": format_compatibility(extra.compatibility if extra else []),
         "cost_at": to_local(extra.onix_cost_at).strftime("%d/%m/%Y") if extra and extra.onix_cost_at else None,
@@ -121,6 +129,7 @@ async def save_product(request: Request, product_id: int, db: Session = Depends(
     extra = extra_for(db, product)
     before = snapshot(extra)
     errors = []
+    extra.brand = str(form.get("brand", "")).strip()[:80] or None
     extra.supplier = str(form.get("supplier", "")).strip()[:120] or None
     extra.supplier_code = str(form.get("supplier_code", "")).strip()[:64] or None
     extra.location = str(form.get("location", "")).strip()[:60] or None

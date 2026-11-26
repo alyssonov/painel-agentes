@@ -22,6 +22,10 @@ class Product(CompanyScoped, TimestampMixin, Base):
     specs: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # ficha técnica
     # Dinheiro sempre em centavos (inteiro) para não haver erro de arredondamento.
     cost_cents: Mapped[int] = mapped_column(BigInteger, default=0)
+    # Marca do produto no Olist (campo "marca" do detalhe GET /produtos/{id}). Só leitura.
+    brand: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    # Quando o detalhe foi lido (vazio = ler de novo na próxima sincronização).
+    brand_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     price_cents: Mapped[int] = mapped_column(BigInteger, default=0)
     is_active: Mapped[bool] = mapped_column(default=True)
     is_demo: Mapped[bool] = mapped_column(default=False)

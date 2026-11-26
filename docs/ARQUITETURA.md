@@ -854,3 +854,20 @@ Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
   e na busca nova da tela **Anúncios** (todos os anúncios de ML e Shopee: título,
   variação, SKU, MLB). Filtra em Python depois de ler do banco (volumes da loja
   são pequenos; acentos não dependem do banco).
+
+## 38. Marca dos produtos
+
+- De onde vem, nesta ordem: **escrita no painel** (`product_extras.brand`, na
+  ficha do produto ou coluna `marca` da planilha) > **Olist** (`products.brand`)
+  > **anúncio do Mercado Livre** (`listings.brand`, a mais comum entre os
+  anúncios do produto). Migração 0021.
+- Olist: a marca só vem no **detalhe** do produto (`GET /produtos/{id}`, campo
+  `marca: {id, nome}`; swagger consultado em 26/11/2026 — a lista não traz).
+  `sync_brands` lê até 60 detalhes por sincronização (respeita o limite de
+  consultas) e só de novo quando o produto muda no Olist
+  (`brand_checked_at` volta a vazio). Só leitura.
+- Mercado Livre: atributo `BRAND` (Marca) da ficha do item, já lido em
+  `/items?attributes=...attributes`.
+- Tela Produtos: coluna **Marca** (no lugar de Fornecedor; o fornecedor
+  continua na ficha e na busca), filtro **Marca** com contagem e "Sem marca",
+  busca também pela marca, planilha com a coluna `marca`.

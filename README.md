@@ -153,8 +153,9 @@ marcadas** (no modo simulação, nada é enviado).
 
 ## Produtos (cadastro complementar)
 
-Menu **Operação → Produtos**: os produtos do Olist com informações que ficam só
-no Gerente do Ano — fornecedor, custo do Onix, estoque mínimo, prazo do
+Menu **Operação → Produtos**: os produtos do Olist com a **marca** (lida do
+Olist ou do anúncio do Mercado Livre; dá para escrever à mão quando não houver)
+e **filtro por marca**, mais informações que ficam só no Gerente do Ano — fornecedor, custo do Onix, estoque mínimo, prazo do
 fornecedor, local na prateleira e **com quais motos o produto é compatível**
 (uma moto por linha, ex.: `Honda CG 160 2016-2024`). A busca encontra pela moto
 também. Para atualizar muitos produtos de uma vez, baixe o modelo e use

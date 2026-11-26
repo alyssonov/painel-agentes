@@ -80,6 +80,7 @@ def run_olist_sync(session_factory: sessionmaker[Session],
             account = get_olist_account(db)
             first_sync = account.last_ok_at is None
             counts["produtos"] = sync_products(db, client, account, started)
+            counts["marcas"] = sync_brands(db, client, started)
             counts["estoque"] = sync_stock(db, client, account, started)
             counts["pedidos"] = sync_orders(db, client, account, started)
             counts["notas"] = sync_invoices(db, client, first_sync=first_sync)
@@ -134,12 +135,32 @@ def sync_products(db: Session, client: OlistClient, account, started: datetime) 
             product.cost_cents = to_cents(cost)
         product.is_active = item.get("situacao", "A") == "A"
         product.is_demo = False
+        product.brand_checked_at = None  # mudou no Olist: lê a marca de novo
         count += 1
         if count % 200 == 0:
             db.flush()
     _set_cursor(account, "cursor_produtos", started)
     db.commit()
     return count
+
+
+BRAND_BATCH = 60  # detalhes por sincronização (respeita o limite de consultas do Olist)
+
+
+def sync_brands(db: Session, client: OlistClient, started: datetime, limit: int = BRAND_BATCH) -> int:
+    """Marca dos produtos: lê o detalhe (GET /produtos/{id}) aos poucos, só de quem ainda não foi lido
+    ou mudou no Olist. A lista de produtos do Olist não traz a marca."""
+    pending = list(db.scalars(select(Product).where(
+        Product.olist_id.is_not(None), Product.is_demo.is_(False), Product.is_active.is_(True),
+        Product.brand_checked_at.is_(None)).limit(limit)))
+    for product in pending:
+        detail = client.get_product(product.olist_id) or {}
+        marca = detail.get("marca") or {}
+        name = str(marca.get("nome") or "").strip() if isinstance(marca, dict) else ""
+        product.brand = name[:80] or None
+        product.brand_checked_at = started
+    db.commit()
+    return len(pending)
 
 
 def sync_stock(db: Session, client: OlistClient, account, started: datetime) -> int:

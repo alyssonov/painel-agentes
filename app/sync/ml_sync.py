@@ -391,7 +391,7 @@ def sync_listings(db: Session, client: MLClient, account, seller_id: str, starte
                                   title=row["title"], status=row["status"], synced_at=started)
                 db.add(listing)
             for key in ("item_id", "title", "price_cents", "available_quantity", "status", "permalink",
-                        "fulfillment", "sku", "variation_label"):
+                        "fulfillment", "sku", "variation_label", "brand"):
                 setattr(listing, key, row[key])
             listing.product_id = by_sku.get(row["sku"]) if row["sku"] else None
             listing.synced_at = started

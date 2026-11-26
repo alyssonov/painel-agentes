@@ -29,11 +29,14 @@ def test_primeira_sincronizacao_importa_tudo(db, olist_env):
     routes = olist_fake.install(respx.mock)
     run = sync()
     assert run.status == SyncStatus.OK, run.error
-    assert run.counts == {"produtos": 2, "estoque": 2, "pedidos": 4, "notas": 2}
+    assert run.counts == {"produtos": 2, "marcas": 2, "estoque": 2, "pedidos": 4, "notas": 2}
 
     # Produtos: custo médio quando existe, senão preço de custo; excluídos ficam de fora.
     caneca = db.scalar(select(Product).where(Product.sku == "CAN-01"))
     garrafa = db.scalar(select(Product).where(Product.sku == "GAR-01"))
+    # Marca: vem do detalhe do produto (GET /produtos/{id}), só uma vez por produto.
+    assert (caneca.brand, garrafa.brand) == ("Cofap", "Vaz") and caneca.brand_checked_at is not None
+    assert all(c.request.method == "GET" for c in routes["produto"].calls)
     assert (caneca.cost_cents, caneca.price_cents) == (2150, 6990)
     assert garrafa.cost_cents == 3450
     assert db.scalar(select(Product).where(Product.sku == "OLD-01")) is None
