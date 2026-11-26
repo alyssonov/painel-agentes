@@ -67,8 +67,8 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   `ONIX_API_URL` com o endereço que o fornecedor passou, **só a parte inicial**
   (ex.: `http://servidor:8020`, sem `/api-produto/...`). Feche e ligue o painel.
   Depois: Contas conectadas → Onix → **Atualizar custos agora**.
-- **Confirmar com o dono:** qual custo usar — `custo` (padrão), `custo médio`
-  ou `custo atacado` (`ONIX_COST_FIELD` no `.env`).
+- ✅ **Custo a usar (confirmado em 26/11):** o campo **"Custo"** do Onix
+  (`custo_prod`) — já é o padrão; não precisa mexer em `ONIX_COST_FIELD`.
 - **⚠️ Segurança (pedir ao fornecedor):** a API está aberta na internet, sem
   senha e sem criptografia (http): quem tiver o endereço vê os custos. Pedir
   para exigir uma chave/senha e usar https — ou liberar só para a rede da loja.
