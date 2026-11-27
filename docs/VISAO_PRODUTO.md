@@ -11,6 +11,11 @@ valendo; conflitos ficam registrados em `PENDENCIAS.md` (seção A) até decisã
   Slogan: **"Sua operação sob controle."**
 - Começa atendendo a empresa do usuário; arquitetura pronta para virar **SaaS**.
 - Não é só painel: gestão inteligente com agentes de IA.
+- **Objetivo do dono (27/11/2026):** a pessoa chega para trabalhar, abre o
+  Gerente do Ano e fica nele até ir embora, **sem precisar entrar em nenhum outro
+  sistema** (Mercado Livre, Shopee, Olist, Onix). Toda tela nova deve ser pensada
+  para eliminar uma ida a outro sistema. A escrita nas plataformas (PENDENCIAS A6)
+  entra depois que o painel estiver pronto.
 
 ## Como trabalhar
 - Analisar antes de mudar; preservar o que funciona; nada destrutivo sem aprovação;
