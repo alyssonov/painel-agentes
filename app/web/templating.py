@@ -53,7 +53,7 @@ NAV_GROUPS = [
                     ("/financeiro/dre", "DRE do mês", "file"), ("/financeiro/despesas", "Despesas", "receipt"),
                     ("/margem/graficos", "Gráficos", "chart"), ("/margem/curva-abc", "Curva ABC", "star")]),
     ("Inteligência", [("/assistente", "Assistente", "chat"), ("/agentes", "Agentes", "bot"),
-                      ("/relatorios", "Relatórios", "file")]),
+                      ("/automacoes", "Automações", "mail"), ("/relatorios", "Relatórios", "file")]),
     ("Administração", [("/equipe", "Equipe", "users"), ("/historico", "Histórico", "receipt"),
                        ("/integracoes", "Contas conectadas", "plug")]),
 ]

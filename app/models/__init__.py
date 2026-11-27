@@ -6,6 +6,7 @@ from app.models.ai import AiCache, AiUsage
 from app.models.assistant import AssistantConversation, AssistantMessage
 from app.models.alert import Alert
 from app.models.audit import AuditLog
+from app.models.automation import Automation, AutomationDelivery
 from app.models.catalog import Product, StockSnapshot
 from app.models.company import Company
 from app.models.expense import Expense
@@ -30,6 +31,8 @@ from app.models.sync import SyncRun
 from app.models.user import User
 
 __all__ = [
+    "Automation",
+    "AutomationDelivery",
     "Action",
     "AiCache",
     "Agent",

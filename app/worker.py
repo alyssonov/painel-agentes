@@ -34,6 +34,7 @@ from app.config import get_settings
 from app.core.db import get_sessionmaker
 from app.fake_data.seed import refresh_demo_if_stale
 from app.sync.ml_sync import run_ml_sync
+from app.automations.runner import run_automations
 from app.sync.shopee_sync import keep_shopee_alive, run_shopee_sync
 from app.sync.onix_sync import run_onix_sync
 from app.sync.olist_sync import run_olist_sync
@@ -123,6 +124,17 @@ def job_margin() -> None:
             logger.info("%s: %s — %s", name, run.status, run.summary)
 
 
+def job_automations() -> None:
+    """Automações: avisos por e-mail dos alertas novos (só o que a loja ligou em Automações)."""
+    try:
+        result = run_automations(get_sessionmaker())
+        if result.sent or result.error:
+            logger.info("Automações: %s aviso(s) enviado(s)%s", result.sent,
+                        f" — erro: {result.error}" if result.error else "")
+    except Exception:  # noqa: BLE001 - o worker nunca pode cair
+        logger.exception("Erro nas automações")
+
+
 def job_daily_report() -> None:
     """Fase 5: relatório diário (confere a cada 10 min se já passou do horário)."""
     run = run_daily_report(get_sessionmaker())
@@ -155,6 +167,7 @@ def main() -> None:
     scheduler.add_job(job_checks, "interval", minutes=15, id="checks", max_instances=1, coalesce=True)
     scheduler.add_job(job_margin, "interval", minutes=60, id="margin", max_instances=1, coalesce=True)
     scheduler.add_job(job_daily_report, "interval", minutes=10, id="daily_report", max_instances=1, coalesce=True)
+    scheduler.add_job(job_automations, "interval", minutes=5, id="automations", max_instances=1, coalesce=True)
     logger.info("Worker iniciado (DRY_RUN=%s). Ctrl+C para parar.", settings.dry_run)
     try:
         job_sync_olist()

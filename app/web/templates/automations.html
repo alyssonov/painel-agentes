@@ -1,0 +1,84 @@
+{% extends "app_layout.html" %}
+{% block title %}Automações{% endblock %}
+{% block page_title %}Automações{% endblock %}
+{% block page_subtitle %}<p class="muted">Escolha quais avisos chegam por e-mail. São só avisos para a loja: nada aqui responde cliente nem muda preço, estoque ou anúncio.</p>{% endblock %}
+{% block content %}
+
+{% if not email_configured %}
+<p class="notice">O e-mail que envia os avisos ainda não está configurado (<code>SMTP_USER</code> e <code>SMTP_PASSWORD</code> no <code>.env</code>, o mesmo do relatório diário). Dá para ligar as automações, mas nada sai até configurar.</p>
+{% endif %}
+
+<section class="card auto-general" aria-labelledby="geral-title">
+  <h2 id="geral-title" class="card-title">Quem recebe e quando</h2>
+  <form method="post" action="/automacoes/geral" class="auto-general-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="field auto-recipients"><span>E-mails que recebem os avisos</span>
+      <input type="text" name="recipients" value="{{ own_recipients }}" placeholder="{{ report_recipients or 'ex.: dono@loja.com, gerente@loja.com' }}">
+      <small class="muted">{% if own_recipients %}Separe por vírgula.{% elif report_recipients %}Vazio = os mesmos do relatório diário ({{ report_recipients }}).{% else %}Separe por vírgula.{% endif %}</small>
+    </label>
+    <fieldset class="auto-quiet">
+      <legend>Horário silencioso</legend>
+      <label class="check"><input type="checkbox" name="quiet_on" value="1" {% if quiet.ativo %}checked{% endif %}> Não mandar avisos</label>
+      <label class="field field-inline"><span>das</span>
+        <select name="quiet_from">{% for h in hours %}<option value="{{ h }}" {% if h == quiet.de %}selected{% endif %}>{{ '%02d'|format(h) }}h</option>{% endfor %}</select></label>
+      <label class="field field-inline"><span>às</span>
+        <select name="quiet_to">{% for h in hours %}<option value="{{ h }}" {% if h == quiet.ate %}selected{% endif %}>{{ '%02d'|format(h) }}h</option>{% endfor %}</select></label>
+      <small class="muted">O que acontecer nesse horário chega junto, num e-mail só, quando ele acabar.</small>
+    </fieldset>
+    <div class="actions"><button class="btn btn-primary" type="submit">Salvar</button></div>
+  </form>
+  <form method="post" action="/automacoes/teste" class="auto-test">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button class="btn btn-secondary btn-sm" type="submit" {% if not effective %}disabled{% endif %}>
+      <svg class="icon" aria-hidden="true"><use href="#i-mail"/></svg>Mandar e-mail de teste</button>
+    <span class="muted small">{% if effective %}Vai para: {{ effective|join(', ') }}{% else %}Cadastre um e-mail acima para testar.{% endif %}</span>
+  </form>
+</section>
+
+<div class="auto-grid">
+{% for c in cards %}
+  {% set d = c.defn %}{% set r = c.row %}
+  <section class="card auto-card" aria-labelledby="auto-{{ d.slug }}">
+    <header class="conn-head">
+      <h2 id="auto-{{ d.slug }}" class="conn-name">{{ d.name }}</h2>
+      {% if r.enabled %}<span class="badge badge-ok">Ligada</span>{% else %}<span class="badge badge-pausado">Desligada</span>{% endif %}
+    </header>
+    <p class="muted small">{{ d.description }}</p>
+    {% if r.enabled %}
+      <p class="small">{% if c.last_sent %}Último aviso: {{ c.last_sent }}{% else %}Nenhum aviso ainda.{% endif %}
+        {% if c.waiting %}<br><span class="stat-foot warn">{{ c.waiting }} aviso(s) esperando o próximo envio</span>{% endif %}</p>
+      {% if r.last_error %}<p class="form-error">{{ r.last_error }}</p>{% endif %}
+    {% endif %}
+    {% if d.params %}
+    <form method="post" action="/automacoes/{{ d.slug }}/config" class="auto-params">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% for p in d.params %}
+        {% if p.kind == 'bool' %}
+        <label class="check"><input type="checkbox" name="{{ p.key }}" value="1" {% if (r.params or {}).get(p.key) %}checked{% endif %}> {{ p.label }}</label>
+        {% else %}
+        <label class="field field-inline"><span>{{ p.label }}</span>
+          <input type="number" name="{{ p.key }}" min="{{ p.minimum }}" max="{{ p.maximum }}" value="{{ (r.params or {}).get(p.key, p.default) }}"></label>
+        {% endif %}
+      {% endfor %}
+      <button class="btn btn-ghost btn-sm" type="submit">Salvar regra</button>
+    </form>
+    {% endif %}
+    <form method="post" action="/automacoes/{{ d.slug }}/ativo" class="auto-toggle">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="enabled" value="{{ '0' if r.enabled else '1' }}">
+      <button class="btn btn-sm {{ 'btn-secondary' if r.enabled else 'btn-primary' }}" type="submit">{{ 'Desligar' if r.enabled else 'Ligar' }}</button>
+    </form>
+  </section>
+{% endfor %}
+</div>
+
+<section class="card" aria-labelledby="recentes-title">
+  <h2 id="recentes-title" class="card-title">Últimos avisos enviados</h2>
+  {% if recent %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Quando</th><th>Automação</th><th>Aviso</th></tr></thead>
+    <tbody>{% for x in recent %}<tr><td class="small">{{ x.when }}</td><td class="small">{{ x.automation }}</td><td>{{ x.title }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">Nenhum aviso enviado ainda. Ligue uma automação acima; ela avisa o que acontecer daqui para frente.</p>{% endif %}
+</section>
+{% endblock %}

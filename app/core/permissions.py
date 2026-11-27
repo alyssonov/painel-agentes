@@ -48,7 +48,8 @@ PERMISSIONS: list[Permission] = [
     Permission(PRICING, "Usar a precificação", "Calculadora de preços e simulações."),
     Permission(PRODUCTS, "Editar o cadastro dos produtos", "Fornecedor, estoque mínimo, local, compatibilidade e "
                "planilha (só no Gerente do Ano; o Olist não muda)."),
-    Permission(AGENTS, "Configurar agentes", "Ligar/desligar agentes, modo manual/automático e regras."),
+    Permission(AGENTS, "Configurar agentes", "Ligar/desligar agentes, modo manual/automático e regras; "
+               "automações (quais avisos chegam por e-mail)."),
     Permission(STORE, "Configurar a loja", "Contas conectadas, impostos, tabela de taxas e relatórios por e-mail."),
     Permission(ASSISTANT, "Usar o assistente de IA", "Chat que tira dúvidas, mostra o caminho no painel e monta "
                "relatórios com os dados que a pessoa já pode ver (usa a cota diária de IA)."),
@@ -96,6 +97,7 @@ ROUTE_RULES: list[tuple[str, str, str | None]] = [
     ("POST", r"^/(tema|logout)$", None),
     ("*", r"^/equipe(/|$)", TEAM),
     ("*", r"^/assistente(/|$)", ASSISTANT),
+    ("*", r"^/automacoes(/|$)", AGENTS),
     ("*", r"^/historico(/|$)", AUDIT),
     ("*", r"^/integracoes(/|$)", STORE),
     ("*", r"^/precificacao/taxas$", STORE),
