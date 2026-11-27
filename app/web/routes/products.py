@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core import audit
 from app.core.db import get_db
-from app.core.permissions import FINANCE
+from app.core.permissions import FINANCE, PRODUCTS
 from app.core.timeutil import local_today, to_local
 from app.models import Product
 from app.models.product_extra import ProductExtra
@@ -102,6 +102,68 @@ async def upload(request: Request, arquivo: UploadFile = File(...), db: Session 
         msg += " Atenção: " + " ".join(result.errors[:4]) + (" (e outros)" if len(result.errors) > 4 else "")
     flash(request, msg, "erro" if result.errors else "ok")
     return RedirectResponse("/produtos", status_code=303)
+
+
+def _missing_costs(db: Session) -> list[tuple[Product, ProductExtra]]:
+    """Produtos ativos sem custo ou que o Onix não achou (o "pai" de variações fica de fora)."""
+    rows = db.execute(select(Product, ProductExtra).outerjoin(ProductExtra, ProductExtra.product_id == Product.id)
+                      .where(Product.is_active.is_(True), Product.is_demo.is_(False)).order_by(Product.name)).all()
+    out = []
+    for p, e in rows:
+        if p.variation_kind == "P":
+            continue
+        no_cost = not p.cost_cents and not (e and e.onix_cost_cents)
+        if no_cost or (e and e.onix_found is False):
+            out.append((p, e))
+    return out
+
+
+@router.get("/custos")
+def missing_costs_page(request: Request, todos: int = 0, db: Session = Depends(get_db),
+                       user: User = Depends(current_user)):
+    rows = _missing_costs(db)
+    pending = [(p, e) for p, e in rows if not (e and e.onix_cost_cents) and not p.cost_cents]
+    not_found = [(p, e) for p, e in rows if e and e.onix_found is False]
+    return render(request, "missing_costs.html", {
+        "rows": not_found if todos else pending, "pending": len(pending), "total": len(not_found), "todos": bool(todos),
+        "can_edit": user.can(PRODUCTS),
+    }, db=db)
+
+
+@router.post("/custos", dependencies=[Depends(verify_csrf)])
+async def save_missing_costs(request: Request, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    if not user.can(PRODUCTS):
+        flash(request, "Você não tem permissão para editar o cadastro dos produtos.", "erro")
+        return RedirectResponse("/produtos/custos", status_code=303)
+    form = await request.form()
+    saved, errors = 0, []
+    for key, raw in form.items():
+        if not key.startswith("custo_") or not str(raw).strip():
+            continue
+        try:
+            product = db.get(Product, int(key.removeprefix("custo_")))
+        except ValueError:
+            continue
+        if product is None:
+            continue
+        cents = parse_money(str(raw).strip())
+        if cents is None or cents <= 0:
+            errors.append(f"{product.sku}: \"{str(raw)[:20]}\" não é um valor")
+            continue
+        extra = extra_for(db, product)
+        before = snapshot(extra)
+        set_cost(extra, cents)
+        after = snapshot(extra)
+        if after != before:
+            saved += 1
+            audit.record(db, actor=f"user:{user.id}", event="produto.cadastro_alterado", target_type="produto",
+                         target_id=product.id, details={**audit.changes(before, after), "origem": "Custos que faltam"})
+    db.commit()
+    msg = f"{saved} custo(s) salvo(s)." if saved else "Nenhum custo novo."
+    if errors:
+        msg += " Não entendi: " + "; ".join(errors[:5]) + ". Use um valor como 18,90."
+    flash(request, msg, "erro" if errors else "ok")
+    return RedirectResponse("/produtos/custos", status_code=303)
 
 
 @router.get("/{product_id}")

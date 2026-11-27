@@ -1,0 +1,40 @@
+{% extends "app_layout.html" %}
+{% block title %}Custos que faltam{% endblock %}
+{% block page_title %}Custos que faltam{% endblock %}
+{% block page_subtitle %}<p class="muted">Produtos sem custo (nem no Onix nem no Olist) ou cujo SKU o Onix não achou. Informe o custo de cada um: ele passa a valer no lucro real. O Olist e o Onix não são alterados.</p>{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <div class="segmented segmented-light" role="group" aria-label="Quais mostrar">
+    <a class="seg{% if not todos %} is-active{% endif %}" href="/produtos/custos">Sem custo ({{ pending }})</a>
+    <a class="seg{% if todos %} is-active{% endif %}" href="/produtos/custos?todos=1">Todos não achados no Onix ({{ total }})</a>
+  </div>
+  <div class="toolbar-actions"><a class="btn btn-secondary" href="/produtos">← Produtos</a></div>
+</div>
+
+<section class="card">
+  {% if rows %}
+  <form method="post" action="/produtos/custos" data-salvar>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Produto</th><th class="num">Custo no Olist</th><th class="num">Custo usado no lucro (R$)</th></tr></thead>
+        <tbody>
+        {% for p, e in rows %}
+          <tr>
+            <td><a class="link t-strong" href="/produtos/{{ p.id }}">{{ p.name }}</a><br><span class="muted small">{{ p.sku }}</span></td>
+            <td class="num">{{ p.cost_cents|brl if p.cost_cents else '—' }}</td>
+            <td class="num"><input class="field cost-input" type="text" inputmode="decimal" name="custo_{{ p.id }}" aria-label="Custo de {{ p.sku }}"
+              value="{{ ('%.2f'|format(e.onix_cost_cents / 100)).replace('.', ',') if e and e.onix_cost_cents else '' }}" placeholder="ex.: 18,90" {% if not can_edit %}disabled{% endif %}></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if can_edit %}<div class="actions"><button class="btn btn-primary" type="submit">Salvar custos</button></div>{% endif %}
+  </form>
+  <p class="muted small">Kits com SKU no formato <strong>código/quantidade</strong> (ex.: 13914/2) são resolvidos sozinhos: o painel procura o 13914 no Onix e multiplica o custo pela quantidade. Se o Onix passar a achar um SKU, o custo dele volta a vir do Onix.</p>
+  {% else %}
+  <p class="muted">{% if todos %}O Onix achou todos os produtos na última leitura.{% else %}Nenhum produto sem custo.{% endif %}</p>
+  {% endif %}
+</section>
+{% endblock %}

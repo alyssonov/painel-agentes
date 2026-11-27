@@ -15,7 +15,7 @@
 </form>
 
 <div class="toolbar">
-  <p class="muted">{{ total }} produto(s){% if counts.sem_compat %} · <a class="link" href="/produtos?filtro=sem_compat">{{ counts.sem_compat }} sem compatibilidade</a>{% endif %}{% if can('ver_financeiro') %}{% if counts.sem_custo %} · <a class="link" href="/produtos?filtro=sem_custo">{{ counts.sem_custo }} sem custo</a>{% endif %}{% if counts.nao_achado_onix %} · <a class="link" href="/produtos?filtro=nao_achado_onix">{{ counts.nao_achado_onix }} não achado(s) no Onix</a>{% endif %}{% endif %}</p>
+  <p class="muted">{{ total }} produto(s){% if counts.sem_compat %} · <a class="link" href="/produtos?filtro=sem_compat">{{ counts.sem_compat }} sem compatibilidade</a>{% endif %}{% if can('ver_financeiro') %}{% if counts.sem_custo %} · <a class="link" href="/produtos/custos">{{ counts.sem_custo }} sem custo — informar</a>{% endif %}{% if counts.nao_achado_onix %} · <a class="link" href="/produtos/custos?todos=1">{{ counts.nao_achado_onix }} não achado(s) no Onix</a>{% endif %}{% endif %}</p>
   <div class="actions"><a class="btn btn-ghost" href="/produtos.csv?busca={{ busca|urlencode }}&filtro={{ filtro }}&marca={{ marca|urlencode }}">Baixar planilha</a></div>
 </div>
 

@@ -70,7 +70,7 @@ def test_sincronizacao_preenche_sem_sobrescrever(db, onix_env):
     route = _fake(respx, {"1550": SEMI_KIT, "2000": other})
     run = run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
     assert run.status == SyncStatus.OK
-    assert run.counts == {"consultados": 3, "atualizados": 2, "custos_mudaram": 2, "nao_encontrados": 1}
+    assert run.counts == {"consultados": 3, "atualizados": 2, "custos_mudaram": 2, "nao_encontrados": 1, "kits": 0}
     assert all(c.request.method == "GET" for c in route.calls)
     extras = {e.product_id: e for e in db.scalars(select(ProductExtra))}
     e1, e2 = extras[semi.id], extras[manual.id]
@@ -260,3 +260,41 @@ def test_pai_de_variacoes_nao_e_consultado_no_onix(db, onix_env):
     assert rows["9113"].missing_cost
     assert [r.product.sku for r in list_products(db, flt="nao_achado_onix")] == ["9113"]
     assert [r.product.sku for r in list_products(db, flt="sem_custo")] == ["9113"]
+
+
+@respx.mock
+def test_kit_codigo_barra_quantidade_usa_o_custo_do_item_vezes_a_quantidade(db, onix_env):
+    """13914/2 no Olist/ML = 2 caixas do 13914 do Onix."""
+    kit = Product(sku="13914/2", name="Kit 4 setas", cost_cents=0)
+    db.add(kit)
+    db.commit()
+    route = _fake(respx, {"13914": dict(SEMI_KIT, cod_prod=13914, custo_prod="30.00")})
+    run = run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
+    assert [c.request.url.params["id"] for c in route.calls] == ["13914/2", "13914"]
+    extra = db.scalar(select(ProductExtra).where(ProductExtra.product_id == kit.id))
+    assert extra.onix_cost_cents == 6000 and extra.onix_found and run.counts["kits"] == 1
+    assert extra.min_stock is None and extra.supplier_code is None  # do item avulso não vale para o kit
+
+
+@respx.mock
+def test_nao_achado_vira_aviso_e_custo_informado_na_tela(logged_client, db, onix_env):
+    from app.models import Alert
+    from app.models.enums import AlertStatus
+    p = Product(sku="XYZ-9", name="Peça sem código no Onix", cost_cents=0)
+    db.add(p)
+    db.commit()
+    _fake(respx, {})
+    run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
+    alert = db.scalar(select(Alert).where(Alert.source == "onix", Alert.status == AlertStatus.OPEN))
+    assert "1 produto(s) sem custo" in alert.title and "XYZ-9" in alert.detail
+    page = logged_client.get("/produtos/custos")
+    assert page.status_code == 200 and "XYZ-9" in page.text
+    r = logged_client.post("/produtos/custos", data={"csrf_token": csrf_from(page.text), f"custo_{p.id}": "18,90"},
+                           follow_redirects=False)
+    assert r.status_code == 303
+    db.expire_all()
+    assert db.scalar(select(ProductExtra).where(ProductExtra.product_id == p.id)).onix_cost_cents == 1890
+    # próxima leitura: continua não achado, mas já tem custo → o aviso some
+    run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
+    db.expire_all()
+    assert db.scalar(select(Alert).where(Alert.source == "onix", Alert.status == AlertStatus.OPEN)) is None

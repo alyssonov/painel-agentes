@@ -944,6 +944,15 @@ página Lucro real mostra quanto cada marketplace ficou (todas × só conferidas
   Olist. Usado no lucro real, DRE, relatórios, Curva ABC, dinheiro parado, preços
   (agente e em massa) e pedidos de compra. Nada é escrito no Olist (cliente só
   leitura): o custo do Onix fica só no banco do painel.
+- **Kits e SKUs que o Onix não acha (27/11/2026):** SKU no formato
+  `código/quantidade` (ex.: `13914/2` = 2 caixas do 13914) não achado → consulta
+  o código e grava custo × quantidade (estoque mínimo, código e local do item
+  avulso não passam para o kit). Ao fim da leitura, alerta "onix:sem_custo" com
+  os SKUs não achados e ainda sem custo (vai para "O que pede atenção" e para as
+  automações por e-mail). Tela `/produtos/custos` ("Custos que faltam", exige
+  ver_financeiro; salvar exige editar_produtos) para digitar o custo de vários de
+  uma vez — fica em `product_extras.onix_cost_cents` (o Onix só sobrescreve se
+  passar a achar o SKU).
   Worker: ao ligar e a cada `ONIX_SYNC_HOURS`; botão em Contas conectadas.
 - O lucro real continua usando o custo do Olist; o do Onix aparece ao lado e o
   filtro "Custo do Onix diferente do Olist" mostra as diferenças.

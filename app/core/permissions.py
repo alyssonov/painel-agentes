@@ -112,6 +112,7 @@ ROUTE_RULES: list[tuple[str, str, str | None]] = [
     ("POST", r"^/(perguntas|pos-venda)/", SUPPORT),
     ("POST", r"^/(anuncios|estoque-precos)/", PRICES),
     ("POST", r"^/agentes/", AGENTS),
+    ("*", r"^/produtos/custos(/|$)", FINANCE),
     ("POST", r"^/produtos(/|$)", PRODUCTS),
     ("POST", r"^/compras(/|$)", PURCHASES),
     ("GET", r"^/", VIEW),

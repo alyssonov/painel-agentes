@@ -805,3 +805,6 @@ form > .card { margin-bottom: 16px; }
 /* Topo: botão de tema do mesmo tamanho do círculo com a inicial da pessoa (30 px). */
 .topbar-user .icon-btn { width: 30px; height: 30px; }
 .topbar-user .icon-btn .icon { width: 16px; height: 16px; }
+
+/* Custos que faltam: campo de valor na tabela */
+.cost-input { width: 130px; text-align: right; }
