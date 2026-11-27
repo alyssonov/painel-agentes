@@ -240,3 +240,23 @@ def test_quando_ler_o_onix_de_novo(db):
     night = datetime(2026, 11, 28, 5, 0)  # 2h da manhã em Brasília
     assert not onix_due(factory, hours=6, now=night, open_hour=8, close_hour=18)
     assert onix_due(factory, hours=6, now=datetime(2026, 11, 28, 12, 0), open_hour=8, close_hour=18)  # 9h
+
+
+@respx.mock
+def test_pai_de_variacoes_nao_e_consultado_no_onix(db, onix_env):
+    """Ex.: anúncio "capachuvadelta" com variações 9112 e 9113: só as variações existem no Onix."""
+    pai = Product(sku="capachuvadelta", name="Capa de chuva Delta", cost_cents=0, variation_kind="P")
+    v1 = Product(sku="9112", name="Capa de chuva Delta P", cost_cents=0, variation_kind="V")
+    v2 = Product(sku="9113", name="Capa de chuva Delta M", cost_cents=0, variation_kind="V")
+    db.add_all([pai, v1, v2])
+    db.commit()
+    route = _fake(respx, {"9112": dict(SEMI_KIT, cod_prod=9112)})
+    run = run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
+    asked = [c.request.url.params["id"] for c in route.calls]
+    assert "capachuvadelta" not in asked and run.counts["nao_encontrados"] == 1  # só o 9113
+    rows = {r.product.sku: r for r in list_products(db)}
+    assert rows["capachuvadelta"].is_variation_parent and not rows["capachuvadelta"].missing_cost
+    assert not rows["9112"].missing_cost  # custo veio do Onix
+    assert rows["9113"].missing_cost
+    assert [r.product.sku for r in list_products(db, flt="nao_achado_onix")] == ["9113"]
+    assert [r.product.sku for r in list_products(db, flt="sem_custo")] == ["9113"]

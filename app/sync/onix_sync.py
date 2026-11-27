@@ -14,7 +14,7 @@ continua usando o custo do Olist (o do Onix aparece ao lado, para comparar).
 import logging
 from datetime import datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
@@ -79,11 +79,14 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
         db.add(run)
         db.commit()
         counts = {"consultados": 0, "atualizados": 0, "custos_mudaram": 0, "nao_encontrados": 0}
+        # "Pai" de variações (ex.: capachuvadelta) não existe no Onix: só as variações (9112, 9113…).
         own = client is None
         client = client or OnixClient(settings.onix_api_url)
         failures = 0
         try:
-            everything = list(db.scalars(select(Product).where(Product.is_active.is_(True), Product.is_demo.is_(False))
+            everything = list(db.scalars(select(Product).where(Product.is_active.is_(True), Product.is_demo.is_(False),
+                                                       or_(Product.variation_kind.is_(None),
+                                                           Product.variation_kind != "P"))
                                          .order_by(Product.id)))
             resume_after = get_setting(db, RESUME_KEY) or 0
             products = [p for p in everything if p.id > resume_after]
@@ -110,9 +113,12 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
                 counts["consultados"] += 1
                 if data is None:
                     counts["nao_encontrados"] += 1
+                    extra_for(db, product).onix_found = False
+                    db.commit()
                     continue
                 info = parse(data, settings.onix_cost_field)
                 extra = extra_for(db, product)
+                extra.onix_found = True
                 before = snapshot(extra)
                 old_cost = extra.onix_cost_cents
                 if info.cost_cents is not None:

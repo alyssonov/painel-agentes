@@ -35,6 +35,8 @@ def test_primeira_sincronizacao_importa_tudo(db, olist_env):
     caneca = db.scalar(select(Product).where(Product.sku == "CAN-01"))
     garrafa = db.scalar(select(Product).where(Product.sku == "GAR-01"))
     # Marca: vem do detalhe do produto (GET /produtos/{id}), só uma vez por produto.
+    # Tipo de variação do Olist: "pai" (P) e produto normal (sem o campo = N).
+    assert (caneca.variation_kind, garrafa.variation_kind) == ("P", "N")
     assert (caneca.brand, garrafa.brand) == ("Cofap", "Vaz") and caneca.brand_checked_at is not None
     assert all(c.request.method == "GET" for c in routes["produto"].calls)
     assert (caneca.cost_cents, caneca.price_cents) == (2150, 6990)

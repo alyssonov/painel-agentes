@@ -24,7 +24,8 @@ from app.services.search import matches, normalize, terms
 PAGE = 50
 FILTERS = {"": "Todos", "sem_compat": "Sem compatibilidade", "abaixo_minimo": "Abaixo do estoque mínimo",
            "custo_diferente": "Custo do Onix diferente do Olist", "sem_marca": "Sem marca",
-           "sem_fornecedor": "Sem fornecedor"}
+           "sem_fornecedor": "Sem fornecedor", "sem_custo": "Sem custo (nem no Olist nem no Onix)",
+           "nao_achado_onix": "Não achado no Onix"}
 NO_BRAND = "__sem__"  # valor do filtro de marca para "sem marca"
 COST_DIFF_PCT = 5.0  # acima disso, avisa que o custo do Onix e o do Olist não batem
 
@@ -114,6 +115,17 @@ class ProductRow:
         return (self.extra.onix_cost_cents - self.product.cost_cents) / self.product.cost_cents * 100
 
     @property
+    def is_variation_parent(self) -> bool:
+        """"Pai" de variações no Olist: não é vendido; custo e Onix ficam nas variações."""
+        return self.product.variation_kind == "P"
+
+    @property
+    def missing_cost(self) -> bool:
+        """Sem custo no Olist e sem custo do Onix (o "pai" de variações não conta)."""
+        return (not self.is_variation_parent and not self.product.cost_cents
+                and not (self.extra and self.extra.onix_cost_cents))
+
+    @property
     def cost_differs(self) -> bool:
         diff = self.cost_diff_pct
         return diff is not None and abs(diff) > COST_DIFF_PCT
@@ -159,6 +171,10 @@ def list_products(db: Session, q: str = "", flt: str = "", brand: str = "") -> l
         rows = [r for r in rows if not (r.extra and r.extra.supplier)]
     elif flt == "sem_marca":
         rows = [r for r in rows if not r.brand]
+    elif flt == "sem_custo":
+        rows = [r for r in rows if r.missing_cost]
+    elif flt == "nao_achado_onix":
+        rows = [r for r in rows if r.extra and r.extra.onix_found is False]
     return rows
 
 

@@ -53,7 +53,9 @@ def products_page(request: Request, busca: str = "", filtro: str = "", marca: st
     pages = max(1, -(-len(rows) // PAGE))
     pagina = min(max(1, pagina), pages)
     counts = {"sem_compat": sum(1 for r in everything if not (r.extra and r.extra.compatibility)),
-              "sem_marca": sum(1 for r in everything if not r.brand)}
+              "sem_marca": sum(1 for r in everything if not r.brand),
+              "sem_custo": sum(1 for r in everything if r.missing_cost),
+              "nao_achado_onix": sum(1 for r in everything if r.extra and r.extra.onix_found is False)}
     return render(request, "products.html", {
         "rows": rows[(pagina - 1) * PAGE: pagina * PAGE], "total": len(rows), "page": pagina, "pages": pages,
         "busca": busca, "filtro": filtro, "filters": FILTERS, "counts": counts, "diff_pct": COST_DIFF_PCT,

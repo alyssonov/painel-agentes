@@ -28,6 +28,9 @@ class Product(CompanyScoped, TimestampMixin, Base):
     brand_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     price_cents: Mapped[int] = mapped_column(BigInteger, default=0)
     is_active: Mapped[bool] = mapped_column(default=True)
+    # tipoVariacao do Olist: N = normal, P = "pai" de variações (não é vendido nem existe no
+    # Onix: quem vende e tem custo são as variações), V = variação. None = ainda não lido.
+    variation_kind: Mapped[str | None] = mapped_column(String(1), nullable=True)
     is_demo: Mapped[bool] = mapped_column(default=False)
 
 

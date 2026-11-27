@@ -10,12 +10,12 @@
       {% for name, n in brands %}<option value="{{ name }}" {% if marca == name %}selected{% endif %}>{{ name }} ({{ n }})</option>{% endfor %}
       <option value="{{ no_brand }}" {% if marca == no_brand %}selected{% endif %}>Sem marca ({{ counts.sem_marca }})</option></select></label>
   <label class="field"><span>Mostrar</span>
-    <select name="filtro">{% for k, label in filters.items() %}{% if k != 'custo_diferente' or can('ver_financeiro') %}<option value="{{ k }}" {% if filtro == k %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}</select></label>
+    <select name="filtro">{% for k, label in filters.items() %}{% if k not in ('custo_diferente', 'sem_custo') or can('ver_financeiro') %}<option value="{{ k }}" {% if filtro == k %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}</select></label>
   <div class="actions"><button class="btn btn-primary" type="submit">Filtrar</button><a class="btn btn-ghost" href="/produtos">Limpar</a></div>
 </form>
 
 <div class="toolbar">
-  <p class="muted">{{ total }} produto(s){% if counts.sem_compat %} · <a class="link" href="/produtos?filtro=sem_compat">{{ counts.sem_compat }} sem compatibilidade</a>{% endif %}</p>
+  <p class="muted">{{ total }} produto(s){% if counts.sem_compat %} · <a class="link" href="/produtos?filtro=sem_compat">{{ counts.sem_compat }} sem compatibilidade</a>{% endif %}{% if can('ver_financeiro') %}{% if counts.sem_custo %} · <a class="link" href="/produtos?filtro=sem_custo">{{ counts.sem_custo }} sem custo</a>{% endif %}{% if counts.nao_achado_onix %} · <a class="link" href="/produtos?filtro=nao_achado_onix">{{ counts.nao_achado_onix }} não achado(s) no Onix</a>{% endif %}{% endif %}</p>
   <div class="actions"><a class="btn btn-ghost" href="/produtos.csv?busca={{ busca|urlencode }}&filtro={{ filtro }}&marca={{ marca|urlencode }}">Baixar planilha</a></div>
 </div>
 
@@ -27,7 +27,7 @@
       <tbody>
       {% for r in rows %}{% set e = r.extra %}
         <tr>
-          <td><a class="link t-strong" href="/produtos/{{ r.product.id }}">{{ r.product.name }}</a><br><span class="muted small">{{ r.product.sku }}</span></td>
+          <td><a class="link t-strong" href="/produtos/{{ r.product.id }}">{{ r.product.name }}</a><br><span class="muted small">{{ r.product.sku }}</span>{% if r.is_variation_parent %} <span class="badge badge-info" title="Produto com variações no Olist: o custo e o Onix ficam em cada variação">com variações</span>{% elif can('ver_financeiro') and r.missing_cost %} <span class="badge badge-atencao">Sem custo</span>{% endif %}</td>
           <td class="small">{% if e and e.compatibility %}{% for c in e.compatibility[:3] %}<div>{{ c.marca }} {{ c.modelo }}{% if c.de %} {{ c.de }}{% if c.ate and c.ate != c.de %}–{{ c.ate }}{% endif %}{% endif %}</div>{% endfor %}{% if e.compatibility|length > 3 %}<span class="muted">+ {{ e.compatibility|length - 3 }}</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
           <td class="num">{{ r.stock if r.stock is not none else '—' }}{% if e and e.min_stock is not none %}<br><span class="small {{ 'text-danger' if r.below_min else 'muted' }}">mín. {{ e.min_stock }}{% if r.below_min %} (abaixo){% endif %}</span>{% endif %}</td>
           <td class="small">{% if r.brand %}<a class="link" href="/produtos?marca={{ r.brand|urlencode }}" title="Ver todos da marca · marca do(a) {{ r.brand_source }}">{{ r.brand }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>

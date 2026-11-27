@@ -933,6 +933,12 @@ página Lucro real mostra quanto cada marketplace ficou (todas × só conferidas
   marca do Onix (`product_extras.onix_brand`, migração 0023; vale depois da do
   Olist) e — só se estiverem vazios — estoque mínimo, código de fábrica e local.
   Para depois de 5 produtos seguidos sem resposta (computador desligado).
+- **Variações (27/11/2026):** o Olist lista o "pai" (`tipoVariacao` P, ex.:
+  `capachuvadelta`) e cada variação (V, ex.: 9112, 9113). Só as variações
+  existem no Onix e são vendidas: o pai não é consultado nem conta como "sem
+  custo". `products.variation_kind` e `product_extras.onix_found` (migração
+  0028); filtros "Sem custo (nem no Olist nem no Onix)" e "Não achado no Onix"
+  em Produtos.
   Worker: ao ligar e a cada `ONIX_SYNC_HOURS`; botão em Contas conectadas.
 - O lucro real continua usando o custo do Olist; o do Onix aparece ao lado e o
   filtro "Custo do Onix diferente do Olist" mostra as diferenças.

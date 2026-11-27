@@ -31,6 +31,8 @@ class ProductExtra(CompanyScoped, TimestampMixin, Base):
     # Custo informado pelo Onix (loja física) ou pela planilha. O lucro continua usando o custo do Olist.
     onix_cost_cents: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     onix_cost_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Última leitura do Onix achou este SKU? None = ainda não consultado.
+    onix_found: Mapped[bool | None] = mapped_column(nullable=True)
     min_stock: Mapped[int | None] = mapped_column(Integer, nullable=True)
     lead_time_days: Mapped[int | None] = mapped_column(Integer, nullable=True)  # prazo deste fornecedor
     location: Mapped[str | None] = mapped_column(String(60), nullable=True)  # prateleira/corredor

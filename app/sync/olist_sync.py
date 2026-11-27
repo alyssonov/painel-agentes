@@ -112,6 +112,10 @@ def run_olist_sync(session_factory: sessionmaker[Session],
 
 def sync_products(db: Session, client: OlistClient, account, started: datetime) -> int:
     since = _cursor(account, "cursor_produtos")
+    # Produtos lidos antes de o painel guardar o tipo de variação: lê tudo de novo uma vez.
+    if since and db.scalar(select(Product.id).where(Product.is_demo.is_(False), Product.olist_id.is_not(None),
+                                                    Product.variation_kind.is_(None)).limit(1)):
+        since = None
     count = 0
     for item in client.iter_products(changed_since=since - CURSOR_OVERLAP if since else None):
         if item.get("situacao") == "E" or not item.get("id"):  # excluído no Olist
@@ -134,6 +138,7 @@ def sync_products(db: Session, client: OlistClient, account, started: datetime) 
         if cost is not None:
             product.cost_cents = to_cents(cost)
         product.is_active = item.get("situacao", "A") == "A"
+        product.variation_kind = (item.get("tipoVariacao") or "N")[:1]
         product.is_demo = False
         product.brand_checked_at = None  # mudou no Olist: lê a marca de novo
         count += 1

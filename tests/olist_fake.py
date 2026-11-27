@@ -12,7 +12,7 @@ from app.integrations.olist.auth import TOKEN_URL
 from app.integrations.olist.client import BASE_URL
 
 PRODUCTS = [
-    {"id": 101, "sku": "CAN-01", "descricao": "Caneca Térmica", "situacao": "A", "tipo": "S",
+    {"id": 101, "sku": "CAN-01", "descricao": "Caneca Térmica", "situacao": "A", "tipo": "V", "tipoVariacao": "P",
      "precos": {"preco": 69.9, "precoPromocional": 0, "precoCusto": 20.0, "precoCustoMedio": 21.5}},
     {"id": 102, "sku": "GAR-01", "descricao": "Garrafa 1L", "situacao": "A", "tipo": "S",
      "precos": {"preco": 99.9, "precoCusto": 34.5, "precoCustoMedio": 0}},
