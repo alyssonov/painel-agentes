@@ -210,3 +210,29 @@ def test_leitura_interrompida_continua_de_onde_parou(logged_client, db, onix_env
     db.expire_all()
     assert db.get(SyncRun, stuck.id).status == S.ERROR  # a antiga ficou marcada como interrompida
     assert get_setting(db, RESUME_KEY) is None  # terminou: a próxima começa do início
+
+
+def test_quando_ler_o_onix_de_novo(db):
+    """Deu certo: espera o ciclo (6 h). Falhou (computador do Onix desligado): tenta em 1 hora."""
+    from datetime import timedelta
+
+    from app.models import SyncRun
+    from app.models.enums import SyncStatus as S
+    from app.sync.onix_sync import onix_due
+    now = datetime(2026, 11, 27, 12, 0)
+    factory = get_sessionmaker()
+    assert onix_due(factory, hours=6, now=now)  # nunca leu
+    run = SyncRun(provider="onix", status=S.ERROR, started_at=now - timedelta(minutes=40),
+                  finished_at=now - timedelta(minutes=40), counts={})
+    db.add(run)
+    db.commit()
+    assert not onix_due(factory, hours=6, now=now)
+    assert onix_due(factory, hours=6, now=now + timedelta(minutes=25))  # 1 h depois da falha
+    run.status = S.OK
+    db.commit()
+    assert not onix_due(factory, hours=6, now=now + timedelta(hours=3))
+    assert onix_due(factory, hours=6, now=now + timedelta(hours=6))
+    run.status, run.counts = S.RUNNING, {"em": (now - timedelta(minutes=2)).isoformat()}
+    db.commit()
+    assert not onix_due(factory, hours=6, now=now)  # lendo agora: não começa outra
+    assert onix_due(factory, hours=6, now=now + timedelta(minutes=30))  # parou no meio: retoma

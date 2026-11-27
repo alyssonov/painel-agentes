@@ -36,7 +36,7 @@ from app.fake_data.seed import refresh_demo_if_stale
 from app.sync.ml_sync import run_ml_sync
 from app.automations.runner import run_automations
 from app.sync.shopee_sync import keep_shopee_alive, run_shopee_sync
-from app.sync.onix_sync import run_onix_sync
+from app.sync.onix_sync import onix_due, run_onix_sync
 from app.sync.olist_sync import run_olist_sync
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -83,6 +83,9 @@ def job_shopee_token() -> None:
 def job_sync_onix() -> None:
     """Onix (loja física): custo, marca e qtd. mínima dos produtos — só leitura."""
     try:
+        # Confere a cada 30 min; lê de fato a cada N horas (ou 1 hora depois de uma falha).
+        if not onix_due(get_sessionmaker(), hours=max(1, get_settings().onix_sync_hours)):
+            return
         run = run_onix_sync(get_sessionmaker())
         if run is not None:
             logger.info("Onix: %s %s", run.status, run.counts)
@@ -158,7 +161,7 @@ def main() -> None:
                       max_instances=1, coalesce=True)
     if settings.onix_configured:
         # Primeira leitura logo ao ligar (em segundo plano, sem atrasar o resto).
-        scheduler.add_job(job_sync_onix, "interval", hours=max(1, settings.onix_sync_hours), id="sync_onix",
+        scheduler.add_job(job_sync_onix, "interval", minutes=30, id="sync_onix",
                           max_instances=1, coalesce=True, next_run_time=datetime.now(settings.tz))
     scheduler.add_job(job_agent_questions, "interval", minutes=settings.agent_questions_minutes,
                       id="agent_questions", max_instances=1, coalesce=True)

@@ -12,6 +12,7 @@ continua usando o custo do Olist (o do Onix aparece ao lado, para comparar).
 """
 
 import logging
+from datetime import datetime, timedelta
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
@@ -34,6 +35,30 @@ MAX_CONSECUTIVE_FAILURES = 5  # Onix desligado: para logo, em vez de tentar prod
 # atualizou no meio): a próxima leitura CONTINUA dali, em vez de recomeçar do zero.
 RESUME_KEY = "onix_continuar_depois_do_produto"
 INTERRUPTED = "Interrompida no meio (o painel foi desligado ou atualizado); a próxima leitura continua de onde parou."
+
+
+RETRY_AFTER_ERROR = timedelta(hours=1)
+STALLED = timedelta(minutes=15)
+
+
+def onix_due(session_factory: sessionmaker[Session], *, hours: int, now: datetime | None = None) -> bool:
+    """Está na hora de ler o Onix?
+
+    Deu certo: espera `hours` horas. Falhou (ex.: o computador do Onix estava desligado
+    à noite): tenta de novo em 1 hora, em vez de esperar o ciclo inteiro. Em andamento
+    (com notícia recente): não começa outra.
+    """
+    now = now or utcnow()
+    with session_factory() as db:
+        last = db.scalar(select(SyncRun).where(SyncRun.provider == PROVIDER).order_by(SyncRun.id.desc()).limit(1))
+    if last is None:
+        return True
+    if last.status == SyncStatus.RUNNING:
+        seen = (last.counts or {}).get("em")
+        return now - (datetime.fromisoformat(seen) if seen else last.started_at) > STALLED
+    if last.status == SyncStatus.OK:
+        return now - (last.finished_at or last.started_at) >= timedelta(hours=hours)
+    return now - (last.finished_at or last.started_at) >= RETRY_AFTER_ERROR
 
 
 def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient | None = None) -> SyncRun | None:
