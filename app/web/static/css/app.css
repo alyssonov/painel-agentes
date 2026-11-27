@@ -799,3 +799,7 @@ form > .card { margin-bottom: 16px; }
 .mk-card .mk-row .abc-bar { height: 10px; }
 .mk-total { display: flex; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 12px;
   font-size: 14px; }
+
+/* Topo: botão de tema do mesmo tamanho do círculo com a inicial da pessoa (30 px). */
+.topbar-user .icon-btn { width: 30px; height: 30px; }
+.topbar-user .icon-btn .icon { width: 16px; height: 16px; }
