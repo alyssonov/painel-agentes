@@ -143,6 +143,24 @@ ver e nunca altera nada — para agir, mostra a tela. Usa a Claude API
 (`ANTHROPIC_API_KEY` no `.env`) e conta no teto diário de IA. Cada pessoa vê só
 as próprias conversas.
 
+## Automações (avisos por e-mail)
+
+Menu **Inteligência → Automações**: escolha quais avisos chegam por e-mail
+(algo urgente, envio atrasado, estoque acabando, venda com prejuízo, pergunta
+esperando resposta, reclamações e reputação, conta com problema). Todas começam
+desligadas; ligada, avisa só o que acontecer **daqui para frente**, num e-mail só
+por rodada (a cada 5 minutos), sem repetir o mesmo aviso. Tem horário silencioso
+(padrão 22h às 7h: o que acontecer nesse horário chega junto quando ele acabar) e
+um botão de e-mail de teste. Usa o mesmo e-mail do relatório diário (`SMTP_*`).
+São avisos para a loja: nada aqui responde cliente nem muda preço ou estoque.
+
+## Relatórios para baixar
+
+Menu **Inteligência → Relatórios**: escolha o relatório (vendas do período, lucro
+por produto ou resumo por dia, com Mercado Livre e Shopee separados) e o período,
+e baixe a **planilha** (abre no Excel com acentos e números certos) ou abra a
+**versão para imprimir** (Imprimir → "Salvar como PDF").
+
 ## Pedidos e lista de separação
 
 Menu **Operação → Pedidos**: todos os pedidos com a situação do envio (a enviar,

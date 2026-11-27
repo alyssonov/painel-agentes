@@ -99,7 +99,7 @@ espera da sua confirmação.
 | **2. Fundação visual** ✅ 26/11 | design system novo (cores, tipografia, componentes, tema escuro/claro), menu reorganizado nos novos módulos, dashboard com mais indicadores e gráficos | A1 |
 | **3. Estrutura e segurança** ✅ 26/11 | empresas (multiempresa), papéis e permissões granulares, auditoria com antes/depois e histórico por registro, tela de equipe | A4 |
 | **4. Operação** ✅ 26/11 (em teste; etiquetas e ações de anúncio dependem da documentação oficial) | central de pedidos (filtros, picking, etiquetas), central de anúncios (filtros, ações em massa com aprovação), precificação em massa, produtos com cadastro complementar e compatibilidade | A2, A3, B7 |
-| **5. Integrações e gestão** | custos do Onix (planilha → conector), fornecedores e compras, financeiro com despesas e DRE, Mercado Ads, Shopee | B2, B6, B5, B3 |
-| **6. Inteligência** 🟡 26/11 (Assistente pronto) | Agente Gerente (chat com dados reais e fontes), tela de automações configuráveis, relatórios exportáveis | — |
+| **5. Integrações e gestão** 🟡 27/11 (falta Mercado Ads — depende da documentação oficial) | custos do Onix (planilha → conector), fornecedores e compras, financeiro com despesas e DRE, Mercado Ads, Shopee | B2, B6, B5, B3 |
+| **6. Inteligência** ✅ 27/11 (Assistente, Automações e Relatórios para baixar) | Agente Gerente (chat com dados reais e fontes), tela de automações configuráveis, relatórios exportáveis | — |
 | **7. Colocar no ar** | domínio, servidor, HTTPS, backup, revisão de segurança | B4 |
 | **8. SaaS** | cadastro de empresas, planos, limites, cobrança | depois de rodar bem na loja |

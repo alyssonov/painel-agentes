@@ -1,0 +1,27 @@
+{% extends "app_layout.html" %}
+{% block title %}{{ t.title }}{% endblock %}
+{% block page_title %}{{ t.title }}{% endblock %}
+{% block page_subtitle %}<p class="muted">{{ t.period.label }}</p>{% endblock %}
+{% block content %}
+<div class="toolbar no-print">
+  <p class="muted">{{ rows|length }} linha(s). Para PDF: Imprimir → destino “Salvar como PDF”.</p>
+  <div class="actions"><button class="btn btn-primary" type="button" data-imprimir>Imprimir ou salvar PDF</button>
+    <a class="btn btn-ghost" href="/relatorios">Voltar</a></div>
+</div>
+<section class="card report-print">
+  <header class="print-head">
+    <h2 class="card-title">{{ t.title }}</h2>
+    <p class="muted small">Gerente do ano · {{ t.period.label }}</p>
+  </header>
+  {% if rows %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr>{% for c in t.columns %}<th{% if loop.index0 in t.money or loop.index0 in t.pct %} class="num"{% endif %}>{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for r in rows %}<tr>{% for v in r %}<td{% if loop.index0 in t.money or loop.index0 in t.pct %} class="num"{% endif %}>{{ v }}</td>{% endfor %}</tr>{% endfor %}
+    </tbody>
+    {% if totals %}<tfoot><tr class="t-strong">{% for v in totals %}<td{% if loop.index0 in t.money or loop.index0 in t.pct %} class="num"{% endif %}>{{ v }}</td>{% endfor %}</tr></tfoot>{% endif %}
+  </table></div>
+  {% else %}<p class="muted">Nenhuma venda neste período.</p>{% endif %}
+  {% for n in t.notes %}<p class="muted small">{{ n }}</p>{% endfor %}
+</section>
+{% endblock %}

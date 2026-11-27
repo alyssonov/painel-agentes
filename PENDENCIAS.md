@@ -109,6 +109,13 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   clicar em "Conectar de novo" no painel.
 - **Depende disso:** investimento, ROAS, ACOS, TACOS, campanhas.
 
+### Etapa 6 — o que conferir (27/11)
+- **Inteligência → Automações:** cadastre quem recebe, clique em **Mandar
+  e-mail de teste** e ligue as automações que quiser (ex.: "Algo urgente" e
+  "Envio atrasado"). Precisa do e-mail configurado (`SMTP_USER`/`SMTP_PASSWORD`).
+- **Inteligência → Relatórios:** baixe a planilha de "Vendas do período" e abra
+  no Excel; teste também "Ver para imprimir ou salvar em PDF".
+
 ### B6. Despesas fixas da empresa — 🟡
 - **Pronto no painel (26/11):** Financeiro → **Despesas** (lançar) e **DRE do
   mês** (lucro líquido de verdade).

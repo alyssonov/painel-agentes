@@ -1,8 +1,37 @@
 {% extends "app_layout.html" %}
 {% block title %}Relatórios{% endblock %}
 {% block page_title %}Relatórios{% endblock %}
-{% block page_subtitle %}<p class="muted">Resumo do dia por e-mail, todo dia a partir das {{ hour }}h. Relatórios semanal e mensal em PDF chegam na próxima etapa.</p>{% endblock %}
+{% block page_subtitle %}<p class="muted">Relatórios para baixar (Excel ou PDF) e o resumo do dia por e-mail, todo dia a partir das {{ hour }}h.</p>{% endblock %}
 {% block content %}
+<section class="card export-card" aria-labelledby="export-title">
+  <h2 id="export-title" class="card-title">Relatórios para baixar</h2>
+  <form method="get" action="/relatorios/baixar" class="export-form">
+    <fieldset class="export-kinds">
+      <legend>Qual relatório</legend>
+      {% for key, (name, desc) in export_kinds.items() %}
+      <label class="export-kind"><input type="radio" name="tipo" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+        <span><strong>{{ name }}</strong><small class="muted">{{ desc }}</small></span></label>
+      {% endfor %}
+    </fieldset>
+    <div class="export-period">
+      <label class="field"><span>Período</span>
+        <select name="periodo">{% for key, label in export_periods.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+      <label class="field"><span>De <small class="muted">(se escolher datas)</small></span><input type="date" name="de" value="{{ export_default.start.isoformat() }}"></label>
+      <label class="field"><span>Até</span><input type="date" name="ate" value="{{ export_default.end.isoformat() }}"></label>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" name="formato" value="planilha">Baixar planilha (Excel)</button>
+      <button class="btn btn-secondary" type="submit" name="formato" value="imprimir">Ver para imprimir ou salvar em PDF</button>
+    </div>
+  </form>
+  <p class="muted small export-more">Outros relatórios do painel:
+    <a class="link" href="/margem/curva-abc.csv">Curva ABC (planilha)</a> ·
+    <a class="link" href="/financeiro/dre">DRE do mês</a> ·
+    <a class="link" href="/estoque-precos/sugestao-de-compra.csv">Sugestão de compra (planilha)</a> ·
+    <a class="link" href="/pedidos">Pedidos (planilha na página)</a> ·
+    <a class="link" href="/produtos">Produtos (planilha na página)</a></p>
+</section>
+
 <div class="report-grid">
   <div class="report-side">
     <section class="card integration">

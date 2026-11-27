@@ -1,7 +1,7 @@
 """Página Relatórios: prévia do relatório de hoje, destinatários, envio de teste e histórico."""
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,7 @@ from app.models import Agent, Report
 from app.models.user import User
 from app.notify.email import invalid_recipients, parse_recipients
 from app.reports.daily import build_daily, render_html, send_daily
+from app.services import exports
 from app.services.store_settings import get_setting, set_setting
 from app.web.auth import current_user, verify_csrf
 from app.web.templating import flash, render
@@ -40,7 +41,29 @@ def reports_page(request: Request, db: Session = Depends(get_db), user: User = D
         "hour": int(agent_rules(agent)["hora_envio"]) if agent else 19,
         "enabled": bool(agent and agent.enabled),
         "history": history,
+        "export_kinds": exports.KINDS, "export_periods": exports.PERIODS,
+        "export_default": exports.parse_period("mes"),
     }, db=db)
+
+
+@router.get("/baixar")
+def download(request: Request, tipo: str = "vendas", periodo: str = "mes", de: str = "", ate: str = "",
+             formato: str = "planilha", db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Relatório do período: planilha para o Excel (CSV) ou página para imprimir / salvar em PDF."""
+    kind = tipo if tipo in exports.KINDS else "vendas"
+    period = exports.parse_period(periodo, de, ate)
+    table = exports.build(db, kind, period, float(get_setting(db, "tax_rate_pct") or 0))
+    audit.record(db, actor=f"user:{user.id}", event="relatorio.baixado", target_type="relatorio", target_id=kind,
+                 details={"periodo": period.label, "formato": formato})
+    db.commit()
+    if formato == "imprimir":
+        return render(request, "report_print.html", {"t": table, "kind": kind,
+                                                     "rows": [table.display(r) for r in table.rows],
+                                                     "totals": table.display(table.totals) if table.totals else None},
+                      db=db)
+    filename = f"{kind}-{period.start:%Y%m%d}-a-{period.end:%Y%m%d}.csv"
+    return Response(exports.to_csv(table), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 @router.get("/previa", response_class=HTMLResponse)

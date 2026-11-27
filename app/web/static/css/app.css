@@ -567,6 +567,9 @@ form > .card { margin-bottom: 16px; }
   .sidebar, .topbar, .no-print, .flash { display: none !important; }
   body, .card { background: #fff !important; color: #000 !important; box-shadow: none !important; border-color: #999 !important; }
   .main, .content { margin: 0 !important; padding: 0 !important; }
+  /* Sem o menu, o conteúdo ocupa a folha inteira (antes a coluna do menu continuava reservada). */
+  .shell { display: block !important; }
+  .content, .card, .table-wrap { width: auto !important; max-width: none !important; overflow: visible !important; }
   .table th, .table td, .muted, .text-danger { color: #000 !important; }
   .pick-box { border-color: #000; }
 }
@@ -761,3 +764,19 @@ form > .card { margin-bottom: 16px; }
 .auto-params { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; border-top: 1px solid var(--line); padding-top: 10px; }
 .auto-params .field-inline input { width: 90px; }
 .auto-toggle { margin: auto 0 0; padding-top: 4px; }
+
+/* Relatórios para baixar */
+.export-card { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.export-form { display: flex; flex-direction: column; gap: 14px; }
+.export-kinds { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.export-kinds legend { font-size: 13px; font-weight: 600; margin-bottom: 8px; padding: 0; }
+.export-kind { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--card-2); cursor: pointer; }
+.export-kind:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.export-kind span { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.export-period { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.export-more { margin: 0; border-top: 1px solid var(--line); padding-top: 10px; }
+.report-print .print-head { margin-bottom: 10px; }
+.report-print .print-head .card-title { margin: 0; }
+.report-print tfoot td { border-top: 2px solid var(--line); }
+@media print { .report-print .table { font-size: 11px; } }
