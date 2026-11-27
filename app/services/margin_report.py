@@ -63,12 +63,35 @@ class LossOrder:
 
 
 @dataclass
+class ChannelShare:
+    """Quanto cada marketplace ficou das vendas (taxas + frete e tarifas)."""
+
+    label: str
+    orders: int = 0
+    confirmed: int = 0  # vendas com o valor recebido/taxas já conferidos no marketplace
+    revenue: int = 0
+    platform: int = 0  # taxas + frete de todas as vendas
+    confirmed_revenue: int = 0
+    confirmed_platform: int = 0
+
+    @property
+    def pct(self) -> float | None:
+        return self.platform / self.revenue * 100 if self.revenue else None
+
+    @property
+    def confirmed_pct(self) -> float | None:
+        """% real (só vendas conferidas): o número em que dá para confiar."""
+        return self.confirmed_platform / self.confirmed_revenue * 100 if self.confirmed_revenue else None
+
+
+@dataclass
 class MarginReport:
     totals: Totals
     products: list[ProductMargin] = field(default_factory=list)
     loss_orders: list[LossOrder] = field(default_factory=list)
     orders_missing_fees: int = 0
     products_missing_cost: int = 0
+    channels: list[ChannelShare] = field(default_factory=list)
 
 
 def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: float, *,
@@ -82,8 +105,19 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
     products: dict[str, ProductMargin] = {}
     losses: list[LossOrder] = []
     missing_fees = 0
+    channels: dict[str, ChannelShare] = {}
     for order in orders:
         m = order_margin(order, tax_rate_pct, other)
+        label = CHANNEL_LABELS.get(Channel(order.channel), order.channel) if order.channel in set(Channel) \
+            else order.channel
+        ch = channels.setdefault(label, ChannelShare(label))
+        ch.orders += 1
+        ch.revenue += m.revenue_cents
+        ch.platform += m.fee_cents + m.shipping_cents
+        if money_confirmed(order):
+            ch.confirmed += 1
+            ch.confirmed_revenue += m.revenue_cents
+            ch.confirmed_platform += m.fee_cents + m.shipping_cents
         totals.revenue += m.revenue_cents
         totals.fees += m.fee_cents
         totals.shipping += m.shipping_cents
@@ -121,4 +155,5 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
     product_list = sorted(products.values(), key=lambda p: (p.profit >= 0, p.margin_pct if p.margin_pct is not None else 0))
     losses.sort(key=lambda o: o.profit)
     return MarginReport(totals, product_list, losses, missing_fees,
-                        sum(1 for p in product_list if p.missing_cost))
+                        sum(1 for p in product_list if p.missing_cost),
+                        sorted(channels.values(), key=lambda c: -c.revenue))

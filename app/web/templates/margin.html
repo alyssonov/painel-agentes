@@ -1,7 +1,7 @@
 {% extends "app_layout.html" %}
 {% block title %}Margem real{% endblock %}
 {% block page_title %}Margem real{% endblock %}
-{% block page_subtitle %}<p class="muted">Mercado Livre: valor que você recebe pela venda (o mesmo do "detalhe da venda": já sem taxa, frete e tarifas) − custo do Olist − impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}%). Outros canais: preço − taxa − frete − custo − impostos.</p>{% endblock %}
+{% block page_subtitle %}<p class="muted">Mercado Livre: valor que você recebe pela venda (o mesmo do "detalhe da venda": já sem taxa, frete e tarifas) (Shopee: a "renda do pedido") − custo do Olist − impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}%) − embalagem e outros − publicidade.</p>{% endblock %}
 {% block content %}
 <div class="toolbar">
   <div class="segmented segmented-light" role="group" aria-label="Período">
@@ -34,7 +34,7 @@
   </article>
   <article class="card stat tone-info">
     <p class="stat-label">Taxas + frete</p><p class="stat-value stat-value-sm">{{ (t.fees + t.shipping)|brl }}</p>
-    <p class="stat-foot muted">Taxas {{ t.fees|brl }} · Frete {{ t.shipping|brl }}</p>
+    <p class="stat-foot muted">Taxas {{ t.fees|brl }} · Frete {{ t.shipping|brl }}{% if t.revenue %} · {{ ((t.fees + t.shipping) / t.revenue * 100)|pct }} do faturamento{% endif %}</p>
   </article>
   <article class="card stat tone-info">
     <p class="stat-label">{{ 'Custo, impostos e outros' if (t.other or t.ads) else 'Custo + impostos' }}</p><p class="stat-value stat-value-sm">{{ (t.cost + t.tax + t.other + t.ads)|brl }}</p>
@@ -50,6 +50,29 @@
     {% if r.orders_missing_fees %}<li><span class="badge badge-info">Aviso</span> {{ r.orders_missing_fees }} pedido(s) com taxa e frete ainda não conferidos (no Mercado Livre o painel lê o valor recebido no Mercado Pago em alguns minutos; Shopee chega depois). O lucro deles pode estar maior do que o real.</li>{% endif %}
     {% if not tax_rate %}<li><span class="badge badge-atencao">Atenção</span> Alíquota de impostos não informada — <a class="link" href="/integracoes#imposto">informar agora</a>.</li>{% endif %}
   </ul>
+</section>
+{% endif %}
+
+{% if r.channels %}
+<section class="card">
+  <div class="card-head"><h2 class="card-title">Quanto cada marketplace ficou</h2><span class="muted small">Taxas + frete e tarifas</span></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Marketplace</th><th class="num">Vendas</th><th class="num">Conferidas</th><th class="num">Faturamento</th><th class="num">Taxas + frete</th><th class="num">% do faturamento</th><th class="num">% nas vendas conferidas</th></tr></thead>
+      <tbody>
+      {% for c in r.channels %}
+        <tr><td class="t-strong">{{ c.label }}</td>
+          <td class="num">{{ c.orders }}</td>
+          <td class="num">{% if c.confirmed < c.orders %}<span class="badge badge-atencao">{{ c.confirmed }} de {{ c.orders }}</span>{% else %}<span class="badge badge-ok">todas</span>{% endif %}</td>
+          <td class="num">{{ c.revenue|brl }}</td>
+          <td class="num">{{ c.platform|brl }}</td>
+          <td class="num">{{ c.pct|pct }}</td>
+          <td class="num">{{ c.confirmed_pct|pct if c.confirmed_pct is not none else '—' }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted small">Venda ainda não conferida entra só com a taxa que o pedido informa (às vezes zero). A última coluna mostra o que o marketplace realmente ficou, só com as vendas já conferidas.</p>
 </section>
 {% endif %}
 
