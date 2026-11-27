@@ -34,7 +34,7 @@
   </article>
   <article class="card stat tone-info">
     <p class="stat-label">Taxas + frete</p><p class="stat-value stat-value-sm">{{ (t.fees + t.shipping)|brl }}</p>
-    <p class="stat-foot muted">Taxas {{ t.fees|brl }} · Frete {{ t.shipping|brl }}{% if t.revenue %} · {{ ((t.fees + t.shipping) / t.revenue * 100)|pct }} do faturamento{% endif %}</p>
+    <p class="stat-foot muted">Taxas {{ t.fees|brl }} · Frete {{ t.shipping|brl }}{% if t.revenue %} · {{ ((t.fees + t.shipping) / t.revenue * 100)|pct }} do faturamento{% endif %}{% if t.estimated %} · {{ t.estimated|brl }} estimado (vendas não conferidas){% endif %}</p>
   </article>
   <article class="card stat tone-info">
     <p class="stat-label">{{ 'Custo, impostos e outros' if (t.other or t.ads) else 'Custo + impostos' }}</p><p class="stat-value stat-value-sm">{{ (t.cost + t.tax + t.other + t.ads)|brl }}</p>
@@ -47,7 +47,7 @@
   <h2 class="card-title">Para a margem ficar exata</h2>
   <ul>
     {% if r.products_missing_cost %}<li><span class="badge badge-atencao">Atenção</span> {{ r.products_missing_cost }} produto(s) vendido(s) sem custo cadastrado no Olist — o lucro deles aparece maior que o real.</li>{% endif %}
-    {% if r.orders_missing_fees %}<li><span class="badge badge-info">Aviso</span> {{ r.orders_missing_fees }} pedido(s) com taxa e frete ainda não conferidos (no Mercado Livre o painel lê o valor recebido no Mercado Pago em alguns minutos; Shopee chega depois). O lucro deles pode estar maior do que o real.</li>{% endif %}
+    {% if r.orders_missing_fees %}<li><span class="badge badge-info">Aviso</span> {{ r.orders_missing_fees }} pedido(s) com taxa e frete ainda não conferidos (no Mercado Livre o painel lê o valor recebido no Mercado Pago em alguns minutos; Shopee chega depois). Enquanto isso, taxas e frete deles são estimados.</li>{% endif %}
     {% if not tax_rate %}<li><span class="badge badge-atencao">Atenção</span> Alíquota de impostos não informada — <a class="link" href="/integracoes#imposto">informar agora</a>.</li>{% endif %}
   </ul>
 </section>
@@ -72,7 +72,7 @@
       </tbody>
     </table>
   </div>
-  <p class="muted small">Venda ainda não conferida entra só com a taxa que o pedido informa (às vezes zero). A última coluna mostra o que o marketplace realmente ficou, só com as vendas já conferidas.</p>
+  <p class="muted small">Venda ainda não conferida entra com uma estimativa: o mesmo % que o marketplace ficou nas vendas conferidas dos últimos 60 dias (sem vendas conferidas suficientes, 25%). A última coluna mostra só o que já foi conferido.</p>
 </section>
 {% endif %}
 

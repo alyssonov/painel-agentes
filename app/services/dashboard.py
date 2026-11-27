@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from sqlalchemy import and_, func, or_, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, object_session, selectinload
 
 from app.config import get_settings
 from app.core.timeutil import local_day_bounds_utc, local_today, to_local, utcnow
@@ -97,6 +97,57 @@ class Overview:
     dispatch: "DispatchDay | None" = None  # envios do dia (só com conta real)
 
 
+# Venda ainda não conferida (o marketplace ainda não informou o valor recebido / as taxas):
+# em vez de contar taxa zero (lucro inflado), o painel estima o que a plataforma fica
+# com o % real das vendas já conferidas do mesmo marketplace nos últimos 60 dias.
+# Sem vendas conferidas suficientes (ex.: Shopee ainda não conectada), usa FALLBACK_RATE.
+RATE_WINDOW_DAYS = 60
+RATE_MIN_ORDERS = 10
+FALLBACK_RATE = 0.25
+_RATE_CACHE_SECONDS = 300
+
+
+def platform_rate(db: Session | None, channel: str) -> tuple[float, bool]:
+    """(% que o marketplace fica, se veio de vendas conferidas) — cache curto na sessão."""
+    if db is None:
+        return FALLBACK_RATE, False
+    now = utcnow()
+    cache = db.info.get("platform_rates")
+    if not cache or (now - cache[0]).total_seconds() > _RATE_CACHE_SECONDS:
+        cache = (now, _platform_rates(db, now))
+        db.info["platform_rates"] = cache
+    rate = cache[1].get(str(channel))
+    return (rate, True) if rate is not None else (FALLBACK_RATE, False)
+
+
+def _platform_rates(db: Session, now: datetime) -> dict[str, float]:
+    from datetime import timedelta
+    since = now - timedelta(days=RATE_WINDOW_DAYS)
+    base = (Order.ordered_at >= since, Order.kanban_status != KanbanStatus.CANCELLED, Order.items_total_cents > 0)
+    rates: dict[str, float] = {}
+    # Com valor recebido (ML e Shopee): o que foi descontado = preço − recebido.
+    rows = db.execute(select(Order.channel, Order.is_demo, func.count(), func.sum(Order.items_total_cents),
+                             func.sum(Order.items_total_cents - Order.net_received_cents))
+                      .where(*base, Order.net_received_cents.is_not(None))
+                      .group_by(Order.channel, Order.is_demo)).all()
+    # Sem valor recebido mas com taxa conhecida (outros canais).
+    rows += db.execute(select(Order.channel, Order.is_demo, func.count(), func.sum(Order.items_total_cents),
+                              func.sum(Order.marketplace_fee_cents + Order.shipping_cost_cents))
+                       .where(*base, Order.net_received_cents.is_(None), Order.fees_known.is_(True),
+                              Order.channel != Channel.ML)
+                       .group_by(Order.channel, Order.is_demo)).all()
+    totals: dict[str, list[int]] = {}
+    for channel, _demo, count, revenue, withheld in rows:
+        t = totals.setdefault(str(channel), [0, 0, 0])
+        t[0] += count or 0
+        t[1] += int(revenue or 0)
+        t[2] += int(withheld or 0)
+    for channel, (count, revenue, withheld) in totals.items():
+        if count >= RATE_MIN_ORDERS and revenue > 0:
+            rates[channel] = min(max(withheld / revenue, 0.0), 0.6)
+    return rates
+
+
 def order_margin(order: Order, tax_rate_pct: float, other_cents: int = 0) -> MarginResult:
     """Margem real de um pedido (custo dos itens vem do cadastro do Olist).
 
@@ -111,6 +162,13 @@ def order_margin(order: Order, tax_rate_pct: float, other_cents: int = 0) -> Mar
         withheld = order.items_total_cents - order.net_received_cents
         fee = min(order.marketplace_fee_cents, max(withheld, 0))
         shipping = withheld - fee  # pode ser negativo: bônus de frete pago à loja (ex.: Flex)
+    estimated = 0
+    if not money_confirmed(order) and order.items_total_cents > 0 and not order.is_demo:
+        rate, _ = platform_rate(object_session(order), order.channel)
+        expected = round(order.items_total_cents * rate)
+        if expected > fee + shipping:
+            estimated = expected - fee - shipping
+            shipping += estimated
     return calculate_margin(
         revenue_cents=order.items_total_cents,
         fee_cents=fee,
@@ -119,6 +177,7 @@ def order_margin(order: Order, tax_rate_pct: float, other_cents: int = 0) -> Mar
         tax_rate_pct=tax_rate_pct,
         other_cents=other_cents if order.items_total_cents > 0 else 0,
         ads_cents=order.ads_cost_cents or 0,
+        estimated_cents=estimated,
     )
 
 

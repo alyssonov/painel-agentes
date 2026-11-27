@@ -1,13 +1,14 @@
 """Gráficos (Margem real → Gráficos)."""
 
 from app.services.charts import bar_chart, daily_points, money_tick, nice_step
+from app.models.enums import Channel
 from tests.olist_helpers import connect_account
 from tests.test_phase4 import product, sale
 
 
 def test_um_ponto_por_dia_inclusive_sem_venda(db):
     prod = product(db, "A", cost=1000, price=5000)
-    sale(db, prod, qty=2, days_ago=1)
+    sale(db, prod, qty=2, days_ago=1, channel=Channel.SHOPEE)  # taxas conferidas (sem estimativa)
     db.commit()
     points = daily_points(db, 7, 0)
     assert len(points) == 7 and sum(p.orders for p in points) == 1

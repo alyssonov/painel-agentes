@@ -27,6 +27,7 @@ class Totals:
     tax: int = 0
     other: int = 0  # embalagem, etiqueta etc.
     ads: int = 0  # publicidade dividida nas vendas
+    estimated: int = 0  # parte de taxas + frete estimada (vendas ainda não conferidas)
     profit: int = 0
     orders: int = 0
 
@@ -125,6 +126,7 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
         totals.tax += m.tax_cents
         totals.other += m.other_cents
         totals.ads += m.ads_cents
+        totals.estimated += m.estimated_cents
         totals.profit += m.profit_cents
         totals.orders += 1
         if not money_confirmed(order):

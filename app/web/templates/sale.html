@@ -19,7 +19,7 @@
   </div>
   <p class="muted small">Vendida em {{ when }}{% if order.olist_status %} · situação no Olist: {{ order.olist_status }}{% endif %}</p>
   {% if not confirmed and order.channel == 'ml' %}
-  <p class="qcard-reason">O painel ainda não leu no Mercado Pago o valor que você recebe por esta venda (normalmente leva alguns minutos; vendas com mais de 35 dias não são lidas). Por enquanto a conta usa a taxa do Mercado Livre e o frete informado no Olist.</p>
+  <p class="qcard-reason">O painel ainda não leu no Mercado Pago o valor que você recebe por esta venda (normalmente leva alguns minutos; vendas com mais de 35 dias não são lidas). Por enquanto a conta usa uma estimativa: o mesmo % que o Mercado Livre ficou nas suas vendas já conferidas.</p>
   {% endif %}
 
   <div class="table-wrap">
@@ -28,7 +28,8 @@
         <tr><td>Preço dos itens</td><td class="num">{{ m.revenue_cents|brl }}</td></tr>
         <tr><td class="indent">Taxa de venda (comissão)</td><td class="num">− {{ m.fee_cents|brl }}</td></tr>
         <tr><td class="indent">{{ 'Frete e tarifas' if order.net_received_cents is not none else 'Frete pago pela loja' }}
-          {% if m.shipping_cents < 0 %}<span class="muted small">(crédito de frete)</span>{% endif %}</td>
+          {% if m.shipping_cents < 0 %}<span class="muted small">(crédito de frete)</span>{% endif %}
+          {% if m.estimated_cents %}<span class="muted small">(inclui {{ m.estimated_cents|brl }} estimado: venda ainda não conferida)</span>{% endif %}</td>
           <td class="num">{{ '+ ' ~ (-m.shipping_cents)|brl if m.shipping_cents < 0 else '− ' ~ m.shipping_cents|brl }}</td></tr>
         <tr class="sale-sub"><td>{{ 'Você recebe (Mercado Pago)' if order.net_received_cents is not none else 'Sobra depois do marketplace' }}</td>
           <td class="num">{{ (m.revenue_cents - m.fee_cents - m.shipping_cents)|brl }}</td></tr>

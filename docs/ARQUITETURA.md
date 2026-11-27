@@ -605,6 +605,12 @@ o que não casar vai para todas as vendas do ML do dia. Fica em
 desconta essa parte no lucro das vendas e deixa nas despesas só o gasto de dias
 sem venda ("Mercado Ads sem venda no dia"). Shopee Ads ainda não é lido.
 
+**Venda ainda não conferida (27/11/2026):** em vez de taxa zero, `order_margin`
+estima o que o marketplace fica com o % real das vendas conferidas do mesmo canal
+nos últimos 60 dias (mínimo 10 vendas; senão 25%, `FALLBACK_RATE`). A diferença
+entra em "frete e tarifas" e fica marcada em `MarginResult.estimated_cents`; a
+página Lucro real mostra quanto cada marketplace ficou (todas × só conferidas).
+
 ## 24. Fase 7 — Agente 4 (Preços)
 
 - **Leitura** (`app/sync/ml_prices.py`, a cada 12 h dentro da sincronização do

@@ -31,6 +31,7 @@ class MarginResult:
     margin_pct: float | None  # None quando não há receita
     other_cents: int = 0  # embalagem, etiqueta etc. (valor médio por venda)
     ads_cents: int = 0  # parte da publicidade (Mercado Ads) que coube a esta venda
+    estimated_cents: int = 0  # quanto do "frete e tarifas" é estimativa (venda ainda não conferida)
 
     @property
     def is_loss(self) -> bool:
@@ -46,6 +47,7 @@ def calculate_margin(
     tax_rate_pct: float,
     other_cents: int = 0,
     ads_cents: int = 0,
+    estimated_cents: int = 0,
 ) -> MarginResult:
     """Calcula lucro e margem de uma venda. Todos os valores em centavos."""
     tax_cents = round(revenue_cents * tax_rate_pct / 100)
@@ -61,4 +63,5 @@ def calculate_margin(
         margin_pct=margin,
         other_cents=other_cents,
         ads_cents=ads_cents,
+        estimated_cents=estimated_cents,
     )
