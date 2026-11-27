@@ -52,7 +52,7 @@ PERMISSIONS: list[Permission] = [
                "automações (quais avisos chegam por e-mail)."),
     Permission(STORE, "Configurar a loja", "Contas conectadas, impostos, tabela de taxas e relatórios por e-mail."),
     Permission(ASSISTANT, "Usar o assistente de IA", "Chat que tira dúvidas, mostra o caminho no painel e monta "
-               "relatórios com os dados que a pessoa já pode ver (usa a cota diária de IA)."),
+               "relatórios com os dados que a pessoa já pode ver."),
     Permission(TEAM, "Gerenciar a equipe", "Adicionar pessoas, mudar papéis e permissões, redefinir senhas."),
     Permission(AUDIT, "Ver o histórico", "Quem fez o quê e quando (com o valor anterior e o novo)."),
 ]

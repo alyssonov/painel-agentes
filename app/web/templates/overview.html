@@ -1,9 +1,7 @@
 {% extends "app_layout.html" %}
 {% block title %}Visão geral{% endblock %}
 {% block page_title %}{% if user %}Olá, {{ user.name.split(' ')[0] }}{% else %}Visão geral{% endif %}{% endblock %}
-{% block page_subtitle %}
-<p class="muted">Sua operação sob controle · {{ ov.orders_today }} venda(s) hoje{% if ov.dispatch %} · {{ ov.dispatch.to_ship }} para enviar hoje{% if ov.dispatch.late %} · {{ ov.dispatch.late }} atrasado(s){% endif %}{% endif %} · IA hoje: {{ ov.ai_cost_today_cents|brl }} de {{ ov.ai_budget_cents|brl }}</p>
-{% endblock %}
+{% block page_subtitle %}{% endblock %}
 {% block content %}
 
 {% macro delta_pill(value) %}
@@ -130,7 +128,7 @@
 <section class="card" aria-labelledby="orders-title">
   <div class="card-head">
     <h2 id="orders-title" class="card-title">{{ 'Envios de hoje' if ov.dispatch else 'Pedidos de hoje' }}</h2>
-    {% if ov.dispatch %}<span class="muted small">pelo prazo de despacho do Mercado Livre</span>{% endif %}
+    {% if ov.dispatch %}<span class="muted small">{{ ov.dispatch.to_ship }} para enviar hoje{% if ov.dispatch.late %} · <span class="text-danger">{{ ov.dispatch.late }} atrasado(s)</span>{% endif %} · pelo prazo de despacho do Mercado Livre e da Shopee</span>{% endif %}
   </div>
   {% include "partials/kanban.html" %}
 </section>

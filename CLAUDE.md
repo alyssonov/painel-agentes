@@ -77,8 +77,9 @@ loja: precisa ser **confiável, seguro e fácil para quem não é técnico**.
    - Limitar o contexto enviado (histórico curto, só os campos necessários da
      ficha do produto).
    - Cache de respostas repetidas (`ai_cache`) e uso de prompt caching da API.
-   - Registrar tokens e custo estimado de cada chamada (`ai_usage`) e mostrar o
-     gasto do dia no painel. Respeitar o teto diário `AI_DAILY_BUDGET_BRL`.
+   - Registrar tokens e custo estimado de cada chamada (`ai_usage`) e respeitar o
+     teto diário `AI_DAILY_BUDGET_BRL`. O gasto **não aparece** para quem usa o
+     painel (nem no e-mail do relatório) — decisão do dono em 27/11/2026.
 8. **Limites das APIs.** Cada integração tem limitador de taxa próprio,
    tentativas automáticas com espera exponencial (só para erros temporários) e
    alerta no painel quando a integração cai.

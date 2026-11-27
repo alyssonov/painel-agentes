@@ -127,7 +127,7 @@ def render_text(c: dict) -> str:
         lines.append(f"  … e mais {c['alertas_total'] - len(c['alertas'])} no painel")
     if c["agentes"]:
         lines += ["", "O QUE OS AGENTES FIZERAM:"] + [f"  {a}" for a in c["agentes"]]
-    lines += ["", f"Gasto com IA hoje: {c['gasto_ia']}", "", "Gerente do Ano — para detalhes, abra o painel."]
+    lines += ["", "Gerente do Ano — para detalhes, abra o painel."]
     return "\n".join(lines)
 
 
@@ -174,7 +174,7 @@ def render_html(c: dict) -> str:
         f'🏆 Gerente do Ano</div><div style="font-size:20px;font-weight:700">{e(c["titulo"])}</div></td></tr>'
         f'{banner}{"".join(rows)}'
         f'<tr><td style="padding:14px 24px;border-top:1px solid #E0E3E8;font-size:12px;color:{muted}">'
-        f'Gasto com IA hoje: {e(c["gasto_ia"])} · Para detalhes, abra o painel.</td></tr>'
+        f'Para detalhes, abra o painel.</td></tr>'
         f'</table></td></tr></table></body></html>'
     )
 

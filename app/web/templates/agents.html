@@ -1,7 +1,7 @@
 {% extends "app_layout.html" %}
 {% block title %}Agentes{% endblock %}
 {% block page_title %}Agentes{% endblock %}
-{% block page_subtitle %}<p class="muted">Gasto com IA hoje: R$ {{ '%.2f'|format(ai_spent_brl)|replace('.', ',') }} de R$ {{ '%.2f'|format(ai_budget_brl)|replace('.', ',') }}</p>{% endblock %}
+{% block page_subtitle %}<p class="muted">Cada agente cuida de uma parte da loja. Ligue, pause e ajuste as regras de cada um.</p>{% endblock %}
 {% block content %}
 <div class="agent-grid">
 {% for c in cards %}
