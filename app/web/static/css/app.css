@@ -118,7 +118,7 @@ details > summary { cursor: pointer; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 16px; color: var(--ink); padding: 0 8px;
   text-decoration: none; }
 .brand-logo { width: 36px; height: 36px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px var(--line); }
-.brand-name { font-weight: 800; letter-spacing: .01em; }
+.brand-name { font-weight: 700; letter-spacing: .01em; }
 .brand-sub { font-weight: 600; color: var(--muted); }
 .nav { display: flex; flex-direction: column; gap: 14px; }
 .nav-group { display: flex; flex-direction: column; gap: 2px; }

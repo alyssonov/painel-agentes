@@ -36,19 +36,15 @@
   <radialGradient id="gDisc" cx=".5" cy=".42" r=".62"><stop offset="0" stop-color="#1A2A47"/><stop offset=".7" stop-color="#111A2B"/><stop offset="1" stop-color="#0D1524"/></radialGradient>
   </defs>
   <circle cx="800" cy="570" r="310" fill="url(#gDisc)"/>
-  <circle cx="800" cy="570" r="296" fill="none" stroke="#3B82F6" stroke-width="5"/>
-  <g id="robo">
-    <ellipse cx="800" cy="812" rx="215" ry="20" fill="#03060C" opacity=".75" filter="url(#fShadow)"/>
-    <rect x="791" y="396" width="18" height="48" rx="6" fill="url(#gStalk)"/>
-    <circle cx="800" cy="371" r="20" fill="url(#gBall)"/>
-    <rect x="539" y="533" width="40" height="142" rx="13" fill="url(#gEar)" stroke="url(#gSilver)" stroke-width="6"/>
-    <rect x="1021" y="533" width="40" height="142" rx="13" fill="url(#gEar)" stroke="url(#gSilver)" stroke-width="6"/>
-    <rect x="585" y="438" width="430" height="329" rx="96" fill="url(#gBody)" stroke="url(#gSilver)" stroke-width="12"/>
-    <rect x="629" y="481" width="342" height="241" rx="68" fill="url(#gScreen)" stroke="url(#gBezel)" stroke-width="9"/>
+  <circle cx="800" cy="570" r="296" fill="none" stroke="#3B82F6" stroke-width="10"/>
+  <g id="robo" transform="translate(800 568) scale(0.85) translate(-800 -556)">
+    <rect x="787" y="396" width="26" height="48" rx="6" fill="url(#gStalk)"/>
+    <circle cx="800" cy="371" r="26" fill="url(#gBall)"/>
+    <rect x="539" y="533" width="40" height="142" rx="13" fill="url(#gEar)" stroke="url(#gSilver)" stroke-width="14"/>
+    <rect x="1021" y="533" width="40" height="142" rx="13" fill="url(#gEar)" stroke="url(#gSilver)" stroke-width="14"/>
+    <rect x="585" y="438" width="430" height="329" rx="96" fill="url(#gBody)" stroke="url(#gSilver)" stroke-width="22"/>
+    <rect x="629" y="481" width="342" height="241" rx="68" fill="url(#gScreen)" stroke="url(#gBezel)" stroke-width="14"/>
     <path d="M640 548 Q640 490 698 490 H902 Q960 490 960 548 Z" fill="url(#gGloss)"/>
-    <g filter="url(#fGlow)" fill="#A9CCFF">
-      <rect x="683" y="577" width="82" height="39" rx="19.5"/>
-      <rect x="835" y="577" width="82" height="39" rx="19.5"/>
-    </g>
+    <g><rect x="670.0" y="564.0" width="108.0" height="65.0" rx="32.5" fill="#3B82F6" opacity=".5"/><rect x="822.0" y="564.0" width="108.0" height="65.0" rx="32.5" fill="#3B82F6" opacity=".5"/><rect x="679.0" y="573.0" width="90.0" height="47.0" rx="23.5" fill="#E3EEFF"/><rect x="831.0" y="573.0" width="90.0" height="47.0" rx="23.5" fill="#E3EEFF"/></g>
   </g>
 </svg>
