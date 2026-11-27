@@ -48,3 +48,9 @@ def test_formularios_de_edicao_so_salvam_quando_algo_muda(logged_client):
         assert "data-salvar" in logged_client.get(url).text, url
     js = logged_client.get("/static/js/app.js").text
     assert "form[data-salvar]" in js and "Salvando…" in js
+
+
+def test_logos_com_versao_para_o_navegador_nao_usar_copia_antiga(client):
+    """Logo e ícones levam ?v=… (muda a cada vez que o painel liga): nada de logo antigo guardado no navegador."""
+    html = client.get("/login").text
+    assert "/static/img/logo-gerente-do-ano.svg?v=" in html and "/static/img/robo-cabeca.svg?v=" in html
