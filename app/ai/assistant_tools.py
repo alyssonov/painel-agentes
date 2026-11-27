@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.agents.config import has_real_data
 from app.core.money import format_brl
-from app.core.permissions import FINANCE
+from app.core.permissions import AGENTS, FINANCE
 from app.core.timeutil import local_day_bounds_utc, local_today, to_local
 from app.models import Action, Alert, Claim, PurchaseOrder, Question
 from app.models.enums import CHANNEL_LABELS, ActionStatus, AlertStatus, Channel, QuestionStatus
@@ -229,6 +229,75 @@ def purchases_view(db: Session, user: User, inp: dict) -> dict:
         for o in orders]}
 
 
+def ads_view(db: Session, user: User, inp: dict) -> dict:
+    """Mercado Ads: investimento, retorno, campanhas e anúncios gastando sem vender."""
+    if not user.can(FINANCE):
+        raise ToolDenied("Publicidade (investimento e retorno) é do financeiro: esta pessoa não tem acesso.")
+    from app.services.ads import STATUS_TEXT, ads_summary, group_roas
+    from app.sync.ml_ads import NO_SALES_MIN_COST_CENTS
+    days = int(inp.get("dias") or 30) if str(inp.get("dias") or 30) in ("7", "30", "90") else 30
+    s = ads_summary(db, days)
+
+    def ratio(value: float | None) -> str | None:
+        return f"{value:.1f}x".replace(".", ",") if value is not None else None
+
+    return {
+        "situacao": STATUS_TEXT.get(s.status or "", "ok" if s.status == "ok" else "ainda não lido"),
+        "periodo": f"últimos {days} dias", "investimento": _brl(s.cost), "vendas_pelos_anuncios": _brl(s.revenue),
+        "retorno_roas": ratio(s.roas), "acos": _pct(s.acos), "tacos": _pct(s.tacos),
+        "faturamento_total_ml": _brl(s.ml_revenue), "cliques": s.clicks, "vendas": s.sales,
+        "campanhas_30_dias": [{"campanha": c.name, "situacao": c.status, "orcamento_dia": _brl(c.budget_cents),
+                               "investimento": _brl(c.cost_cents), "vendas_pelos_anuncios": _brl(c.revenue_cents),
+                               "retorno": ratio(c.revenue_cents / c.cost_cents if c.cost_cents else None),
+                               "vendas": c.sales} for c in s.campaigns[:LIMIT]],
+        "anuncios_gastando_sem_vender": [{"anuncio": g.title, "codigo": g.external_id, "investimento": _brl(g.cost_cents),
+                                          "cliques": g.clicks} for g in s.groups
+                                         if g.cost_cents >= NO_SALES_MIN_COST_CENTS and g.sales == 0][:15],
+        "anuncios_que_mais_gastaram": [{"anuncio": g.title, "investimento": _brl(g.cost_cents),
+                                        "vendas_pelos_anuncios": _brl(g.revenue_cents), "retorno": ratio(group_roas(g)),
+                                        "vendas": g.sales} for g in s.groups[:10]],
+        "observacao": "ROAS = vendas pelos anúncios ÷ investimento; TACOS = investimento ÷ faturamento total no ML. "
+                      "O investimento já entra no DRE. Tela: /publicidade.",
+    }
+
+
+def accounts_view(db: Session, user: User, inp: dict) -> dict:
+    """Situação das contas conectadas (sem chaves nem tokens)."""
+    from app.models import IntegrationAccount, SyncRun
+    from app.models.enums import PROVIDER_LABELS
+    rows = []
+    for acc in db.scalars(select(IntegrationAccount).where(IntegrationAccount.is_demo.is_(False))):
+        last = db.scalar(select(SyncRun).where(SyncRun.provider == acc.provider).order_by(SyncRun.id.desc()).limit(1))
+        rows.append({"conta": PROVIDER_LABELS.get(acc.provider, acc.provider),
+                     "conectada": bool(acc.access_token_enc), "situacao": acc.status, "erro": acc.last_error,
+                     "ultima_atualizacao": to_local(last.started_at).strftime("%d/%m %H:%M") if last else None,
+                     "resultado": last.status if last else None})
+    onix = db.scalar(select(SyncRun).where(SyncRun.provider == "onix").order_by(SyncRun.id.desc()).limit(1))
+    rows.append({"conta": "Onix (loja física, só das 8h às 18h)", "ultima_leitura":
+                 to_local(onix.started_at).strftime("%d/%m %H:%M") if onix else None,
+                 "resultado": onix.status if onix else None, "numeros": onix.counts if onix else None,
+                 "erro": onix.error if onix else None})
+    return {"contas": rows, "tela": "/integracoes",
+            "observacao": "Se uma conta estiver com erro de acesso, a solução é 'Conectar de novo' em Contas conectadas."}
+
+
+def automations_view(db: Session, user: User, inp: dict) -> dict:
+    """Quais avisos por e-mail estão ligados (Automações)."""
+    if not user.can(AGENTS):
+        raise ToolDenied("Automações são de quem configura os agentes: esta pessoa não tem acesso.")
+    from app.automations.catalog import AUTOMATIONS
+    from app.automations.runner import ensure_rows, quiet_settings, recipients
+    rows = ensure_rows(db)
+    quiet = quiet_settings(db)
+    return {"automacoes": [{"nome": d.name, "ligada": rows[d.slug].enabled, "o_que_avisa": d.description,
+                            "ultimo_aviso": to_local(rows[d.slug].last_sent_at).strftime("%d/%m %H:%M")
+                            if rows[d.slug].last_sent_at else None, "erro": rows[d.slug].last_error}
+                           for d in AUTOMATIONS],
+            "quantos_recebem": len(recipients(db)),
+            "horario_silencioso": f"das {quiet['de']}h às {quiet['ate']}h" if quiet.get("ativo") else "desligado",
+            "tela": "/automacoes"}
+
+
 # --- Definições enviadas à IA -------------------------------------------------------
 
 _DAYS = {"type": "integer", "description": "Últimos N dias (padrão 30). Ignorado se 'inicio' for informado."}
@@ -280,10 +349,23 @@ TOOLS: list[dict[str, Any]] = [
      "description": "Pedidos de compra feitos aos fornecedores (a caminho, recebidos ou cancelados).",
      "input_schema": {"type": "object", "properties": {
          "situacao": {"type": "string", "enum": list(PO_STATUS)}}}},
+    {"name": "publicidade",
+     "description": "Mercado Ads (anúncios patrocinados do Mercado Livre): investimento, vendas geradas, retorno "
+                    "(ROAS), ACOS, TACOS, campanhas e anúncios que gastam sem vender. Só para quem vê o financeiro.",
+     "input_schema": {"type": "object", "properties": {
+         "dias": {"type": "integer", "enum": [7, 30, 90], "description": "Período (padrão 30)."}}}},
+    {"name": "contas_conectadas",
+     "description": "Situação das contas (Olist, Mercado Livre, Shopee, Onix): conectada ou não, última "
+                    "atualização e erros. Use quando perguntarem se algo está conectado ou por que um dado não chegou.",
+     "input_schema": {"type": "object", "properties": {}}},
+    {"name": "automacoes",
+     "description": "Avisos por e-mail (Automações): quais estão ligados, último aviso, horário silencioso.",
+     "input_schema": {"type": "object", "properties": {}}},
 ]
 RUNNERS = {"resumo_vendas": sales_summary, "buscar_produtos": find_products, "buscar_pedidos": find_orders,
            "estoque": stock_view, "dre_do_mes": dre_view, "pendencias": pending_view,
-           "buscar_anuncios": find_listings, "compras": purchases_view}
+           "buscar_anuncios": find_listings, "compras": purchases_view, "publicidade": ads_view,
+           "contas_conectadas": accounts_view, "automacoes": automations_view}
 
 
 def run_tool(db: Session, user: User, name: str, inp: dict) -> tuple[str, bool]:

@@ -163,3 +163,33 @@ def test_sem_chave_avisa(logged_client, db):
     r = logged_client.post("/assistente/perguntar", data={"csrf_token": token, "pergunta": "oi"},
                            headers={"X-Requested-With": "fetch"})
     assert r.status_code == 503 and "ANTHROPIC_API_KEY" in r.json()["erro"]
+
+
+def test_consultas_novas_publicidade_contas_e_automacoes(db, user):
+    """Assistente conhece Mercado Ads, contas conectadas e automações — só leitura e com permissões."""
+    from datetime import timedelta
+
+    from app.core.timeutil import local_today
+    from app.models import AdCampaign, AdDaily, AdGroup, IntegrationAccount
+    db.add(IntegrationAccount(provider="ml", account_name="LOJA", is_demo=False, access_token_enc="x",
+                              status="ok", extra={"ads_status": "ok"}))
+    db.add(AdCampaign(campaign_id="1", name="Pastilhas", status="active", cost_cents=10000, revenue_cents=60000,
+                      sales=5))
+    db.add(AdDaily(campaign_id="1", day=local_today() - timedelta(days=1), cost_cents=10000, revenue_cents=60000))
+    db.add(AdGroup(ad_group_id="9", title="Retentor CG", cost_cents=4500, revenue_cents=0, sales=0, clicks=30))
+    db.commit()
+    out, err = run_tool(db, user, "publicidade", {"dias": 7})
+    data = json.loads(out)
+    assert not err and data["investimento"] == "R$ 100,00" and data["retorno_roas"] == "6,0x"
+    assert data["anuncios_gastando_sem_vender"][0]["anuncio"] == "Retentor CG"
+    out, err = run_tool(db, user, "contas_conectadas", {})
+    assert not err and "Mercado Livre" in out and "access_token" not in out and '"x"' not in out
+    out, err = run_tool(db, user, "automacoes", {})
+    assert not err and "Envio atrasado" in out
+    # sem permissão: publicidade é do financeiro; automações de quem configura agentes
+    at = _add(db, "at@loja.com", "atendimento")
+    assert run_tool(db, at, "publicidade", {})[1] and run_tool(db, at, "automacoes", {})[1]
+    assert not run_tool(db, at, "contas_conectadas", {})[1]
+    # mapa de telas: as novas aparecem só para quem pode abrir
+    assert "/publicidade" in build_system(user)[0]["text"] and "/automacoes" in build_system(user)[0]["text"]
+    assert "/publicidade" not in build_system(at)[0]["text"]

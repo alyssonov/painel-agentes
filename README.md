@@ -143,6 +143,10 @@ ver e nunca altera nada — para agir, mostra a tela. Usa a Claude API
 (`ANTHROPIC_API_KEY` no `.env`) e conta no teto diário de IA. Cada pessoa vê só
 as próprias conversas.
 
+Consultas disponíveis (todas só leitura, respeitando as permissões de quem pergunta):
+vendas, produtos, pedidos, estoque, DRE, pendências, anúncios, compras, **publicidade
+(Mercado Ads)**, **situação das contas conectadas** e **automações**.
+
 ## Publicidade (Mercado Ads)
 
 Menu **Financeiro → Publicidade**: investimento em anúncios patrocinados do

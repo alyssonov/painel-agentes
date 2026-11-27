@@ -60,13 +60,20 @@ PAGE_GUIDE = {
     "/margem/recebimentos": "Recebimentos: quando o dinheiro das vendas cai.",
     "/financeiro/dre": "DRE do mês: vendas, taxas, impostos, custo, despesas e lucro líquido.",
     "/financeiro/despesas": "Despesas: lançar aluguel, salários, contador etc.",
+    "/publicidade": "Publicidade (Mercado Ads): investimento em anúncios patrocinados, vendas geradas, retorno "
+                    "(ROAS), TACOS, campanhas e anúncios gastando sem vender. Entra sozinho no DRE.",
     "/margem/graficos": "Gráficos: faturamento e lucro por dia, por marketplace.",
     "/margem/curva-abc": "Curva ABC: produtos que mais faturam/lucram.",
     "/agentes": "Agentes: ligar/pausar cada agente, modo manual/automático e regras.",
-    "/relatorios": "Relatórios: relatório diário por e-mail e envio manual.",
+    "/automacoes": "Automações: escolher quais avisos chegam por e-mail (algo urgente, envio atrasado, estoque, "
+                   "venda com prejuízo, pergunta esperando, reclamações, anúncio pago sem vender, conta com "
+                   "problema), quem recebe, horário silencioso e e-mail de teste.",
+    "/relatorios": "Relatórios: relatórios para baixar (vendas do período, lucro por produto, resumo por dia) em "
+                   "planilha do Excel ou para imprimir/salvar PDF; e o resumo diário por e-mail.",
     "/equipe": "Equipe: pessoas, papéis e permissões.",
     "/historico": "Histórico: quem fez o quê e quando (antes → depois).",
-    "/integracoes": "Contas conectadas: Olist, Mercado Livre, Shopee, alíquota de impostos.",
+    "/integracoes": "Contas conectadas: Olist, Mercado Livre, Shopee (pedidos, prazos e taxas), Onix (custos da "
+                    "loja física, lido das 8h às 18h), botões Conectar/Atualizar e alíquota de impostos.",
 }
 
 SYSTEM_RULES = """Você é o Assistente do Gerente do Ano, o painel de gestão de uma loja de motopeças que vende no \
