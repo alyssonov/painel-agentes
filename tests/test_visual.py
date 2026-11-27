@@ -40,3 +40,11 @@ def test_tema_nao_redireciona_para_fora_e_exige_csrf(logged_client):
 def test_tema_invalido_no_cookie_volta_ao_escuro(logged_client):
     logged_client.cookies.set("tema", "rosa")
     assert 'data-theme="dark"' in logged_client.get("/").text
+
+
+def test_formularios_de_edicao_so_salvam_quando_algo_muda(logged_client):
+    """Botão "Salvar" apagado até mudar algo (data-salvar + app.js) nas telas de configuração."""
+    for url in ("/integracoes", "/relatorios", "/automacoes", "/agentes", "/precificacao/taxas"):
+        assert "data-salvar" in logged_client.get(url).text, url
+    js = logged_client.get("/static/js/app.js").text
+    assert "form[data-salvar]" in js and "Salvando…" in js

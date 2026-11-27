@@ -169,11 +169,11 @@
     <p class="conn-sub">Alíquota efetiva passada pela contabilidade (Lucro Real), usada na margem real.
       {% if tax_rate_is_demo %}<span class="stat-foot warn">O valor atual é só um exemplo da simulação.</span>{% endif %}</p>
   </div>
-  <form method="post" action="/integracoes/imposto" class="inline-form">
+  <form method="post" action="/integracoes/imposto" class="inline-form" data-salvar>
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label class="field field-inline">
       <span>Alíquota (%)</span>
-      <input type="text" name="tax_rate_pct" inputmode="decimal" value="{{ '%g'|format(tax_rate_pct) if tax_rate_pct else '' }}" placeholder="ex.: 14,25" required>
+      <input type="text" name="tax_rate_pct" inputmode="decimal" value="{{ ('%g'|format(tax_rate_pct))|replace('.', ',') if tax_rate_pct else '' }}" placeholder="ex.: 14,25" required>
     </label>
     <button class="btn btn-primary btn-sm" type="submit">Salvar</button>
   </form>

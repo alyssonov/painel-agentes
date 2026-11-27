@@ -18,7 +18,7 @@
   <h2 id="extra-title" class="card-title">Cadastro complementar</h2>
   <p class="muted small">Fica só no Gerente do Ano. O Olist continua igual.</p>
   {% if can('editar_produtos') %}
-  <form method="post" action="/produtos/{{ p.id }}" class="team-form">
+  <form method="post" action="/produtos/{{ p.id }}" class="team-form" data-salvar>
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <div class="team-fields">
       <label class="field"><span>Marca <span class="muted small">{% if olist_brand %}(Olist: {{ olist_brand }}){% elif listing_brand %}(anúncio do ML: {{ listing_brand }}){% else %}(o Olist e o anúncio não informam){% endif %}</span></span>

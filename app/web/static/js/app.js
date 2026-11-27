@@ -115,3 +115,44 @@ document.addEventListener("click", function (event) {
   var form = none.closest("form");
   if (form) form.querySelectorAll('input[name="' + none.dataset.selectNone + '"]').forEach(function (c) { c.checked = false; });
 });
+
+// Formulários de edição (data-salvar): o botão "Salvar" só fica ativo quando algo
+// mudou. Assim, depois de salvar (a página volta com os valores novos), ele fica
+// apagado e não dá a impressão de que nada foi salvo. Ao enviar: "Salvando…".
+(function () {
+  function snapshot(form) {
+    var parts = [];
+    new FormData(form).forEach(function (value, key) {
+      if (key !== "csrf_token") parts.push(key + "=" + (typeof value === "string" ? value : value.name));
+    });
+    return parts.join("&");
+  }
+
+  function setup(form) {
+    var buttons = Array.prototype.slice.call(form.querySelectorAll('button[type="submit"]'));
+    if (!buttons.length) return;
+    var initial = snapshot(form);
+    var labels = buttons.map(function (b) { return b.textContent; });
+    function update() {
+      var changed = snapshot(form) !== initial;
+      buttons.forEach(function (b, i) {
+        b.disabled = !changed;
+        b.textContent = labels[i];
+        b.title = changed ? "" : "Nada mudou desde a última vez que foi salvo";
+      });
+    }
+    form.addEventListener("input", update);
+    form.addEventListener("change", update);
+    form.addEventListener("submit", function () {
+      // Espera o envio começar antes de travar o botão (senão o navegador não envia).
+      setTimeout(function () {
+        buttons.forEach(function (b) { b.disabled = true; b.textContent = "Salvando…"; });
+      }, 0);
+    });
+    // Voltar pelo navegador reabre a página guardada: refaz o estado.
+    window.addEventListener("pageshow", function () { initial = snapshot(form); update(); });
+    update();
+  }
+
+  document.querySelectorAll("form[data-salvar]").forEach(setup);
+})();

@@ -10,7 +10,7 @@
 
 <section class="card auto-general" aria-labelledby="geral-title">
   <h2 id="geral-title" class="card-title">Quem recebe e quando</h2>
-  <form method="post" action="/automacoes/geral" class="auto-general-form">
+  <form method="post" action="/automacoes/geral" class="auto-general-form" data-salvar>
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <label class="field auto-recipients"><span>E-mails que recebem os avisos</span>
       <input type="text" name="recipients" value="{{ own_recipients }}" placeholder="{{ report_recipients or 'ex.: dono@loja.com, gerente@loja.com' }}">
@@ -50,7 +50,7 @@
       {% if r.last_error %}<p class="form-error">{{ r.last_error }}</p>{% endif %}
     {% endif %}
     {% if d.params %}
-    <form method="post" action="/automacoes/{{ d.slug }}/config" class="auto-params">
+    <form method="post" action="/automacoes/{{ d.slug }}/config" class="auto-params" data-salvar>
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       {% for p in d.params %}
         {% if p.kind == 'bool' %}

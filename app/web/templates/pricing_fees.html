@@ -8,7 +8,7 @@
   <p class="small"><strong>Shopee e TikTok Shop:</strong> os valores vieram de fontes públicas de 2026 consultadas em {{ checked }} — <strong>elas divergem em alguns pontos</strong>. Confira na Central do Vendedor de cada marketplace e corrija aqui.</p>
 </section>
 
-<form method="post" action="/precificacao/taxas">
+<form method="post" action="/precificacao/taxas" data-salvar>
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
   {% for key in ['shopee', 'tiktok'] %}{% set f = fees[key] %}
   <section class="card">

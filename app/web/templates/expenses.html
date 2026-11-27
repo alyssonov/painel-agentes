@@ -48,7 +48,7 @@
         {% if can('lancar_despesas') %}
         <tr><td colspan="4">
             <details class="team-edit"><summary class="link">Editar "{{ e.name }}"</summary>
-              <form method="post" action="/financeiro/despesas/{{ e.id }}" class="team-form">
+              <form method="post" action="/financeiro/despesas/{{ e.id }}" class="team-form" data-salvar>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <div class="team-fields">
                   <label class="field"><span>Nome</span><input type="text" name="name" value="{{ e.name }}" maxlength="120"></label>

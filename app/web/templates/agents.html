@@ -57,7 +57,7 @@
       {% if c.rules %}
       <details class="rules">
         <summary>Regras deste agente</summary>
-        <form method="post" action="/agentes/{{ a.slug }}/config" class="rules-form">
+        <form method="post" action="/agentes/{{ a.slug }}/config" class="rules-form" data-salvar>
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           {% for rule, value in c.rules %}
           <label class="field"><span>{{ rule.label }} ({{ rule.suffix }})</span>
@@ -71,7 +71,7 @@
       {% if a.slug == 'perguntas' %}
       <details class="rules">
         <summary>Regras das respostas</summary>
-        <form method="post" action="/agentes/perguntas/regras" class="rules-form">
+        <form method="post" action="/agentes/perguntas/regras" class="rules-form" data-salvar>
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           {% for key, (label, value, size) in rules.items() %}
           <label class="field"><span>{{ label }}</span>
