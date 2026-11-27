@@ -939,6 +939,11 @@ página Lucro real mostra quanto cada marketplace ficou (todas × só conferidas
   custo". `products.variation_kind` e `product_extras.onix_found` (migração
   0028); filtros "Sem custo (nem no Olist nem no Onix)" e "Não achado no Onix"
   em Produtos.
+- **Custo do lucro (27/11/2026, regra do dono):** `app/services/costs.py`
+  `unit_cost(product)` = custo do Onix (cadastro complementar) e, sem ele, o do
+  Olist. Usado no lucro real, DRE, relatórios, Curva ABC, dinheiro parado, preços
+  (agente e em massa) e pedidos de compra. Nada é escrito no Olist (cliente só
+  leitura): o custo do Onix fica só no banco do painel.
   Worker: ao ligar e a cada `ONIX_SYNC_HOURS`; botão em Contas conectadas.
 - O lucro real continua usando o custo do Olist; o do Onix aparece ao lado e o
   filtro "Custo do Onix diferente do Olist" mostra as diferenças.

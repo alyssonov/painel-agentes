@@ -41,7 +41,7 @@
 
 <section class="card">
   <div class="card-head"><h2 class="card-title">Lucro real por dia</h2></div>
-  <p class="muted small">Preço − taxas − frete − custo do Olist − impostos. Dias com prejuízo aparecem em vermelho, abaixo da linha do zero.</p>
+  <p class="muted small">Preço − taxas − frete − custo do produto − impostos. Dias com prejuízo aparecem em vermelho, abaixo da linha do zero.</p>
   {% with c = profit_chart, aria = "Lucro real por dia nos últimos " ~ periodo ~ " dias" %}{% include "partials/bar_chart.html" %}{% endwith %}
 </section>
 

@@ -28,6 +28,7 @@ from app.models.expense import CATEGORIES, Expense
 from app.services.dashboard import _orders_between, money_confirmed, order_margin
 from app.services.store_settings import get_setting
 from app.services.store_settings import other_costs_cents
+from app.services.costs import unit_cost
 
 # Linha automática do DRE: investimento no Mercado Ads (Product Ads), lido do Mercado Livre.
 ADS_CATEGORY = "mercado_ads"
@@ -71,7 +72,7 @@ class MonthDRE:
     ads: int = 0  # publicidade dividida nas vendas (o resto do gasto fica nas despesas)
     orders: int = 0
     unconfirmed: int = 0  # vendas com taxa/frete ainda não conferidos
-    missing_cost: int = 0  # vendas com produto sem custo no Olist
+    missing_cost: int = 0  # vendas com produto sem custo (nem no Onix nem no Olist)
     expenses: dict[str, int] = field(default_factory=dict)  # categoria → total
     partial: bool = False  # mês atual (ainda não acabou)
 
@@ -130,7 +131,7 @@ def month_dre(db: Session, month: date) -> MonthDRE:
         result.ads += m.ads_cents
         result.orders += 1
         result.unconfirmed += not money_confirmed(order)
-        result.missing_cost += any(not item.product or not item.product.cost_cents for item in order.items)
+        result.missing_cost += any(not unit_cost(item.product) for item in order.items)
     for expense in expenses_for(db, month):
         result.expenses[expense.category] = result.expenses.get(expense.category, 0) + expense.amount_cents
     # Mercado Ads lido automaticamente do Mercado Livre (até hoje, no mês atual).

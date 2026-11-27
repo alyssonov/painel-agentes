@@ -2,8 +2,8 @@
 
 Para cada produto do Olist (o código no Onix é o mesmo SKU do Olist, confirmado
 pelo dono em 26/11/2026), consulta o Onix e grava no CADASTRO COMPLEMENTAR do
-painel (product_extras). O Olist e o Onix não são alterados; o lucro real
-continua usando o custo do Olist (o do Onix aparece ao lado, para comparar).
+painel (product_extras). O Olist e o Onix não são alterados. O custo do Onix é o usado
+no lucro real (app/services/costs.py); sem ele, vale o do Olist — regra do dono, 27/11/2026.
 
 - custo do Onix: atualizado sempre (com histórico antes → depois quando muda);
 - marca do Onix: guardada à parte (onix_brand) e usada quando o Olist não tem;

@@ -1,7 +1,7 @@
 {% extends "app_layout.html" %}
 {% block title %}Margem real{% endblock %}
 {% block page_title %}Margem real{% endblock %}
-{% block page_subtitle %}<p class="muted">Mercado Livre: valor que você recebe pela venda (o mesmo do "detalhe da venda": já sem taxa, frete e tarifas) (Shopee: a "renda do pedido") − custo do Olist − impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}%) − embalagem e outros − publicidade.</p>{% endblock %}
+{% block page_subtitle %}<p class="muted">Mercado Livre: valor que você recebe pela venda (o mesmo do "detalhe da venda": já sem taxa, frete e tarifas) (Shopee: a "renda do pedido") − custo do produto (Onix; sem ele, Olist) − impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}%) − embalagem e outros − publicidade.</p>{% endblock %}
 {% block content %}
 <div class="toolbar">
   <div class="segmented segmented-light" role="group" aria-label="Período">
@@ -87,7 +87,7 @@
         {% set tone = 'erro' if p.profit < 0 else ('atencao' if p.margin_pct is not none and p.margin_pct < min_margin else 'ok') %}
         <tr>
           <td><span class="t-strong">{{ p.name }}</span><br><span class="muted small">{{ p.sku }}</span>
-            {% if p.missing_cost %}<span class="badge badge-atencao">Sem custo no Olist</span>{% endif %}</td>
+            {% if p.missing_cost %}<span class="badge badge-atencao">Sem custo</span>{% endif %}</td>
           <td class="num">{{ p.units }}</td>
           <td class="num">{{ p.revenue|brl }}</td>
           <td class="num {{ 'text-danger' if p.profit < 0 }}">{{ p.profit|brl }}</td>

@@ -33,7 +33,7 @@
           <td class="num">{{ '+ ' ~ (-m.shipping_cents)|brl if m.shipping_cents < 0 else '− ' ~ m.shipping_cents|brl }}</td></tr>
         <tr class="sale-sub"><td>{{ 'Você recebe (Mercado Pago)' if order.net_received_cents is not none else 'Sobra depois do marketplace' }}</td>
           <td class="num">{{ (m.revenue_cents - m.fee_cents - m.shipping_cents)|brl }}</td></tr>
-        <tr><td class="indent">Custo dos produtos (Olist)</td><td class="num">− {{ m.cost_cents|brl }}</td></tr>
+        <tr><td class="indent">Custo dos produtos (Onix / Olist)</td><td class="num">− {{ m.cost_cents|brl }}</td></tr>
         <tr><td class="indent">Impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}% do preço)</td><td class="num">− {{ m.tax_cents|brl }}</td></tr>
         {% if m.other_cents %}<tr><td class="indent">Embalagem e outros custos por venda</td><td class="num">− {{ m.other_cents|brl }}</td></tr>{% endif %}
         {% if m.ads_cents %}<tr><td class="indent">Publicidade (Mercado Ads) <span class="muted small">(parte do gasto do dia)</span></td><td class="num">− {{ m.ads_cents|brl }}</td></tr>{% endif %}
@@ -48,12 +48,12 @@
   <div class="card-head"><h2 class="card-title">Itens</h2></div>
   <div class="table-wrap">
     <table class="table">
-      <thead><tr><th>Produto</th><th class="num">Qtd.</th><th class="num">Preço unit.</th><th class="num">Custo unit. (Olist)</th></tr></thead>
+      <thead><tr><th>Produto</th><th class="num">Qtd.</th><th class="num">Preço unit.</th><th class="num">Custo unit.</th></tr></thead>
       <tbody>
       {% for i in items %}
         <tr><td><span class="t-strong">{{ i.title }}</span><br><span class="muted small">{{ i.sku }}</span></td>
           <td class="num">{{ i.qty }}</td><td class="num">{{ i.price|brl }}</td>
-          <td class="num">{% if i.missing_cost %}<span class="badge badge-atencao">sem custo no Olist</span>{% else %}{{ i.unit_cost|brl }}{% endif %}</td></tr>
+          <td class="num">{% if i.missing_cost %}<span class="badge badge-atencao">sem custo</span>{% else %}{{ i.unit_cost|brl }}{% endif %}</td></tr>
       {% endfor %}
       </tbody>
     </table>

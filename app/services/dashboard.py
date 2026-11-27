@@ -30,6 +30,7 @@ from app.models.enums import (
 from app.services.margin import MarginResult, calculate_margin
 from app.services.store_settings import get_setting
 from app.services.store_settings import other_costs_cents
+from app.services.costs import unit_cost
 
 _SEVERITY_ORDER = {AlertSeverity.CRITICAL: 0, AlertSeverity.WARNING: 1, AlertSeverity.INFO: 2}
 
@@ -156,7 +157,7 @@ def order_margin(order: Order, tax_rate_pct: float, other_cents: int = 0) -> Mar
     Olist − impostos − outros custos − publicidade da venda. Tudo que o Mercado Livre descontou vira taxa (comissão do item) +
     "frete e tarifas" (o resto). Sem o valor recebido, usa taxa + frete informados.
     """
-    cost = sum(item.quantity * (item.product.cost_cents if item.product else 0) for item in order.items)
+    cost = sum(item.quantity * unit_cost(item.product) for item in order.items)
     fee, shipping = order.marketplace_fee_cents, order.shipping_cost_cents
     if order.net_received_cents is not None:
         withheld = order.items_total_cents - order.net_received_cents

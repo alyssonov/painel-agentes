@@ -33,7 +33,7 @@ def test_previa_por_margem_com_final_90(db):
     r1 = by["MLB1"]
     assert r1.selectable and r1.new_cents % 100 == 90 and r1.margin_new >= 20
     assert by["MLB2"].blocked.startswith("Automatização") and by["MLB3"].blocked.startswith("Em promoção")
-    assert by["MLB4"].blocked == "Sem custo no Olist" and not by["MLB4"].selectable
+    assert by["MLB4"].blocked == "Sem custo (nem no Onix nem no Olist)" and not by["MLB4"].selectable
 
 
 def test_reajuste_e_avisos(db):

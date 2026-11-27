@@ -31,6 +31,7 @@ from app.services.stock import stock_rows
 from app.web.auth import current_user, verify_csrf
 from app.web.routes.reports import _purchase_rules, _rules
 from app.web.templating import flash, render
+from app.services.costs import unit_cost
 
 router = APIRouter(prefix="/compras")
 
@@ -68,7 +69,7 @@ def parse_lines(db: Session, text: str) -> tuple[list[PurchaseOrderItem], list[s
             errors.append(f"Linha {n} ({sku}): informe a quantidade.")
             continue
         items.append(PurchaseOrderItem(product_id=product.id, sku=product.sku, name=product.name, quantity=qty,
-                                       unit_cost_cents=cost if cost is not None else (product.cost_cents or None)))
+                                       unit_cost_cents=cost if cost is not None else (unit_cost(product) or None)))
     return items, errors
 
 

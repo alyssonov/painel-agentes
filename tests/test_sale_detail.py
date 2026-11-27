@@ -32,7 +32,7 @@ def test_venda_nao_conferida_e_busca_sem_resultado(logged_client, db):
     order = sale(db, product(db, "Y", cost=0, price=1000), qty=1, fee=100)
     db.commit()
     html = logged_client.get(f"/margem/venda/{order.id}").text
-    assert "Taxa e frete ainda não conferidos" in html and "sem custo no Olist" in html
+    assert "Taxa e frete ainda não conferidos" in html and "sem custo" in html
     html = logged_client.get("/margem/venda?numero=999").text
     assert "Não achei a venda" in html and "Vendas recentes" in html
     assert "Conferir uma venda" in logged_client.get("/margem").text

@@ -1,7 +1,7 @@
 """Relatório de margem real por período: totais, por produto e vendas no prejuízo.
 
 Fórmula (app/services/margin.py): preço − taxa do marketplace − frete pago pela
-loja − custo do produto (Olist) − impostos (alíquota da loja).
+loja − custo do produto (Onix; sem ele, Olist) − impostos (alíquota da loja).
 Taxa, frete e imposto do pedido são divididos entre os itens na proporção do
 valor de cada item.
 """
@@ -16,6 +16,7 @@ from app.models import Order, OrderItem
 from app.models.enums import CHANNEL_LABELS, Channel, KanbanStatus
 from app.services.dashboard import money_confirmed, order_margin
 from app.services.store_settings import other_costs_cents
+from app.services.costs import unit_cost
 
 
 @dataclass
@@ -140,7 +141,7 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
         for item in order.items:
             item_rev = item.quantity * item.unit_price_cents
             share = item_rev / items_total
-            cost = item.quantity * (item.product.cost_cents if item.product else 0)
+            cost = item.quantity * unit_cost(item.product)
             profit = round(item_rev - (m.fee_cents + m.shipping_cents + m.other_cents + m.ads_cents) * share
                            - item_rev * tax_rate_pct / 100) - cost
             key = str(item.product_id or item.sku)
@@ -151,7 +152,7 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
             entry.units += item.quantity
             entry.revenue += item_rev
             entry.profit += profit
-            entry.missing_cost = entry.missing_cost or not (item.product and item.product.cost_cents > 0)
+            entry.missing_cost = entry.missing_cost or not unit_cost(item.product)
             entry.missing_fees = entry.missing_fees or not money_confirmed(order)
 
     product_list = sorted(products.values(), key=lambda p: (p.profit >= 0, p.margin_pct if p.margin_pct is not None else 0))

@@ -243,6 +243,12 @@ se quiser, `ONIX_COST_FIELD` (`custo_prod`, `vlmedio_prod` ou
 botão em **Contas conectadas → Onix**. Estoque mínimo, código e local só são
 preenchidos quando estão vazios no painel.
 
+**O custo do Onix é o usado no lucro** (vendas, DRE, relatórios, preços). Produto
+sem custo no Onix usa o custo do Olist. O Olist nunca é alterado. Produto com
+variações: o "pai" (ex.: `capachuvadelta`) não é consultado; cada variação (9112,
+9113…) é. Em **Produtos**, os filtros "Sem custo" e "Não achado no Onix" mostram o
+que falta.
+
 ## Conectar o Olist ERP (somente leitura)
 
 1. No Olist: **Menu > Configurações > aba Geral > Aplicativos > + novo
@@ -340,7 +346,7 @@ alerta, horas sem nota, margem mínima...) ficam em "Regras deste agente".
   nota (urgente), pedido parado sem nota há mais de X horas e notas
   rejeitadas/denegadas. A correção é sempre feita no Olist.
 - **Margem real** (a cada hora): lucro por produto e por venda (preço − taxa
-  do marketplace − frete − custo do Olist − impostos), avisos de prejuízo,
+  do marketplace − frete − custo do produto − impostos), avisos de prejuízo,
   margem abaixo da mínima e produtos sem custo no Olist. Página: **Margem
   real** (hoje, 7 ou 30 dias).
 
@@ -407,7 +413,7 @@ em **Agentes**.
 ## Preços (Fase 7 — agente Monitor de preços)
 
 O agente compara cada anúncio com as **referências de preço oficiais do Mercado
-Livre** e calcula o lucro no preço novo com o custo do Olist. Ele só sugere
+Livre** e calcula o lucro no preço novo com o custo do produto. Ele só sugere
 baixar se o lucro continuar acima da **margem mínima** (padrão 15%, em
 **Agentes → Monitor de preços**) e sugere subir quando você está abaixo da
 concorrência. As sugestões aparecem em **Estoque e preços → Sugestões de
@@ -418,7 +424,7 @@ Nada muda no modo simulação.
 ## Sugestão de compra
 
 Em **Estoque e preços**, o quadro **Sugestão de compra** mostra o que repor,
-quantas unidades e o custo estimado (custo do Olist), com o botão **Baixar
+quantas unidades e o custo estimado (custo do produto), com o botão **Baixar
 planilha** para mandar ao fornecedor. Em **Agentes → Vigia de estoque** você
 ajusta quantos dias o fornecedor leva para entregar e para quantos dias de
 vendas quer comprar.
@@ -427,7 +433,7 @@ vendas quer comprar.
 
 Também em **Estoque e preços**: produtos com estoque que não vendem há mais de
 60 dias, ou com estoque para mais de 180 dias, e quanto dinheiro está
-empatado neles (estoque × custo do Olist). Para isso o painel importa, aos
+empatado neles (estoque × custo do produto). Para isso o painel importa, aos
 poucos e em segundo plano, até 120 dias de vendas antigas do Olist
 (`OLIST_HISTORY_DAYS`). Os dois limites se ajustam em **Agentes → Vigia de
 estoque**.
@@ -437,7 +443,7 @@ estoque**.
 Em **Margem real**, digite o número da venda (do Mercado Livre, do pacote ou do
 pedido no Olist) em **Conferir uma venda**. O painel mostra a conta linha por
 linha: preço, comissão, frete e tarifas, **quanto você recebe** (Mercado Pago),
-custo do Olist, impostos e lucro — para comparar com o "detalhe da venda" do
+custo do produto, impostos e lucro — para comparar com o "detalhe da venda" do
 Mercado Livre. Sem número, a página lista as vendas recentes.
 
 ## Gráficos

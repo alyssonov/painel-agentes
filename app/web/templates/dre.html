@@ -32,7 +32,7 @@
   {% if can('lancar_despesas') %}<a class="link" href="/financeiro/despesas">Lançar aluguel, salários, contador…</a>{% endif %}</p></div>
 {% endif %}
 {% if c.unconfirmed or c.missing_cost %}
-<p class="muted small">Atenção em {{ c.label }}: {% if c.unconfirmed %}{{ c.unconfirmed }} venda(s) com taxa e frete ainda não conferidos (estimados){% endif %}{% if c.unconfirmed and c.missing_cost %} · {% endif %}{% if c.missing_cost %}{{ c.missing_cost }} venda(s) com produto sem custo no Olist (custo contado como zero){% endif %}.</p>
+<p class="muted small">Atenção em {{ c.label }}: {% if c.unconfirmed %}{{ c.unconfirmed }} venda(s) com taxa e frete ainda não conferidos (estimados){% endif %}{% if c.unconfirmed and c.missing_cost %} · {% endif %}{% if c.missing_cost %}{{ c.missing_cost }} venda(s) com produto sem custo (custo contado como zero){% endif %}.</p>
 {% endif %}
 
 <section class="card" aria-labelledby="dre-title">
@@ -50,7 +50,7 @@
         {{ line("Frete e tarifas", "shipping", minus=true) }}
         {{ line("Impostos sobre as vendas", "taxes", minus=true) }}
         {{ line("Receita líquida", "net_revenue", strong=true, cls='dre-sub') }}
-        {{ line("Custo dos produtos vendidos (Olist)", "cost", minus=true) }}
+        {{ line("Custo dos produtos vendidos (Onix / Olist)", "cost", minus=true) }}
         {% if months|selectattr('other')|list %}{{ line("Embalagem e outros custos por venda", "other", minus=true) }}{% endif %}
         {% if months|selectattr('ads')|list %}{{ line("Publicidade das vendas (Mercado Ads)", "ads", minus=true) }}{% endif %}
         {{ line("Lucro das vendas (margem de contribuição)", "gross_profit", strong=true, cls='dre-sub') }}

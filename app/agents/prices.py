@@ -31,6 +31,7 @@ from app.core.money import format_brl
 from app.models import Action, PriceReference, Product
 from app.models.enums import ActionStatus, ActionType, Channel
 from app.services.store_settings import get_setting
+from app.services.costs import unit_cost
 
 SLUG = "precos"
 ABOVE = {"with_benchmark_high", "with_benchmark_highest"}
@@ -46,7 +47,7 @@ VERDICT_LABELS = {
     "promocao": "Em promoção",
     "automatico": "Automatização do ML",
     "variacoes": "Anúncio com variações",
-    "sem_custo": "Sem custo no Olist",
+    "sem_custo": "Sem custo (nem no Onix nem no Olist)",
     "aplicado": "Preço alterado",
     "simulado": "Aprovado (simulação)",
 }
@@ -132,7 +133,7 @@ def run_prices_agent(session_factory: sessionmaker[Session]):
             for ref in db.scalars(select(PriceReference).where(PriceReference.channel == Channel.ML,
                                                                PriceReference.is_demo.is_(False))):
                 product = db.get(Product, ref.product_id) if ref.product_id else None
-                result = analyze(ref, product.cost_cents if product else None, tax, min_margin)
+                result = analyze(ref, (unit_cost(product, db) or None) if product else None, tax, min_margin)
                 ref.verdict, ref.note, ref.profit_at_suggested_cents = result.verdict, result.note, \
                     result.profit_at_suggested
                 old = _pending(db, ref)

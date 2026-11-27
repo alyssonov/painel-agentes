@@ -41,7 +41,7 @@ def build_alerts(report, min_margin_pct: float, days: int) -> list[AlertSpec]:
     specs = specs[:MAX_ALERTS]
     if report.products_missing_cost:
         specs.append(AlertSpec("sem_custo", AlertSeverity.WARNING,
-                               f"{report.products_missing_cost} produto(s) vendido(s) sem custo no Olist",
+                               f"{report.products_missing_cost} produto(s) vendido(s) sem custo",
                                "Cadastre o custo no Olist para a margem real ficar certa.", "produto"))
     return specs
 

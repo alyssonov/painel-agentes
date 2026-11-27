@@ -1,13 +1,13 @@
 """Precificação em massa (Mercado Livre): prévia e propostas — nada muda sem aprovação.
 
 Mesma conta de lucro do agente de Preços (app/agents/prices.py):
-    lucro(p) = p − taxa(p) − frete − custo do Olist − imposto(p)
+    lucro(p) = p − taxa(p) − frete − custo do produto (Onix; sem ele, Olist) − imposto(p)
 A taxa vem da referência oficial de preço do ML de cada anúncio. As mudanças
 viram Ações "mudar_preco" no ActionGateway: aprovar (uma a uma ou em lote) é que
 envia ao Mercado Livre — e no modo simulação nada é enviado.
 
 Ficam de fora (como no agente): automatização de preços do ML ligada, anúncio
-com variações, anúncio em promoção e produto sem custo no Olist.
+com variações, anúncio em promoção e produto sem custo.
 """
 
 import math
@@ -24,6 +24,7 @@ from app.services.marketplace_fees import load_fees
 from app.services.pricing_calc import round_up_price
 from app.services.search import matches, terms
 from app.services.store_settings import get_setting
+from app.services.costs import unit_cost
 
 RULES = {"margem": "Preço para uma margem", "reajuste": "Reajuste em %", "referencia": "Ir para a referência do ML"}
 MAX_ROWS = 300
@@ -118,7 +119,7 @@ def preview(db: Session, rule: Rule) -> tuple[list[PreviewRow], float]:
     rows = []
     for ref in refs[:MAX_ROWS]:
         product = products.get(ref.product_id) if ref.product_id else None
-        cost = product.cost_cents if product else None
+        cost = (unit_cost(product, db) or None) if product else None
         blocked = None
         if ref.automated:
             blocked = "Automatização de preços do ML ligada"
@@ -127,7 +128,7 @@ def preview(db: Session, rule: Rule) -> tuple[list[PreviewRow], float]:
         elif ref.promoted:
             blocked = "Em promoção (ajuste no ML)"
         elif not cost:
-            blocked = "Sem custo no Olist"
+            blocked = "Sem custo (nem no Onix nem no Olist)"
         rate = _fee_rate(ref, fallback)
         new = profit_new = None
         warnings: list[str] = []

@@ -28,7 +28,8 @@ class ProductExtra(CompanyScoped, TimestampMixin, Base):
     onix_brand: Mapped[str | None] = mapped_column(String(80), nullable=True)  # marca no Onix (só leitura)
     supplier: Mapped[str | None] = mapped_column(String(120), nullable=True)
     supplier_code: Mapped[str | None] = mapped_column(String(64), nullable=True)  # código do item no fornecedor
-    # Custo informado pelo Onix (loja física) ou pela planilha. O lucro continua usando o custo do Olist.
+    # Custo informado pelo Onix (loja física) ou pela planilha. É o custo usado no lucro (app/services/costs.py);
+    # sem ele, vale o do Olist.
     onix_cost_cents: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     onix_cost_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     # Última leitura do Onix achou este SKU? None = ainda não consultado.

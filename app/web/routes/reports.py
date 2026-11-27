@@ -31,6 +31,7 @@ from app.services.store_settings import get_setting
 from app.web.auth import current_user, verify_csrf
 from app.web.templating import flash, render
 from app.services.store_settings import other_costs_cents
+from app.services.costs import unit_cost
 
 router = APIRouter()
 
@@ -92,7 +93,7 @@ def purchase_csv(db: Session = Depends(get_db), user: User = Depends(current_use
     for item in purchase_suggestions(db, rows, lead_days=lead, coverage_days=coverage):
         writer.writerow([item.sku, item.name, item.available, item.on_order, f"{item.avg_daily:.1f}".replace(".", ","),
                          f"{item.days_left:.0f}" if item.days_left is not None else "", item.quantity,
-                         format_brl(item.unit_cost_cents) if item.unit_cost_cents else "sem custo no Olist",
+                         format_brl(item.unit_cost_cents) if item.unit_cost_cents else "sem custo",
                          format_brl(item.total_cost_cents) if item.unit_cost_cents else "",
                          URGENCY_LABELS[item.urgency][0], item.supplier or ""])
     filename = f"sugestao-de-compra-{local_today():%Y-%m-%d}.csv"
@@ -243,8 +244,8 @@ def sale_detail(request: Request, order_id: int, db: Session = Depends(get_db), 
                                                      Payment.order_ref == order.external_id)
                                .order_by(Payment.approved_at)))
     items = [{"title": i.title, "sku": i.sku, "qty": i.quantity, "price": i.unit_price_cents,
-              "unit_cost": i.product.cost_cents if i.product else 0,
-              "missing_cost": not (i.product and i.product.cost_cents > 0)} for i in order.items]
+              "unit_cost": unit_cost(i.product),
+              "missing_cost": not unit_cost(i.product)} for i in order.items]
     return render(request, "sale.html", {
         "order": order, "m": m, "tax_rate": tax, "items": items, "payments": payments,
         "confirmed": money_confirmed(order), "channel_label": CHANNEL_LABELS.get(Channel(order.channel), order.channel),

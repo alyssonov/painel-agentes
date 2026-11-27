@@ -77,7 +77,7 @@ def test_sincronizacao_preenche_sem_sobrescrever(db, onix_env):
     assert (e1.onix_cost_cents, e1.onix_brand, e1.min_stock, e1.supplier_code) == (2470, "ALLEN", 20, "81730")
     assert (e2.onix_cost_cents, e2.min_stock, e2.supplier_code) == (510, 3, "X-1")  # o que já existia ficou
     db.refresh(semi)
-    assert semi.cost_cents == 2200  # custo do Olist (usado no lucro) não muda
+    assert semi.cost_cents == 2200  # o Olist nunca é alterado (o lucro passa a usar o custo do Onix)
     rows = {r.product.sku: r for r in list_products(db)}
     assert (rows["1550"].brand, rows["1550"].brand_source) == ("ALLEN", "Onix")
     assert rows["2000"].brand == "Sabó"  # marca do Olist vale mais que a do Onix

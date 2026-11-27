@@ -1,7 +1,7 @@
 """Relatórios para baixar (planilha para o Excel) ou imprimir / salvar em PDF.
 
 Todos usam a mesma conta do Lucro real (app/services/margin.py via order_margin):
-preço − taxa do marketplace − frete pago pela loja − custo (Olist) − impostos
+preço − taxa do marketplace − frete pago pela loja − custo (Onix; sem ele, Olist) − impostos
 − outros custos por venda − publicidade da venda.
 Só leitura: nada é alterado. Só vendas reais (a loja de simulação fica de fora
 quando há conta real conectada; sem conta real, mostra a simulação).
@@ -175,14 +175,14 @@ def _products(db: Session, period: Period, tax: float, demo: bool) -> Table:
     t = Table(KINDS["produtos"][0], period, ["SKU", "Produto", "Unidades", "Faturamento", "Lucro", "Margem %",
                                              "Observação"], money={3, 4}, pct={5})
     for p in sorted(report.products, key=lambda p: -p.revenue):
-        note = "; ".join(n for n, flag in (("sem custo no Olist", p.missing_cost),
+        note = "; ".join(n for n, flag in (("sem custo", p.missing_cost),
                                            ("taxa ainda não confirmada", p.missing_fees)) if flag)
         t.rows.append([p.sku, p.name, p.units, p.revenue, p.profit, p.margin_pct, note])
     tot = report.totals
     t.totals = ["Total", f"{len(t.rows)} produtos", sum(p.units for p in report.products), tot.revenue, tot.profit,
                 tot.margin_pct, ""]
     if report.products_missing_cost:
-        t.notes.append(f"{report.products_missing_cost} produto(s) sem custo no Olist: o lucro deles aparece maior "
+        t.notes.append(f"{report.products_missing_cost} produto(s) sem custo (nem no Onix nem no Olist): o lucro deles aparece maior "
                        "do que é.")
     return t
 

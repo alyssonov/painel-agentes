@@ -16,6 +16,7 @@ from app.core.db import utcnow
 from app.models import Order, OrderItem, Product
 from app.models.enums import KanbanStatus
 from app.services.stock import StockRow
+from app.services.costs import onix_costs
 
 IDLE_LABELS = {"parado": ("Parado", "atencao"), "excesso": ("Estoque demais", "info")}
 
@@ -56,6 +57,7 @@ def idle_products(db: Session, rows: list[StockRow], *, idle_days: int, excess_d
     history_since = db.scalar(select(func.min(Order.ordered_at)).where(*valid))
     ids = [r.product_id for r in rows]
     costs = dict(db.execute(select(Product.id, Product.cost_cents).where(Product.id.in_(ids))).all()) if ids else {}
+    costs.update({pid: c for pid, c in onix_costs(db).items() if pid in costs})  # Onix vale mais que o Olist
     limit = now - timedelta(days=idle_days)
 
     items = []

@@ -36,7 +36,7 @@
     <h2 class="card-title">Produtos do maior para o menor</h2>
     {% if rows %}<a class="btn btn-secondary" href="/margem/curva-abc.csv?periodo={{ periodo }}&criterio={{ criterio }}">Baixar planilha</a>{% endif %}
   </div>
-  {% if missing_cost and criterio == 'lucro' %}<p class="muted small">{{ missing_cost }} produto(s) sem custo no Olist: o lucro deles aparece maior do que é.</p>{% endif %}
+  {% if missing_cost and criterio == 'lucro' %}<p class="muted small">{{ missing_cost }} produto(s) sem custo (nem no Onix nem no Olist): o lucro deles aparece maior do que é.</p>{% endif %}
   {% if rows %}
   <div class="table-wrap">
     <table class="table">

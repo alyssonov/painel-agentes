@@ -117,7 +117,7 @@ def render_text(c: dict) -> str:
     if c["prejuizos"]:
         lines.append(f"  Atenção: venda com prejuízo em {', '.join(c['prejuizos'])}")
     if c["sem_custo"]:
-        lines.append(f"  {c['sem_custo']} produto(s) vendido(s) sem custo no Olist (a margem fica errada)")
+        lines.append(f"  {c['sem_custo']} produto(s) vendido(s) sem custo (a margem fica errada)")
     if c["mais_vendidos"]:
         lines += ["", "MAIS VENDIDOS: " + " · ".join(c["mais_vendidos"])]
     lines += ["", f"PERGUNTAS: {c['perguntas_respondidas']} respondida(s) · {c['perguntas_aguardando']} esperando você"]
@@ -151,7 +151,7 @@ def render_html(c: dict) -> str:
     if c["prejuizos"]:
         margin += p("⚠ Venda com prejuízo em " + e(", ".join(c["prejuizos"])), red, 13, True)
     if c["sem_custo"]:
-        margin += p(f"{c['sem_custo']} produto(s) vendido(s) sem custo no Olist", amber, 13)
+        margin += p(f"{c['sem_custo']} produto(s) vendido(s) sem custo", amber, 13)
     alerts = "".join(p(f"{a['icone']} {e(a['texto'])}") for a in c["alertas"]) or p("✓ Nada pendente. Tudo em ordem.", "#17733F")
     if c["alertas_total"] > len(c["alertas"]):
         alerts += p(f"… e mais {c['alertas_total'] - len(c['alertas'])} no painel", muted, 13)
