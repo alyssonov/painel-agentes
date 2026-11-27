@@ -23,7 +23,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.agents.base import run_agent
-from app.agents.config import has_real_data
+from app.agents.config import agent_rules, has_real_data
 from app.agents.questions import CONTACT_RE, normalize
 from app.ai.client import AIClient, AIError, AINotConfigured, AIRefused, BudgetExceeded, Transport
 from app.core import actions
@@ -39,7 +39,6 @@ from app.services.store_settings import get_setting
 logger = logging.getLogger("agentes.posvenda")
 
 SLUG = "posvenda"
-MAX_PER_RUN = 15
 LAST_MESSAGES = 6
 MAX_ANSWER_CHARS = 300
 PROMPT = (Path(__file__).resolve().parent.parent / "ai" / "prompts" / "responder_mensagem.md").read_text("utf-8")
@@ -225,7 +224,7 @@ def process_conversation(db: Session, conversation: Conversation, ai: AIClient, 
 
 # --- Reclamações: só avisos ---------------------------------------------------------
 
-def claim_alerts(db: Session) -> list[AlertSpec]:
+def claim_alerts(db: Session, urgent_hours: float = 24) -> list[AlertSpec]:
     specs = []
     now = utcnow()
     for claim in db.scalars(select(Claim).where(Claim.status == "opened", Claim.is_demo.is_(False))
@@ -238,7 +237,7 @@ def claim_alerts(db: Session) -> list[AlertSpec]:
             detail += f" Responda até {to_local(claim.due_date):%d/%m às %H:%M}."
         if claim.affects_reputation == "affected":
             detail += " Afeta a reputação."
-        late = claim.due_date is not None and claim.due_date - now < timedelta(hours=24)
+        late = claim.due_date is not None and claim.due_date - now < timedelta(hours=urgent_hours)
         severity = AlertSeverity.CRITICAL if mine and (late or claim.affects_reputation == "affected") \
             else AlertSeverity.WARNING if mine else AlertSeverity.INFO
         specs.append(AlertSpec(f"reclamacao:{claim.external_id}", severity, title, detail, "reclamacao"))
@@ -262,17 +261,18 @@ def today_summary(db: Session) -> str:
 def run_postsale_agent(session_factory: sessionmaker[Session], *, transport: Transport | None = None):
     """Uma rodada do agente (chamada pelo worker)."""
 
-    def work(db: Session, _agent) -> tuple[int, str]:
+    def work(db: Session, agent) -> tuple[int, str]:
         account = get_ml_account(db)
         if account is None or not account.access_token_enc or not has_real_data(db):
             return 0, "Aguardando o Mercado Livre ser conectado"
-        sync_alerts(db, SLUG, claim_alerts(db))
+        rules = agent_rules(agent)  # regras editáveis na página Agentes
+        sync_alerts(db, SLUG, claim_alerts(db, rules["horas_urgente"]))
         db.commit()
         pending = [c for c in db.scalars(
             select(Conversation).where(Conversation.channel == Channel.ML, Conversation.is_demo.is_(False),
                                        Conversation.status == ConversationStatus.NEW,
-                                       Conversation.last_message_at > utcnow() - timedelta(days=30))
-            .order_by(Conversation.last_message_at).limit(MAX_PER_RUN))]
+                                       Conversation.last_message_at > utcnow() - timedelta(days=rules["dias_conversas"]))
+            .order_by(Conversation.last_message_at).limit(int(rules["conversas_por_rodada"])))]
         if not pending:
             return 0, today_summary(db)
 

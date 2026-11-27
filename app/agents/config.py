@@ -53,6 +53,11 @@ RULES: dict[str, list[Rule]] = {
         Rule("limite_reclamacoes_pct", "Avisar produto com reclamações acima de", 5, 0.5, 50, "% das vendas (90 dias)"),
         Rule("nota_minima", "Avisar produto com nota abaixo de", 4.0, 1, 5, "estrelas"),
     ],
+    "posvenda": [
+        Rule("horas_urgente", "Reclamação vira urgente quando faltar menos de", 24, 1, 72, "horas para responder"),
+        Rule("conversas_por_rodada", "Sugerir respostas para no máximo", 15, 1, 50, "conversas por rodada"),
+        Rule("dias_conversas", "Considerar conversas dos últimos", 30, 3, 60, "dias"),
+    ],
     "relatorio": [
         Rule("hora_envio", "Enviar o relatório diário a partir das", 19, 0, 23, "horas"),
     ],

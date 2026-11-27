@@ -268,3 +268,20 @@ def test_simulacao_mostra_conversas_ficticias(logged_client, db):
     clear_demo(db)
     db.commit()
     assert db.scalar(select(Conversation)) is None and db.scalar(select(Claim)) is None
+
+
+def test_regras_do_pos_venda_aparecem_e_valem(db, logged_client):
+    """Pós-venda tem regras na página Agentes (antes era o único sem): prazo de urgência da reclamação."""
+    from datetime import timedelta
+
+    from app.agents.postsale import claim_alerts
+    from app.core.db import utcnow
+    from app.models import Claim
+    from app.models.enums import AlertSeverity
+    page = logged_client.get("/agentes").text
+    assert "Reclamação vira urgente quando faltar menos de" in page and "/agentes/posvenda/config" in page
+    db.add(Claim(channel="ml", external_id="c1", status="opened", stage="claim", action_responsible="seller",
+                 due_date=utcnow() + timedelta(hours=30), order_ref="200", seller_actions=[], checked_at=utcnow()))
+    db.commit()
+    assert claim_alerts(db, 24)[0].severity == AlertSeverity.WARNING  # faltam 30 h: ainda não é urgente
+    assert claim_alerts(db, 48)[0].severity == AlertSeverity.CRITICAL  # com a regra em 48 h, já é
