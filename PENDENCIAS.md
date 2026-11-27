@@ -107,6 +107,9 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
   24.04) e seguir o guia. O painel fica em `app.gerentedoano.com`.
 - **Resolve:** contas que desconectam (o Olist cai depois de 1 dia com o
   computador desligado) e acesso pelo celular.
+- **Depois do servidor (27/11):** ligar as notificações do Mercado Livre (e da
+  Shopee) para perguntas, vendas e mensagens chegarem em segundos, em vez da
+  leitura a cada 1 minuto.
 
 ### B5. Mercado Ads (publicidade) — 🟡 (leitura pronta em 27/11)
 - **Pronto:** Financeiro → **Publicidade** (investimento, retorno, campanhas,
