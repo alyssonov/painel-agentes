@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from app.core.db import utcnow
+from app.core.timeutil import local_day_bounds_utc, local_today
 from app.models import Order, OrderItem, Product, Shipment, StockSnapshot
 from app.models.enums import Channel, KanbanStatus
 from app.services.orders import OrderFilter, list_orders, pick_list
@@ -25,8 +26,14 @@ def _order(db, ref, *, channel=Channel.ML, hours_ago=2, status=KanbanStatus.TO_P
     return o
 
 
+def _hours_left_today() -> float:
+    """Horas até o fim de HOJE no fuso da loja (o teste não pode depender da hora em que roda)."""
+    end = local_day_bounds_utc(local_today())[1]
+    return max((end - utcnow()).total_seconds() / 3600 - 0.01, 0.001)
+
+
 def _setup(db):
-    _order(db, "A1", ship=("ready_to_ship", 3, None, None))                      # a enviar hoje
+    _order(db, "A1", ship=("ready_to_ship", _hours_left_today(), None, None))   # a enviar hoje
     _order(db, "A2", ship=("ready_to_ship", -1, None, None), qty=2, total=9980)  # atrasado
     _order(db, "A3", ship=("shipped", -20, None, None), invoice="nf1")           # enviado
     _order(db, "A4", ship=("ready_to_ship", -2, "picked_up", None))             # coletado = saiu
