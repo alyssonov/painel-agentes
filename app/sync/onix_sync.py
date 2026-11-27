@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.config import get_settings
 from app.core import audit
 from app.core.db import utcnow
+from app.core.timeutil import to_local
 from app.integrations.errors import IntegrationError, TemporaryError
 from app.integrations.onix.client import OnixClient
 from app.integrations.onix.mapping import parse
@@ -41,14 +42,19 @@ RETRY_AFTER_ERROR = timedelta(hours=1)
 STALLED = timedelta(minutes=15)
 
 
-def onix_due(session_factory: sessionmaker[Session], *, hours: int, now: datetime | None = None) -> bool:
+def onix_due(session_factory: sessionmaker[Session], *, hours: int, now: datetime | None = None,
+             open_hour: int = 0, close_hour: int = 24) -> bool:
     """Está na hora de ler o Onix?
 
+    Só dentro do horário em que o computador do Onix fica ligado (padrão 8h às 18h).
     Deu certo: espera `hours` horas. Falhou (ex.: o computador do Onix estava desligado
     à noite): tenta de novo em 1 hora, em vez de esperar o ciclo inteiro. Em andamento
     (com notícia recente): não começa outra.
     """
     now = now or utcnow()
+    # Fora do horário da loja o computador do Onix está desligado: nem tenta.
+    if not open_hour <= to_local(now).hour < close_hour:
+        return False
     with session_factory() as db:
         last = db.scalar(select(SyncRun).where(SyncRun.provider == PROVIDER).order_by(SyncRun.id.desc()).limit(1))
     if last is None:

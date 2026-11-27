@@ -431,6 +431,7 @@ def _onix_context(db: Session) -> dict:
         "configured": settings.onix_configured,
         "insecure": settings.onix_configured and settings.onix_api_url.startswith("http://") and not local,
         "cost_field": settings.onix_cost_field, "hours": settings.onix_sync_hours,
+        "open_hour": settings.onix_open_hour, "close_hour": settings.onix_close_hour,
         "last_run": last_run,
         "last_run_label": to_local(last_run.started_at).strftime("%d/%m às %H:%M") if last_run else None,
         "stalled": _onix_stalled(last_run),

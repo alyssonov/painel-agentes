@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     # Qual custo do Onix usar: custo_prod (custo), vlmedio_prod (custo médio) ou custoatac_prod (atacado).
     onix_cost_field: str = "custo_prod"
     onix_sync_hours: int = 6
+    # Horário em que o computador do Onix fica ligado na loja (o painel só tenta nesse horário).
+    onix_open_hour: int = 8
+    onix_close_hour: int = 18
 
     # E-mail para os relatórios (Gmail: smtp.gmail.com, porta 587, "senha de app").
     smtp_host: str = "smtp.gmail.com"

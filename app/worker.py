@@ -84,7 +84,9 @@ def job_sync_onix() -> None:
     """Onix (loja física): custo, marca e qtd. mínima dos produtos — só leitura."""
     try:
         # Confere a cada 30 min; lê de fato a cada N horas (ou 1 hora depois de uma falha).
-        if not onix_due(get_sessionmaker(), hours=max(1, get_settings().onix_sync_hours)):
+        settings = get_settings()
+        if not onix_due(get_sessionmaker(), hours=max(1, settings.onix_sync_hours),
+                        open_hour=settings.onix_open_hour, close_hour=settings.onix_close_hour):
             return
         run = run_onix_sync(get_sessionmaker())
         if run is not None:

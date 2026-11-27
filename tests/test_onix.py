@@ -236,3 +236,7 @@ def test_quando_ler_o_onix_de_novo(db):
     db.commit()
     assert not onix_due(factory, hours=6, now=now)  # lendo agora: não começa outra
     assert onix_due(factory, hours=6, now=now + timedelta(minutes=30))  # parou no meio: retoma
+    # Horário da loja (8h às 18h em Brasília): de madrugada nem tenta.
+    night = datetime(2026, 11, 28, 5, 0)  # 2h da manhã em Brasília
+    assert not onix_due(factory, hours=6, now=night, open_hour=8, close_hour=18)
+    assert onix_due(factory, hours=6, now=datetime(2026, 11, 28, 12, 0), open_hour=8, close_hour=18)  # 9h

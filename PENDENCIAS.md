@@ -72,6 +72,10 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 - **Segurança — decisão do dono (26/11):** a API do Onix fica **sem senha**
   (aberta na internet, http). Risco aceito: quem tiver o endereço vê os custos.
   Se mudar de ideia, o painel aceita uma chave quando o fornecedor criar.
+- **27/11:** o Onix só responde com o computador principal da loja ligado
+  (8h às 18h): o painel só lê nesse horário (`ONIX_OPEN_HOUR`/`ONIX_CLOSE_HOUR`
+  no `.env`, se mudar) e, se falhar, tenta de novo em 1 hora. A leitura
+  interrompida continua de onde parou.
 - **Melhoria opcional (pedir ao fornecedor):** uma consulta que liste vários
   produtos de uma vez (ou só os alterados desde uma data) deixaria a leitura
   bem mais rápida que um produto por vez.
