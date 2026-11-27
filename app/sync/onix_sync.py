@@ -42,17 +42,27 @@ RESUME_KEY = "onix_continuar_depois_do_produto"
 INTERRUPTED = "Interrompida no meio (o painel foi desligado ou atualizado); a próxima leitura continua de onde parou."
 
 
-# Kit vendido com SKU "código/quantidade" (ex.: 13914/2 = 2 caixas do 13914 no Onix).
-KIT_SKU = re.compile(r"^\s*(.+?)\s*/\s*(\d{1,3})\s*$")
+# Kits vendidos com SKU que junta códigos do Onix (formatos vistos na loja, 27/11/2026):
+#   13914/2        → 2 × 13914          13299(2)        → 2 × 13299
+#   2x1626         → 2 × 1626           1x1627/1x1626   → 1 × 1627 + 1 × 1626
+KIT_SLASH = re.compile(r"^\s*(.+?)\s*/\s*(\d{1,3})\s*$")
+KIT_PAREN = re.compile(r"^\s*(.+?)\s*\(\s*(\d{1,3})\s*\)\s*$")
+KIT_TIMES = re.compile(r"^\s*(\d{1,3})\s*[xX]\s*(\S+?)\s*$")
 ALERT_SOURCE = "onix"
 
 
-def kit_parts(sku: str) -> tuple[str, int] | None:
-    """"13914/2" → ("13914", 2). None quando o SKU não está nesse formato."""
-    match = KIT_SKU.match(sku or "")
-    if not match or int(match.group(2)) < 2:
-        return None
-    return match.group(1), int(match.group(2))
+def kit_parts(sku: str) -> list[tuple[str, int]] | None:
+    """Peças de um SKU de kit: [(código no Onix, quantidade)]. None quando não é kit."""
+    sku = (sku or "").strip()
+    times = [KIT_TIMES.match(p) for p in sku.split("/")]
+    if all(times):
+        parts = [(m.group(2), int(m.group(1))) for m in times]
+        return parts if all(q >= 1 for _, q in parts) else None
+    for pattern in (KIT_SLASH, KIT_PAREN):
+        match = pattern.match(sku)
+        if match and int(match.group(2)) >= 2:
+            return [(match.group(1), int(match.group(2)))]
+    return None
 
 
 RETRY_AFTER_ERROR = timedelta(hours=1)
@@ -129,11 +139,9 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
                     continue
                 counts["consultados"] += 1
                 kit = kit_parts(product.sku) if data is None else None
-                if kit:  # "13914/2": procura o 13914 e multiplica o custo pela quantidade
-                    try:
-                        data = client.get_product(kit[0])
-                    except TemporaryError:
-                        data = None
+                kit_cost = None
+                if kit:  # ex.: "13914/2": procura o 13914 e multiplica o custo pela quantidade
+                    kit_cost, data = _kit_cost(client, kit, settings.onix_cost_field)
                     if data is not None:
                         counts["kits"] += 1
                 if data is None:
@@ -146,8 +154,14 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
                 extra.onix_found = True
                 before = snapshot(extra)
                 old_cost = extra.onix_cost_cents
-                if info.cost_cents is not None:
-                    set_cost(extra, info.cost_cents * (kit[1] if kit else 1))
+                if kit:
+                    # Custo digitado por alguém vale mais que o calculado do kit.
+                    if kit_cost is not None and not extra.cost_manual:
+                        set_cost(extra, kit_cost)
+                else:
+                    if info.cost_cents is not None:
+                        set_cost(extra, info.cost_cents)
+                    extra.cost_manual = False  # o Onix achou o SKU exato: o custo dele vale
                 extra.onix_brand = info.brand
                 # Estoque mínimo, código de fábrica e local do item avulso não valem para o kit.
                 if not kit and extra.min_stock is None and info.min_qty:
@@ -179,6 +193,24 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
         audit.record(db, actor="system", event=f"onix.sincronizacao.{run.status}", details=counts)
         db.commit()
         return run
+
+
+def _kit_cost(client: OnixClient, parts: list[tuple[str, int]], cost_field: str) -> tuple[int | None, dict | None]:
+    """Soma o custo das peças do kit. (None, None) se alguma peça não estiver no Onix."""
+    total, first = 0, None
+    for code, qty in parts:
+        try:
+            data = client.get_product(code)
+        except TemporaryError:
+            return None, None
+        if data is None:
+            return None, None
+        first = first or data
+        cost = parse(data, cost_field).cost_cents
+        if cost is None:
+            return None, first
+        total += cost * qty
+    return total, first
 
 
 def _missing_alert(db: Session) -> None:

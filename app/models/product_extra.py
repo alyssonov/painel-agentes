@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import JSON, BigInteger, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import false as sa_false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base, TimestampMixin
@@ -32,6 +33,8 @@ class ProductExtra(CompanyScoped, TimestampMixin, Base):
     # sem ele, vale o do Olist.
     onix_cost_cents: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     onix_cost_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Custo digitado por alguém (tela ou planilha): o custo calculado de kit não passa por cima.
+    cost_manual: Mapped[bool] = mapped_column(default=False, server_default=sa_false())
     # Última leitura do Onix achou este SKU? None = ainda não consultado.
     onix_found: Mapped[bool | None] = mapped_column(nullable=True)
     min_stock: Mapped[int | None] = mapped_column(Integer, nullable=True)

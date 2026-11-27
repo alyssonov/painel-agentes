@@ -152,7 +152,7 @@ async def save_missing_costs(request: Request, db: Session = Depends(get_db), us
             continue
         extra = extra_for(db, product)
         before = snapshot(extra)
-        set_cost(extra, cents)
+        set_cost(extra, cents, manual=True)
         after = snapshot(extra)
         if after != before:
             saved += 1
@@ -212,7 +212,7 @@ async def save_product(request: Request, product_id: int, db: Session = Depends(
         if raw and cents is None:
             errors.append("Custo do Onix: use um valor como 18,90.")
         else:
-            set_cost(extra, cents)
+            set_cost(extra, cents, manual=True)
     items, bad = parse_compatibility(str(form.get("compatibility", "")))
     if bad:
         errors.append("Não entendi estas motos: " + "; ".join(bad[:3]) + ". Use: marca modelo ano-ano.")

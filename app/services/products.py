@@ -7,6 +7,7 @@ mínimo, local, compatibilidade) fica na tabela product_extras.
 import csv
 import io
 import re
+import unicodedata
 from collections import Counter
 from dataclasses import dataclass
 from typing import Any
@@ -207,10 +208,13 @@ def snapshot(extra: ProductExtra) -> dict[str, Any]:
             "observacoes": extra.notes}
 
 
-def set_cost(extra: ProductExtra, cents: int | None) -> None:
+def set_cost(extra: ProductExtra, cents: int | None, *, manual: bool = False) -> None:
+    """Grava o custo. ``manual``: digitado por alguém (tela, planilha) — o Onix só o troca se
+    achar o SKU exato; o custo calculado de kit (ex.: 13914/2) não passa por cima dele."""
     if cents != extra.onix_cost_cents:
         extra.onix_cost_cents = cents
         extra.onix_cost_at = utcnow() if cents is not None else None
+        extra.cost_manual = manual and cents is not None
 
 
 def to_int(value: Any, lo: int = 0, hi: int = 1_000_000) -> int | None:
@@ -256,6 +260,12 @@ def _norm(header: str) -> str:
     return key
 
 
+def sku_key(sku: str | None) -> str:
+    """SKU para comparar: sem acento, minúsculas, sem espaços nem caracteres invisíveis."""
+    plain = unicodedata.normalize("NFKD", sku or "").encode("ascii", "ignore").decode().lower()
+    return re.sub(r"\s+", "", plain)
+
+
 def import_csv(db: Session, raw: bytes) -> tuple[ImportResult, list[tuple[ProductExtra, dict, dict]]]:
     """Lê a planilha (separador ; ou ,). Só preenche as colunas que vierem com valor.
 
@@ -277,53 +287,61 @@ def import_csv(db: Session, raw: bytes) -> tuple[ImportResult, list[tuple[Produc
     header = [_norm(h) for h in next(reader, [])]
     if "sku" not in header:
         return ImportResult(0, 0, [], ["A planilha precisa de uma coluna 'sku'. Baixe o modelo."]), []
-    products = {p.sku.lower(): p for p in db.scalars(select(Product))}
+    # O mesmo SKU (com diferença só de maiúscula, acento ou espaço) pode estar em mais de um
+    # produto (ex.: "AMARELO" em dois suportes): vale para todos.
+    products: dict[str, list[Product]] = {}
+    for p in db.scalars(select(Product).order_by(Product.is_active.desc(), Product.id)):
+        products.setdefault(sku_key(p.sku), []).append(p)
+    for key, found in products.items():
+        real = [p for p in found if p.is_active and not p.is_demo]
+        products[key] = real or found[:1]
     result, changes = ImportResult(0, 0, [], []), []
     for n, row in enumerate(reader, start=2):
         data = {header[i]: (row[i].strip() if i < len(row) else "") for i in range(len(header))}
         sku = data.get("sku", "")
         if not sku:
             continue
-        product = products.get(sku.lower())
-        if product is None:
+        matches = products.get(sku_key(sku))
+        if not matches:
             result.unknown_skus.append(sku)
             continue
-        extra = extra_for(db, product)
-        before = snapshot(extra)
-        if data.get("marca"):
-            extra.brand = data["marca"][:80]
-        if data.get("fornecedor"):
-            extra.supplier = data["fornecedor"][:120]
-        if data.get("codigo_fornecedor"):
-            extra.supplier_code = data["codigo_fornecedor"][:64]
-        if data.get("custo_onix"):
-            cents = parse_money(data["custo_onix"])
-            if cents is None:
-                result.errors.append(f"Linha {n} ({sku}): custo '{data['custo_onix']}' não é um valor.")
-            else:
-                set_cost(extra, cents)
-        for col, attr, hi in (("estoque_minimo", "min_stock", 1_000_000), ("prazo_dias", "lead_time_days", 365)):
-            if data.get(col):
-                value = to_int(data[col], 0, hi)
-                if value is None:
-                    result.errors.append(f"Linha {n} ({sku}): {col.replace('_', ' ')} '{data[col]}' inválido.")
+        for product in matches:
+            extra = extra_for(db, product)
+            before = snapshot(extra)
+            if data.get("marca"):
+                extra.brand = data["marca"][:80]
+            if data.get("fornecedor"):
+                extra.supplier = data["fornecedor"][:120]
+            if data.get("codigo_fornecedor"):
+                extra.supplier_code = data["codigo_fornecedor"][:64]
+            if data.get("custo_onix"):
+                cents = parse_money(data["custo_onix"])
+                if cents is None:
+                    result.errors.append(f"Linha {n} ({sku}): custo '{data['custo_onix']}' não é um valor.")
                 else:
-                    setattr(extra, attr, value)
-        if data.get("localizacao"):
-            extra.location = data["localizacao"][:60]
-        if data.get("compatibilidade"):
-            items, bad = parse_compatibility(data["compatibilidade"].replace("|", "\n"))
-            if bad:
-                result.errors.append(f"Linha {n} ({sku}): não entendi a moto '{bad[0]}'.")
-            extra.compatibility = items
-        if data.get("observacoes"):
-            extra.notes = data["observacoes"][:2000]
-        after = snapshot(extra)
-        if after != before:
-            result.updated += 1
-            changes.append((extra, before, after))
-        else:
-            result.unchanged += 1
+                    set_cost(extra, cents, manual=True)
+            for col, attr, hi in (("estoque_minimo", "min_stock", 1_000_000), ("prazo_dias", "lead_time_days", 365)):
+                if data.get(col):
+                    value = to_int(data[col], 0, hi)
+                    if value is None:
+                        result.errors.append(f"Linha {n} ({sku}): {col.replace('_', ' ')} '{data[col]}' inválido.")
+                    else:
+                        setattr(extra, attr, value)
+            if data.get("localizacao"):
+                extra.location = data["localizacao"][:60]
+            if data.get("compatibilidade"):
+                items, bad = parse_compatibility(data["compatibilidade"].replace("|", "\n"))
+                if bad:
+                    result.errors.append(f"Linha {n} ({sku}): não entendi a moto '{bad[0]}'.")
+                extra.compatibility = items
+            if data.get("observacoes"):
+                extra.notes = data["observacoes"][:2000]
+            after = snapshot(extra)
+            if after != before:
+                result.updated += 1
+                changes.append((extra, before, after))
+            else:
+                result.unchanged += 1
     return result, changes
 
 

@@ -298,3 +298,44 @@ def test_nao_achado_vira_aviso_e_custo_informado_na_tela(logged_client, db, onix
     run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
     db.expire_all()
     assert db.scalar(select(Alert).where(Alert.source == "onix", Alert.status == AlertStatus.OPEN)) is None
+
+
+def test_formatos_de_kit():
+    from app.sync.onix_sync import kit_parts
+    assert kit_parts("13914/2") == [("13914", 2)]
+    assert kit_parts("13299(2)") == [("13299", 2)]
+    assert kit_parts("2x1626") == [("1626", 2)]
+    assert kit_parts("1x1626") == [("1626", 1)]
+    assert kit_parts("1x1627/1x1626") == [("1627", 1), ("1626", 1)]
+    assert kit_parts("2x1627/2x1626") == [("1627", 2), ("1626", 2)]
+    assert kit_parts("040-BRT-01300") is None and kit_parts("AMARELO") is None and kit_parts("13914/1") is None
+
+
+@respx.mock
+def test_kit_de_dois_codigos_e_custo_digitado_vale_mais(db, onix_env):
+    combo = Product(sku="1x1627/1x1626", name="Seta 1 lado de cada", cost_cents=0)
+    manual = Product(sku="2x1626", name="Seta 2 lados direitos", cost_cents=0)
+    db.add_all([combo, manual])
+    db.flush()
+    db.add(ProductExtra(product_id=manual.id, onix_cost_cents=5664, cost_manual=True, compatibility=[]))
+    db.commit()
+    _fake(respx, {"1627": dict(SEMI_KIT, custo_prod="10.00"), "1626": dict(SEMI_KIT, custo_prod="12.00")})
+    run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
+    extras = {e.product_id: e for e in db.scalars(select(ProductExtra))}
+    assert extras[combo.id].onix_cost_cents == 2200
+    assert extras[manual.id].onix_cost_cents == 5664  # digitado: o cálculo do kit (24,00) não passa por cima
+
+
+def test_planilha_com_sku_repetido_vale_para_todos(logged_client, db):
+    a = Product(sku="AMARELO", name="Suporte celular amarelo", cost_cents=0)
+    b = Product(sku="Amarelo ", name="Suporte mini amarelo", cost_cents=0)
+    db.add_all([a, b])
+    db.commit()
+    page = logged_client.get("/produtos")
+    r = logged_client.post("/produtos/planilha", data={"csrf_token": csrf_from(page.text)},
+                           files={"arquivo": ("custos.csv", "sku;custo_onix\nAMARELO;15,96\n".encode(), "text/csv")},
+                           follow_redirects=False)
+    assert r.status_code == 303
+    db.expire_all()
+    costs = {e.product_id: (e.onix_cost_cents, e.cost_manual) for e in db.scalars(select(ProductExtra))}
+    assert costs[a.id] == (1596, True) and costs[b.id] == (1596, True)

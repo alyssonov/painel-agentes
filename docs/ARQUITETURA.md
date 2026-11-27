@@ -953,6 +953,11 @@ página Lucro real mostra quanto cada marketplace ficou (todas × só conferidas
   ver_financeiro; salvar exige editar_produtos) para digitar o custo de vários de
   uma vez — fica em `product_extras.onix_cost_cents` (o Onix só sobrescreve se
   passar a achar o SKU).
+  Formatos de kit aceitos: `13914/2`, `13299(2)`, `2x1626`, `1x1627/1x1626`
+  (soma das peças). Custo digitado (tela, página do produto ou planilha) marca
+  `product_extras.cost_manual` (migração 0029): o custo calculado do kit não passa
+  por cima; só o Onix achando o SKU exato troca. Planilha: SKU comparado sem
+  maiúscula/acento/espaço e aplicado a todos os produtos com o mesmo SKU.
   Worker: ao ligar e a cada `ONIX_SYNC_HOURS`; botão em Contas conectadas.
 - O lucro real continua usando o custo do Olist; o do Onix aparece ao lado e o
   filtro "Custo do Onix diferente do Olist" mostra as diferenças.
