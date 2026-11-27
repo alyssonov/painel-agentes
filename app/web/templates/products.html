@@ -23,7 +23,7 @@
   {% if rows %}
   <div class="table-wrap">
     <table class="table">
-      <thead><tr><th>Produto</th><th>Compatível com</th><th class="num">Estoque</th><th>Marca</th>{% if can('ver_financeiro') %}<th class="num">Custo Olist / Onix</th>{% endif %}<th>Local</th></tr></thead>
+      <thead><tr><th>Produto</th><th>Compatível com</th><th class="num">Estoque</th><th>Marca</th>{% if can('ver_financeiro') %}<th class="num">Custo</th>{% endif %}<th>Local</th></tr></thead>
       <tbody>
       {% for r in rows %}{% set e = r.extra %}
         <tr>
@@ -31,7 +31,7 @@
           <td class="small">{% if e and e.compatibility %}{% for c in e.compatibility[:3] %}<div>{{ c.marca }} {{ c.modelo }}{% if c.de %} {{ c.de }}{% if c.ate and c.ate != c.de %}–{{ c.ate }}{% endif %}{% endif %}</div>{% endfor %}{% if e.compatibility|length > 3 %}<span class="muted">+ {{ e.compatibility|length - 3 }}</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
           <td class="num">{{ r.stock if r.stock is not none else '—' }}{% if e and e.min_stock is not none %}<br><span class="small {{ 'text-danger' if r.below_min else 'muted' }}">mín. {{ e.min_stock }}{% if r.below_min %} (abaixo){% endif %}</span>{% endif %}</td>
           <td class="small">{% if r.brand %}<a class="link" href="/produtos?marca={{ r.brand|urlencode }}" title="Ver todos da marca · marca do(a) {{ r.brand_source }}">{{ r.brand }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
-          {% if can('ver_financeiro') %}<td class="num small">{{ r.product.cost_cents|brl }}<br>{% if e and e.onix_cost_cents %}<span class="{{ 'text-danger' if r.cost_differs else 'muted' }}">{{ e.onix_cost_cents|brl }}{% if r.cost_differs %} ({{ '%+.0f'|format(r.cost_diff_pct) }}%){% endif %}</span>{% else %}<span class="muted">—</span>{% endif %}</td>{% endif %}
+          {% if can('ver_financeiro') %}<td class="num small">{% if e and e.onix_cost_cents %}{{ e.onix_cost_cents|brl }}<br><span class="muted">{{ 'digitado' if e.cost_manual else 'Onix' }}{% if r.cost_differs %} · Olist {{ r.product.cost_cents|brl }}{% endif %}</span>{% elif r.product.cost_cents %}{{ r.product.cost_cents|brl }}<br><span class="muted">Olist</span>{% else %}<span class="muted">—</span>{% endif %}</td>{% endif %}
           <td class="small">{{ e.location if e and e.location else '—' }}</td>
         </tr>
       {% endfor %}

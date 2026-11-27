@@ -155,7 +155,7 @@
     <div class="conn-actions">
       <form method="post" action="/integracoes/onix/sincronizar"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="btn btn-primary btn-sm" type="submit">Atualizar custos</button></form>
-      <a class="link small" href="/produtos?filtro=custo_diferente" title="Produtos com custo diferente do Olist">Ver diferenças →</a>
+      <a class="link small" href="/produtos?filtro=custo_diferente" title="O painel já usa o custo do Onix; o Olist não é alterado">Custo do Olist desatualizado →</a>
     </div>
     <p class="conn-tip">Lê {{ {'custo_prod': 'custo', 'vlmedio_prod': 'custo médio', 'custoatac_prod': 'custo atacado'}.get(onix.cost_field, onix.cost_field) }}, marca e local pelo código do Olist.{% if onix.insecure %} API aberta na internet sem senha: endereço só no <code>.env</code>.{% endif %}</p>
   {% endif %}

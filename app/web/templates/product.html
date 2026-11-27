@@ -7,8 +7,8 @@
   <article class="card stat"><p class="stat-label">Estoque (Olist)</p><p class="stat-value">{{ stock if stock is not none else '—' }}</p>
     {% if e and e.min_stock is not none %}<p class="stat-foot {{ 'down' if stock is not none and stock < e.min_stock else '' }}">mínimo {{ e.min_stock }}</p>{% endif %}</article>
   {% if can('ver_financeiro') %}
-  <article class="card stat"><p class="stat-label">Custo (Olist)</p><p class="stat-value">{{ p.cost_cents|brl }}</p><p class="stat-foot">{% if not (e and e.onix_cost_cents) and p.cost_cents %}é o custo usado no lucro real{% elif e and e.onix_cost_cents %}usado só quando o Onix não tem custo{% else %}sem custo{% endif %}</p></article>
-  <article class="card stat"><p class="stat-label">Custo (Onix)</p><p class="stat-value">{{ e.onix_cost_cents|brl if e and e.onix_cost_cents else '—' }}</p>
+  <article class="card stat"><p class="stat-label">Custo (Olist)</p><p class="stat-value">{{ p.cost_cents|brl }}</p><p class="stat-foot">{% if not (e and e.onix_cost_cents) and p.cost_cents %}é o custo usado no lucro real{% elif e and e.onix_cost_cents and p.cost_cents and p.cost_cents != e.onix_cost_cents %}desatualizado — o painel usa o do Onix{% elif e and e.onix_cost_cents %}não usado (o painel usa o do Onix){% else %}sem custo{% endif %}</p></article>
+  <article class="card stat"><p class="stat-label">Custo ({{ 'digitado' if e and e.cost_manual else 'Onix' }})</p><p class="stat-value">{{ e.onix_cost_cents|brl if e and e.onix_cost_cents else '—' }}</p>
     <p class="stat-foot">{% if e and e.onix_cost_cents %}é o custo usado no lucro real{% if cost_at %} · atualizado em {{ cost_at }}{% endif %}{% else %}ainda não informado{% endif %}</p></article>
   {% endif %}
   <article class="card stat"><p class="stat-label">Preço (Olist)</p><p class="stat-value">{{ p.price_cents|brl }}</p></article>

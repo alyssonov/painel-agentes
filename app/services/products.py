@@ -24,7 +24,7 @@ from app.services.search import matches, normalize, terms
 
 PAGE = 50
 FILTERS = {"": "Todos", "sem_compat": "Sem compatibilidade", "abaixo_minimo": "Abaixo do estoque mínimo",
-           "custo_diferente": "Custo do Onix diferente do Olist", "sem_marca": "Sem marca",
+           "custo_diferente": "Custo do Olist desatualizado (diferente do Onix)", "sem_marca": "Sem marca",
            "sem_fornecedor": "Sem fornecedor", "sem_custo": "Sem custo (nem no Olist nem no Onix)",
            "nao_achado_onix": "Não achado no Onix"}
 NO_BRAND = "__sem__"  # valor do filtro de marca para "sem marca"
