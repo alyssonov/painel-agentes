@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.models import Order, OrderItem
 from app.models.enums import CHANNEL_LABELS, Channel, KanbanStatus
 from app.services.dashboard import money_confirmed, order_margin
+from app.services.store_settings import other_costs_cents
 
 
 @dataclass
@@ -24,6 +25,7 @@ class Totals:
     shipping: int = 0
     cost: int = 0
     tax: int = 0
+    other: int = 0  # embalagem, etiqueta etc.
     profit: int = 0
     orders: int = 0
 
@@ -75,16 +77,18 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
                             Order.kanban_status != KanbanStatus.CANCELLED, Order.is_demo.is_(demo))
         .options(selectinload(Order.items).selectinload(OrderItem.product)))
     totals = Totals()
+    other = other_costs_cents(db)
     products: dict[str, ProductMargin] = {}
     losses: list[LossOrder] = []
     missing_fees = 0
     for order in orders:
-        m = order_margin(order, tax_rate_pct)
+        m = order_margin(order, tax_rate_pct, other)
         totals.revenue += m.revenue_cents
         totals.fees += m.fee_cents
         totals.shipping += m.shipping_cents
         totals.cost += m.cost_cents
         totals.tax += m.tax_cents
+        totals.other += m.other_cents
         totals.profit += m.profit_cents
         totals.orders += 1
         if not money_confirmed(order):
@@ -99,7 +103,8 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
             item_rev = item.quantity * item.unit_price_cents
             share = item_rev / items_total
             cost = item.quantity * (item.product.cost_cents if item.product else 0)
-            profit = round(item_rev - (m.fee_cents + m.shipping_cents) * share - item_rev * tax_rate_pct / 100) - cost
+            profit = round(item_rev - (m.fee_cents + m.shipping_cents + m.other_cents) * share
+                           - item_rev * tax_rate_pct / 100) - cost
             key = str(item.product_id or item.sku)
             entry = products.get(key)
             if entry is None:

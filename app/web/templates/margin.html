@@ -37,8 +37,8 @@
     <p class="stat-foot muted">Taxas {{ t.fees|brl }} · Frete {{ t.shipping|brl }}</p>
   </article>
   <article class="card stat tone-info">
-    <p class="stat-label">Custo + impostos</p><p class="stat-value stat-value-sm">{{ (t.cost + t.tax)|brl }}</p>
-    <p class="stat-foot muted">Custo {{ t.cost|brl }} · Impostos {{ t.tax|brl }}</p>
+    <p class="stat-label">{{ 'Custo, impostos e embalagem' if t.other else 'Custo + impostos' }}</p><p class="stat-value stat-value-sm">{{ (t.cost + t.tax + t.other)|brl }}</p>
+    <p class="stat-foot muted">Custo {{ t.cost|brl }} · Impostos {{ t.tax|brl }}{% if t.other %} · Embalagem e outros {{ t.other|brl }}{% endif %}</p>
   </article>
 </section>
 

@@ -165,8 +165,9 @@
 
 <section class="card conn conn-tax" id="imposto" aria-labelledby="tax-title">
   <div>
-    <h2 id="tax-title" class="conn-name">Impostos sobre a venda</h2>
-    <p class="conn-sub">Alíquota efetiva passada pela contabilidade (Lucro Real), usada na margem real.
+    <h2 id="tax-title" class="conn-name">Impostos e custos por venda</h2>
+    <p class="conn-sub">Alíquota efetiva passada pela contabilidade (Lucro Real) e o gasto médio por venda com embalagem,
+      etiqueta, fita etc. Os dois entram no lucro real de cada venda.
       {% if tax_rate_is_demo %}<span class="stat-foot warn">O valor atual é só um exemplo da simulação.</span>{% endif %}</p>
   </div>
   <form method="post" action="/integracoes/imposto" class="inline-form" data-salvar>
@@ -174,6 +175,10 @@
     <label class="field field-inline">
       <span>Alíquota (%)</span>
       <input type="text" name="tax_rate_pct" inputmode="decimal" value="{{ ('%g'|format(tax_rate_pct))|replace('.', ',') if tax_rate_pct else '' }}" placeholder="ex.: 14,25" required>
+    </label>
+    <label class="field field-inline">
+      <span>Outros custos por venda (R$)</span>
+      <input type="text" name="other_costs" inputmode="decimal" value="{{ ('%.2f'|format(other_costs_cents / 100))|replace('.', ',') if other_costs_cents else '' }}" placeholder="ex.: 2,50">
     </label>
     <button class="btn btn-primary btn-sm" type="submit">Salvar</button>
   </form>

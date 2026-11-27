@@ -29,6 +29,7 @@ from app.models.enums import (
 )
 from app.services.margin import MarginResult, calculate_margin
 from app.services.store_settings import get_setting
+from app.services.store_settings import other_costs_cents
 
 _SEVERITY_ORDER = {AlertSeverity.CRITICAL: 0, AlertSeverity.WARNING: 1, AlertSeverity.INFO: 2}
 
@@ -96,7 +97,7 @@ class Overview:
     dispatch: "DispatchDay | None" = None  # envios do dia (só com conta real)
 
 
-def order_margin(order: Order, tax_rate_pct: float) -> MarginResult:
+def order_margin(order: Order, tax_rate_pct: float, other_cents: int = 0) -> MarginResult:
     """Margem real de um pedido (custo dos itens vem do cadastro do Olist).
 
     Mercado Livre com valor recebido conhecido (regra do dono): lucro = o que a loja
@@ -116,6 +117,7 @@ def order_margin(order: Order, tax_rate_pct: float) -> MarginResult:
         shipping_cents=shipping,
         cost_cents=cost,
         tax_rate_pct=tax_rate_pct,
+        other_cents=other_cents if order.items_total_cents > 0 else 0,
     )
 
 
@@ -193,6 +195,7 @@ def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn
     now = utcnow()
     start, end = local_day_bounds_utc(local_today())
     tax_rate = float(get_setting(db, "tax_rate_pct") or 0)
+    other = other_costs_cents(db)
     rows = db.scalars(select(Shipment).where(
         Shipment.channel.in_(channels),
         or_(Shipment.logistic_type.is_(None), Shipment.logistic_type != "fulfillment"),
@@ -235,7 +238,7 @@ def _shipment_cards(db: Session, channel: str | None) -> tuple[list[KanbanColumn
             id=order.id if order else 0, channel=row.channel, channel_label=CHANNEL_LABELS[row.channel],
             external_id=row.order_ref, customer=order.customer_short_name if order else "—", summary=summary,
             total_cents=order.items_total_cents if order else 0, time_label=label, problem=problem,
-            is_loss=order_margin(order, tax_rate).is_loss if order else False))
+            is_loss=order_margin(order, tax_rate, other).is_loss if order else False))
     return list(columns.values()), day
 
 
@@ -261,6 +264,7 @@ def kanban(db: Session, channel: str | None = None) -> list[KanbanColumn]:
         return _shipment_cards(db, channel)[0]
     start, end = local_day_bounds_utc(local_today())
     tax_rate = float(get_setting(db, "tax_rate_pct") or 0)
+    other = other_costs_cents(db)
     columns = {status: KanbanColumn(status, KANBAN_LABELS[status]) for status in KANBAN_COLUMNS}
     for order in _orders_between(db, start, end, channel):
         first = order.items[0].title if order.items else "Pedido"
@@ -276,7 +280,7 @@ def kanban(db: Session, channel: str | None = None) -> list[KanbanColumn]:
             total_cents=order.items_total_cents,
             time_label=to_local(order.ordered_at).strftime("%H:%M"),
             problem=order.problem_note,
-            is_loss=order_margin(order, tax_rate).is_loss,
+            is_loss=order_margin(order, tax_rate, other).is_loss,
         )
         columns.get(KanbanStatus(order.kanban_status), columns[KanbanStatus.PROBLEM]).orders.append(card)
     return list(columns.values())
@@ -314,9 +318,10 @@ def overview(db: Session) -> Overview:
     start, end = local_day_bounds_utc(today)
     now = utcnow()
     tax_rate = float(get_setting(db, "tax_rate_pct") or 0)
+    other = other_costs_cents(db)
 
     orders_today = _orders_between(db, start, end)
-    margins = [order_margin(o, tax_rate) for o in orders_today]
+    margins = [order_margin(o, tax_rate, other) for o in orders_today]
     revenue = sum(m.revenue_cents for m in margins)
     profit = sum(m.profit_cents for m in margins)
 

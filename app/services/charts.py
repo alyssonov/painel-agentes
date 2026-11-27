@@ -19,6 +19,7 @@ from app.core.timeutil import local_day_bounds_utc, local_today, to_local
 from app.models import Order, OrderItem
 from app.models.enums import KanbanStatus
 from app.services.dashboard import order_margin
+from app.services.store_settings import other_costs_cents
 
 WEEKDAYS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 
@@ -38,13 +39,14 @@ def daily_points(db: Session, days: int, tax_rate_pct: float, *, demo: bool = Fa
     start, _ = local_day_bounds_utc(first)
     _, end = local_day_bounds_utc(today)
     points = {first + timedelta(days=i): DayPoint(first + timedelta(days=i)) for i in range(days)}
+    other = other_costs_cents(db)
     for order in db.scalars(select(Order).where(
             Order.ordered_at >= start, Order.ordered_at < end, Order.kanban_status != KanbanStatus.CANCELLED,
             Order.is_demo.is_(demo)).options(selectinload(Order.items).selectinload(OrderItem.product))):
         point = points.get(to_local(order.ordered_at).date())
         if point is None:
             continue
-        m = order_margin(order, tax_rate_pct)
+        m = order_margin(order, tax_rate_pct, other)
         point.revenue += m.revenue_cents
         point.profit += m.profit_cents
         point.orders += 1

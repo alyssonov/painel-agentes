@@ -14,6 +14,8 @@ DEFAULTS: dict[str, Any] = {
     "answer_tone": "cordial e objetivo",
     "shipping_days": "1 dia útil para postagem após a confirmação do pagamento",
     "warranty": "90 dias contra defeitos de fabricação",
+    # Outros custos por venda (embalagem, etiqueta, fita…), em centavos, descontados do lucro de cada pedido.
+    "other_costs_cents": 0,
 }
 
 
@@ -28,3 +30,11 @@ def set_setting(db: Session, key: str, value: Any) -> None:
         row.value = value
     else:
         db.add(StoreSetting(key=key, value=value))
+
+
+def other_costs_cents(db: Session) -> int:
+    """Custo médio por venda com embalagem, etiqueta etc. (centavos). Entra no lucro real de cada pedido."""
+    try:
+        return max(0, int(get_setting(db, "other_costs_cents") or 0))
+    except (TypeError, ValueError):
+        return 0

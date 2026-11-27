@@ -33,6 +33,7 @@ from app.services.products import FILTERS, format_compatibility, list_products
 from app.services.purchase import purchase_suggestions
 from app.services.stock import stock_rows
 from app.services.store_settings import get_setting
+from app.services.store_settings import other_costs_cents
 
 LIMIT = 40
 CHANNELS = {"ml": Channel.ML, "shopee": Channel.SHOPEE, "outro": Channel.OTHER}
@@ -75,10 +76,11 @@ def sales_summary(db: Session, user: User, inp: dict) -> dict:
     channel = CHANNELS.get(inp.get("marketplace") or "")
     finance = user.can(FINANCE)
     tax = float(get_setting(db, "tax_rate_pct") or 0)
+    other = other_costs_cents(db)
     orders = _orders_between(db, local_day_bounds_utc(start)[0], local_day_bounds_utc(end)[1], channel)
     buckets: dict[str, dict] = defaultdict(lambda: {"faturamento": 0, "lucro": 0, "pedidos": 0, "unidades": 0})
     for order in orders:
-        m = order_margin(order, tax)
+        m = order_margin(order, tax, other)
         if group in ("produto", "marca"):
             for item in order.items:
                 product = item.product

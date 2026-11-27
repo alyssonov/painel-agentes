@@ -114,3 +114,17 @@ def test_salvar_aliquota(logged_client, db):
     r = logged_client.post("/integracoes/imposto", data={"csrf_token": token, "tax_rate_pct": "abc"})
     assert "entre 0 e 60" in r.text
     assert get_setting(db, "tax_rate_pct") == 14.25
+
+
+def test_salva_aliquota_e_outros_custos_por_venda(logged_client, db):
+    from app.services.store_settings import get_setting
+    page = logged_client.get("/integracoes").text
+    assert "Outros custos por venda (R$)" in page
+    csrf = csrf_from(page)
+    logged_client.post("/integracoes/imposto", data={"csrf_token": csrf, "tax_rate_pct": "13,5", "other_costs": "2,50"})
+    db.expire_all()
+    assert get_setting(db, "other_costs_cents") == 250 and get_setting(db, "tax_rate_pct") == 13.5
+    assert 'value="2,50"' in logged_client.get("/integracoes").text
+    logged_client.post("/integracoes/imposto", data={"csrf_token": csrf, "tax_rate_pct": "13,5", "other_costs": "abc"})
+    db.expire_all()
+    assert get_setting(db, "other_costs_cents") == 250  # valor inválido não muda nada

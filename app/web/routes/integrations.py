@@ -80,6 +80,7 @@ def integrations_page(request: Request, db: Session = Depends(get_db), user: Use
         "shopee": _shopee_context(db),
         "onix": _onix_context(db),
         "tax_rate_pct": float(get_setting(db, "tax_rate_pct") or 0),
+        "other_costs_cents": int(get_setting(db, "other_costs_cents") or 0),
         "tax_rate_is_demo": bool(get_setting(db, "tax_rate_is_demo")),
     }, db=db)
 
@@ -176,9 +177,9 @@ def olist_disconnect(request: Request, db: Session = Depends(get_db), user: User
 
 
 @router.post("/imposto", dependencies=[Depends(verify_csrf)])
-def save_tax_rate(request: Request, tax_rate_pct: str = Form(...), db: Session = Depends(get_db),
-                  user: User = Depends(current_user)):
-    """Alíquota efetiva de impostos sobre a venda (informada pela contabilidade)."""
+def save_tax_rate(request: Request, tax_rate_pct: str = Form(...), other_costs: str = Form(""),
+                  db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Alíquota efetiva de impostos sobre a venda (contabilidade) e outros custos por venda (embalagem etc.)."""
     try:
         value = float(tax_rate_pct.replace(",", ".").replace("%", "").strip())
     except ValueError:
@@ -186,13 +187,25 @@ def save_tax_rate(request: Request, tax_rate_pct: str = Form(...), db: Session =
     if not 0 <= value <= 60:
         flash(request, "Informe a alíquota como um número entre 0 e 60 (ex.: 14,25).", "erro")
         return RedirectResponse("/integracoes", status_code=303)
-    old = get_setting(db, "tax_rate_pct")
+    text = other_costs.replace("R$", "").replace(" ", "").strip()
+    if "," in text:  # formato brasileiro: 1.234,56
+        text = text.replace(".", "").replace(",", ".")
+    try:
+        other_cents = round(float(text) * 100) if text else 0
+    except ValueError:
+        other_cents = -1
+    if not 0 <= other_cents <= 100_000:
+        flash(request, "Informe os outros custos por venda em reais, entre 0 e 1.000 (ex.: 2,50).", "erro")
+        return RedirectResponse("/integracoes", status_code=303)
+    before = {"aliquota_pct": get_setting(db, "tax_rate_pct"), "outros_custos": get_setting(db, "other_costs_cents")}
     set_setting(db, "tax_rate_pct", value)
     set_setting(db, "tax_rate_is_demo", False)
+    set_setting(db, "other_costs_cents", other_cents)
     audit.record(db, actor=f"user:{user.id}", event="loja.aliquota_alterada",
-                 details=audit.changes({"aliquota_pct": old}, {"aliquota_pct": value}))
+                 details=audit.changes(before, {"aliquota_pct": value, "outros_custos": other_cents}))
     db.commit()
-    flash(request, f"Alíquota de impostos salva: {str(value).replace('.', ',')}%.")
+    flash(request, f"Salvo: impostos {str(value).replace('.', ',')}% e outros custos de "
+                   f"R$ {other_cents / 100:.2f}".replace(".", ",") + " por venda.")
     return RedirectResponse("/integracoes", status_code=303)
 
 

@@ -15,6 +15,7 @@ from app.models import Order, OrderItem
 from app.models.enums import CHANNEL_LABELS, Channel, KanbanStatus
 from app.services.dashboard import money_confirmed, order_margin
 from app.services.store_settings import get_setting
+from app.services.store_settings import other_costs_cents
 
 
 @dataclass
@@ -64,10 +65,11 @@ def _first_of_previous(day: date) -> date:
 
 def _totals(db: Session, start, end, tax_rate: float, per_channel: dict | None = None) -> Totals:
     total = Totals()
+    other = other_costs_cents(db)
     for order in db.scalars(select(Order).where(Order.ordered_at >= start, Order.ordered_at < end,
                                                 Order.kanban_status != KanbanStatus.CANCELLED)
                             .options(selectinload(Order.items).selectinload(OrderItem.product))):
-        m = order_margin(order, tax_rate)
+        m = order_margin(order, tax_rate, other)
         units = sum(i.quantity for i in order.items)
         for bucket in [total] + ([per_channel.setdefault(order.channel, Totals())] if per_channel is not None else []):
             bucket.revenue += m.revenue_cents

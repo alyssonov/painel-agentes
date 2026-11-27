@@ -21,6 +21,7 @@ from app.models.enums import CHANNEL_LABELS, Channel, KanbanStatus
 from app.agents.config import has_real_data
 from app.services.dashboard import money_confirmed, order_margin
 from app.services.margin_report import margin_report
+from app.services.store_settings import other_costs_cents
 
 KINDS = {
     "vendas": ("Vendas do período", "Uma linha por venda: valor, taxa, frete, custo, imposto e lucro."),
@@ -143,21 +144,24 @@ def build(db: Session, kind: str, period: Period, tax_rate_pct: float) -> Table:
 def _sales(db: Session, period: Period, tax: float, demo: bool) -> Table:
     t = Table(KINDS["vendas"][0], period,
               ["Data", "Marketplace", "Pedido", "Cliente", "Itens", "Faturamento", "Taxa do marketplace",
-               "Frete pago pela loja", "Custo dos produtos", "Impostos", "Lucro", "Margem %", "Valores conferidos"],
-              money={5, 6, 7, 8, 9, 10}, pct={11})
-    sums = [0] * 6
+               "Frete pago pela loja", "Custo dos produtos", "Impostos", "Embalagem e outros", "Lucro", "Margem %",
+               "Valores conferidos"],
+              money={5, 6, 7, 8, 9, 10, 11}, pct={12})
+    sums = [0] * 7
     pending = 0
+    other = other_costs_cents(db)
     for o in _orders(db, period, demo):
-        m = order_margin(o, tax)
+        m = order_margin(o, tax, other)
         items = "; ".join(f"{i.quantity}x {i.title}" for i in o.items)[:300]
         confirmed = money_confirmed(o)
         pending += 0 if confirmed else 1
-        values = [m.revenue_cents, m.fee_cents, m.shipping_cents, m.cost_cents, m.tax_cents, m.profit_cents]
+        values = [m.revenue_cents, m.fee_cents, m.shipping_cents, m.cost_cents, m.tax_cents, m.other_cents,
+                  m.profit_cents]
         sums = [a + b for a, b in zip(sums, values)]
         t.rows.append([to_local(o.ordered_at).strftime("%d/%m/%Y %H:%M"), _channel(o), o.external_id,
                        o.customer_short_name, items, *values, m.margin_pct, "sim" if confirmed else "não"])
     t.totals = ["Total", "", f"{len(t.rows)} vendas", "", "", *sums,
-                sums[5] / sums[0] * 100 if sums[0] else None, ""]
+                sums[6] / sums[0] * 100 if sums[0] else None, ""]
     if pending:
         t.notes.append(f"{pending} venda(s) ainda sem a taxa/valor recebido confirmados pelo marketplace: "
                        "o lucro delas é estimado.")
@@ -187,8 +191,9 @@ def _daily(db: Session, period: Period, tax: float, demo: bool) -> Table:
               ["Dia", "Pedidos", "Faturamento", "Lucro", "Margem %", "Mercado Livre", "Shopee", "Outros"],
               money={2, 3, 5, 6, 7}, pct={4})
     days: dict[date, list[int]] = {}
+    other = other_costs_cents(db)
     for o in _orders(db, period, demo):
-        m = order_margin(o, tax)
+        m = order_margin(o, tax, other)
         row = days.setdefault(to_local(o.ordered_at).date(), [0, 0, 0, 0, 0, 0])
         row[0] += 1
         row[1] += m.revenue_cents

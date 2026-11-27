@@ -11,6 +11,7 @@ da loja. Depois entram as despesas fixas do mês. Só leitura de vendas.
     (−) impostos sobre vendas
     = receita líquida
     (−) custo dos produtos vendidos
+    (−) embalagem e outros custos por venda
     = lucro bruto (margem de contribuição)
     (−) despesas (por categoria) — inclui o Mercado Ads lido automaticamente
     = lucro líquido do mês
@@ -26,6 +27,7 @@ from app.core.timeutil import local_day_bounds_utc, local_today
 from app.models.expense import CATEGORIES, Expense
 from app.services.dashboard import _orders_between, money_confirmed, order_margin
 from app.services.store_settings import get_setting
+from app.services.store_settings import other_costs_cents
 
 # Linha automática do DRE: investimento no Mercado Ads (Product Ads), lido do Mercado Livre.
 ADS_CATEGORY = "mercado_ads"
@@ -65,6 +67,7 @@ class MonthDRE:
     shipping: int = 0
     taxes: int = 0
     cost: int = 0
+    other: int = 0  # embalagem, etiqueta etc. (valor médio por venda × vendas)
     orders: int = 0
     unconfirmed: int = 0  # vendas com taxa/frete ainda não conferidos
     missing_cost: int = 0  # vendas com produto sem custo no Olist
@@ -81,7 +84,7 @@ class MonthDRE:
 
     @property
     def gross_profit(self) -> int:
-        return self.net_revenue - self.cost
+        return self.net_revenue - self.cost - self.other
 
     @property
     def total_expenses(self) -> int:
@@ -113,14 +116,16 @@ def month_dre(db: Session, month: date) -> MonthDRE:
     start = local_day_bounds_utc(month)[0]
     end = local_day_bounds_utc(nxt)[0]
     tax_rate = float(get_setting(db, "tax_rate_pct") or 0)
+    other = other_costs_cents(db)
     result = MonthDRE(month=month, partial=month <= local_today() < nxt)
     for order in _orders_between(db, start, end):
-        m = order_margin(order, tax_rate)
+        m = order_margin(order, tax_rate, other)
         result.revenue += m.revenue_cents
         result.fees += m.fee_cents
         result.shipping += m.shipping_cents
         result.taxes += m.tax_cents
         result.cost += m.cost_cents
+        result.other += m.other_cents
         result.orders += 1
         result.unconfirmed += not money_confirmed(order)
         result.missing_cost += any(not item.product or not item.product.cost_cents for item in order.items)

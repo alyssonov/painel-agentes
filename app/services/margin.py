@@ -2,7 +2,10 @@
 
 Fórmula (regra do projeto):
     lucro = preço dos itens − taxas do marketplace − frete pago pela loja
-            − custo dos produtos − impostos
+            − custo dos produtos − impostos − outros custos por venda
+
+"Outros custos por venda" (embalagem, etiqueta, fita…) é um valor médio fixo por
+pedido, configurado em Contas conectadas (chave "other_costs_cents").
 
 O imposto é calculado como uma alíquota (%) sobre o preço dos itens.
 A alíquota é configurada nas regras da loja (chave "tax_rate_pct") e deve
@@ -21,6 +24,7 @@ class MarginResult:
     tax_cents: int
     profit_cents: int
     margin_pct: float | None  # None quando não há receita
+    other_cents: int = 0  # embalagem, etiqueta etc. (valor médio por venda)
 
     @property
     def is_loss(self) -> bool:
@@ -34,10 +38,11 @@ def calculate_margin(
     shipping_cents: int,
     cost_cents: int,
     tax_rate_pct: float,
+    other_cents: int = 0,
 ) -> MarginResult:
     """Calcula lucro e margem de uma venda. Todos os valores em centavos."""
     tax_cents = round(revenue_cents * tax_rate_pct / 100)
-    profit = revenue_cents - fee_cents - shipping_cents - cost_cents - tax_cents
+    profit = revenue_cents - fee_cents - shipping_cents - cost_cents - tax_cents - other_cents
     margin = (profit / revenue_cents * 100) if revenue_cents > 0 else None
     return MarginResult(
         revenue_cents=revenue_cents,
@@ -47,4 +52,5 @@ def calculate_margin(
         tax_cents=tax_cents,
         profit_cents=profit,
         margin_pct=margin,
+        other_cents=other_cents,
     )

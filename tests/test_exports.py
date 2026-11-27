@@ -43,8 +43,8 @@ def test_vendas_produtos_e_resumo_diario(db):
     period = parse_period("personalizado", "2026-11-20", "2026-11-21")
     sales = build(db, "vendas", period, 10.0)
     # A1: 100 − 20 taxa − 50 custo − 10 imposto = 20 de lucro
-    assert sales.rows[0][2] == "A1" and sales.rows[0][10] == 2000 and round(sales.rows[0][11], 1) == 20.0
-    assert sales.totals[5] == 30000 and sales.totals[10] == 2000 + 4000  # A2: 200 − 40 − 100 − 20 = 40
+    assert sales.rows[0][2] == "A1" and sales.rows[0][11] == 2000 and round(sales.rows[0][12], 1) == 20.0
+    assert sales.totals[5] == 30000 and sales.totals[11] == 2000 + 4000  # A2: 200 − 40 − 100 − 20 = 40
     products = build(db, "produtos", period, 10.0)
     assert products.rows[0][:5] == ["PAST-01", "Pastilha CG 160", 3, 30000, 6000]
     daily = build(db, "diario", period, 10.0)
@@ -70,3 +70,20 @@ def test_quem_nao_ve_financeiro_nao_baixa(client, db, user):
     login(client, "op@loja.com")
     r = client.get("/relatorios/baixar?tipo=vendas", follow_redirects=False)
     assert r.status_code in (303, 403)
+
+
+def test_outros_custos_por_venda_entram_no_lucro(db):
+    """Embalagem, etiqueta etc. (valor médio por venda) descontado de cada pedido, em todas as contas."""
+    from app.models import IntegrationAccount
+    from app.services.dre import month_dre
+    from app.services.store_settings import set_setting
+    db.add(IntegrationAccount(provider="olist", account_name="Olist", is_demo=False, access_token_enc="x", extra={}))
+    _sale(db, "B1", Channel.SHOPEE, datetime(2026, 11, 20, 15), 10000, 2000, 5000)
+    set_setting(db, "other_costs_cents", 250)
+    db.commit()
+    period = parse_period("personalizado", "2026-11-20", "2026-11-20")
+    row = build(db, "vendas", period, 10.0).rows[0]
+    assert row[10] == 250 and row[11] == 2000 - 250  # coluna "Embalagem e outros" e lucro
+    assert build(db, "produtos", period, 10.0).rows[0][4] == 1750
+    dre = month_dre(db, date(2026, 11, 1))
+    assert dre.other >= 250 and dre.gross_profit == dre.net_revenue - dre.cost - dre.other

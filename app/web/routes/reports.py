@@ -30,6 +30,7 @@ from app.services.stock import stock_rows
 from app.services.store_settings import get_setting
 from app.web.auth import current_user, verify_csrf
 from app.web.templating import flash, render
+from app.services.store_settings import other_costs_cents
 
 router = APIRouter()
 
@@ -237,7 +238,7 @@ def sale_detail(request: Request, order_id: int, db: Session = Depends(get_db), 
     if order is None:
         return RedirectResponse("/margem/venda", status_code=303)
     tax = float(get_setting(db, "tax_rate_pct") or 0)
-    m = order_margin(order, tax)
+    m = order_margin(order, tax, other_costs_cents(db))
     payments = list(db.scalars(select(Payment).where(Payment.channel == order.channel,
                                                      Payment.order_ref == order.external_id)
                                .order_by(Payment.approved_at)))
