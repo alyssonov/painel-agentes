@@ -102,7 +102,7 @@ def order_margin(order: Order, tax_rate_pct: float, other_cents: int = 0) -> Mar
 
     Mercado Livre com valor recebido conhecido (regra do dono): lucro = o que a loja
     RECEBE pela venda (líquido do Mercado Pago, igual ao "detalhe da venda") − custo do
-    Olist − impostos. Tudo que o Mercado Livre descontou vira taxa (comissão do item) +
+    Olist − impostos − outros custos − publicidade da venda. Tudo que o Mercado Livre descontou vira taxa (comissão do item) +
     "frete e tarifas" (o resto). Sem o valor recebido, usa taxa + frete informados.
     """
     cost = sum(item.quantity * (item.product.cost_cents if item.product else 0) for item in order.items)
@@ -118,6 +118,7 @@ def order_margin(order: Order, tax_rate_pct: float, other_cents: int = 0) -> Mar
         cost_cents=cost,
         tax_rate_pct=tax_rate_pct,
         other_cents=other_cents if order.items_total_cents > 0 else 0,
+        ads_cents=order.ads_cost_cents or 0,
     )
 
 

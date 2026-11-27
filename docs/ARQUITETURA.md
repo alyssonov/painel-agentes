@@ -591,6 +591,20 @@ recebido, a venda conta como "taxa e frete ainda não conferidos" na Margem
 real (antes o frete vinha do campo informativo `valorFretePagoEmpresa` do
 Olist, que costuma vir zerado nas vendas do ML — lucro inflado).
 
+**Atualização (27/11/2026, regra do dono):** lucro de cada venda = valor
+recebido (ML: Mercado Pago; Shopee: `escrow_amount` do `get_escrow_detail`)
+− custo do Olist − impostos − **outros custos por venda** (embalagem, etiqueta;
+valor médio fixo em Contas conectadas, chave `other_costs_cents`) −
+**publicidade da venda**. O Mercado Livre não informa o custo de anúncio por
+venda, só por campanha e dia: `app/services/ads_allocation.py` divide o gasto de
+cada campanha no dia entre as vendas do ML do mesmo dia com produto anunciado
+nela (Ad Group → anúncio MLB → `listings` → produto/SKU), na proporção do valor;
+o que não casar vai para todas as vendas do ML do dia. Fica em
+`orders.ads_cost_cents` (migração 0027), refeito a cada leitura da publicidade
+(15 dias; 90 na primeira) e para hoje/ontem a cada sincronização do ML. O DRE
+desconta essa parte no lucro das vendas e deixa nas despesas só o gasto de dias
+sem venda ("Mercado Ads sem venda no dia"). Shopee Ads ainda não é lido.
+
 ## 24. Fase 7 — Agente 4 (Preços)
 
 - **Leitura** (`app/sync/ml_prices.py`, a cada 12 h dentro da sincronização do

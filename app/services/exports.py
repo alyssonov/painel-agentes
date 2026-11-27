@@ -1,7 +1,8 @@
 """Relatórios para baixar (planilha para o Excel) ou imprimir / salvar em PDF.
 
 Todos usam a mesma conta do Lucro real (app/services/margin.py via order_margin):
-preço − taxa do marketplace − frete pago pela loja − custo (Olist) − impostos.
+preço − taxa do marketplace − frete pago pela loja − custo (Olist) − impostos
+− outros custos por venda − publicidade da venda.
 Só leitura: nada é alterado. Só vendas reais (a loja de simulação fica de fora
 quando há conta real conectada; sem conta real, mostra a simulação).
 """
@@ -24,7 +25,7 @@ from app.services.margin_report import margin_report
 from app.services.store_settings import other_costs_cents
 
 KINDS = {
-    "vendas": ("Vendas do período", "Uma linha por venda: valor, taxa, frete, custo, imposto e lucro."),
+    "vendas": ("Vendas do período", "Uma linha por venda: valor, taxa, frete, custo, imposto, publicidade e lucro."),
     "produtos": ("Lucro por produto", "Unidades, faturamento, lucro e margem de cada produto."),
     "diario": ("Resumo por dia", "Pedidos, faturamento e lucro de cada dia, separado por marketplace."),
 }
@@ -144,10 +145,10 @@ def build(db: Session, kind: str, period: Period, tax_rate_pct: float) -> Table:
 def _sales(db: Session, period: Period, tax: float, demo: bool) -> Table:
     t = Table(KINDS["vendas"][0], period,
               ["Data", "Marketplace", "Pedido", "Cliente", "Itens", "Faturamento", "Taxa do marketplace",
-               "Frete pago pela loja", "Custo dos produtos", "Impostos", "Embalagem e outros", "Lucro", "Margem %",
-               "Valores conferidos"],
-              money={5, 6, 7, 8, 9, 10, 11}, pct={12})
-    sums = [0] * 7
+               "Frete pago pela loja", "Custo dos produtos", "Impostos", "Embalagem e outros", "Publicidade", "Lucro",
+               "Margem %", "Valores conferidos"],
+              money={5, 6, 7, 8, 9, 10, 11, 12}, pct={13})
+    sums = [0] * 8
     pending = 0
     other = other_costs_cents(db)
     for o in _orders(db, period, demo):
@@ -156,12 +157,12 @@ def _sales(db: Session, period: Period, tax: float, demo: bool) -> Table:
         confirmed = money_confirmed(o)
         pending += 0 if confirmed else 1
         values = [m.revenue_cents, m.fee_cents, m.shipping_cents, m.cost_cents, m.tax_cents, m.other_cents,
-                  m.profit_cents]
+                  m.ads_cents, m.profit_cents]
         sums = [a + b for a, b in zip(sums, values)]
         t.rows.append([to_local(o.ordered_at).strftime("%d/%m/%Y %H:%M"), _channel(o), o.external_id,
                        o.customer_short_name, items, *values, m.margin_pct, "sim" if confirmed else "não"])
     t.totals = ["Total", "", f"{len(t.rows)} vendas", "", "", *sums,
-                sums[6] / sums[0] * 100 if sums[0] else None, ""]
+                sums[7] / sums[0] * 100 if sums[0] else None, ""]
     if pending:
         t.notes.append(f"{pending} venda(s) ainda sem a taxa/valor recebido confirmados pelo marketplace: "
                        "o lucro delas é estimado.")

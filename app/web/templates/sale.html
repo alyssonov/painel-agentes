@@ -35,6 +35,7 @@
         <tr><td class="indent">Custo dos produtos (Olist)</td><td class="num">− {{ m.cost_cents|brl }}</td></tr>
         <tr><td class="indent">Impostos ({{ ('%g'|format(tax_rate))|replace('.', ',') }}% do preço)</td><td class="num">− {{ m.tax_cents|brl }}</td></tr>
         {% if m.other_cents %}<tr><td class="indent">Embalagem e outros custos por venda</td><td class="num">− {{ m.other_cents|brl }}</td></tr>{% endif %}
+        {% if m.ads_cents %}<tr><td class="indent">Publicidade (Mercado Ads) <span class="muted small">(parte do gasto do dia)</span></td><td class="num">− {{ m.ads_cents|brl }}</td></tr>{% endif %}
         <tr class="sale-total"><td>Lucro real</td>
           <td class="num {{ 'text-danger' if m.profit_cents < 0 }}">{{ m.profit_cents|brl }} <span class="muted small">({{ m.margin_pct|pct }})</span></td></tr>
       </tbody>

@@ -38,6 +38,9 @@ class Order(CompanyScoped, TimestampMixin, Base):
     # Se a taxa do marketplace já é conhecida. O Olist não informa a taxa: ela chega
     # pelas APIs do Mercado Livre e da Shopee (Fase 3). Até lá a margem não a inclui.
     fees_known: Mapped[bool] = mapped_column(default=False)
+    # Parte da publicidade (Mercado Ads) que cabe a esta venda, dividida pelo
+    # app/services/ads_allocation.py. Entra no lucro real.
+    ads_cost_cents: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     ordered_at: Mapped[datetime] = mapped_column(DateTime, index=True)
     is_demo: Mapped[bool] = mapped_column(default=False)
 

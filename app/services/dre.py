@@ -31,7 +31,7 @@ from app.services.store_settings import other_costs_cents
 
 # Linha automática do DRE: investimento no Mercado Ads (Product Ads), lido do Mercado Livre.
 ADS_CATEGORY = "mercado_ads"
-ADS_LABEL = "Publicidade no Mercado Livre (Mercado Ads, automático)"
+ADS_LABEL = "Mercado Ads sem venda no dia (automático)"
 
 MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro",
           "novembro", "dezembro"]
@@ -68,6 +68,7 @@ class MonthDRE:
     taxes: int = 0
     cost: int = 0
     other: int = 0  # embalagem, etiqueta etc. (valor médio por venda × vendas)
+    ads: int = 0  # publicidade dividida nas vendas (o resto do gasto fica nas despesas)
     orders: int = 0
     unconfirmed: int = 0  # vendas com taxa/frete ainda não conferidos
     missing_cost: int = 0  # vendas com produto sem custo no Olist
@@ -84,7 +85,7 @@ class MonthDRE:
 
     @property
     def gross_profit(self) -> int:
-        return self.net_revenue - self.cost - self.other
+        return self.net_revenue - self.cost - self.other - self.ads
 
     @property
     def total_expenses(self) -> int:
@@ -126,6 +127,7 @@ def month_dre(db: Session, month: date) -> MonthDRE:
         result.taxes += m.tax_cents
         result.cost += m.cost_cents
         result.other += m.other_cents
+        result.ads += m.ads_cents
         result.orders += 1
         result.unconfirmed += not money_confirmed(order)
         result.missing_cost += any(not item.product or not item.product.cost_cents for item in order.items)
@@ -134,8 +136,10 @@ def month_dre(db: Session, month: date) -> MonthDRE:
     # Mercado Ads lido automaticamente do Mercado Livre (até hoje, no mês atual).
     from app.services.ads import ads_cost_between  # import local: evita ciclo
     ads = ads_cost_between(db, month, min(add_months(month, 1) - timedelta(days=1), local_today()))
-    if ads:
-        result.expenses[ADS_CATEGORY] = ads
+    # A parte que já foi descontada venda a venda não entra de novo: fica só o gasto
+    # de dias sem venda no Mercado Livre (ou ainda não dividido).
+    if ads - result.ads > 0:
+        result.expenses[ADS_CATEGORY] = ads - result.ads
     return result
 
 

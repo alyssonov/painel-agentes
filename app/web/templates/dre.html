@@ -52,6 +52,7 @@
         {{ line("Receita líquida", "net_revenue", strong=true, cls='dre-sub') }}
         {{ line("Custo dos produtos vendidos (Olist)", "cost", minus=true) }}
         {% if months|selectattr('other')|list %}{{ line("Embalagem e outros custos por venda", "other", minus=true) }}{% endif %}
+        {% if months|selectattr('ads')|list %}{{ line("Publicidade das vendas (Mercado Ads)", "ads", minus=true) }}{% endif %}
         {{ line("Lucro das vendas (margem de contribuição)", "gross_profit", strong=true, cls='dre-sub') }}
         {% for cat in categories %}
         <tr><td><span class="muted">(−)</span> {{ category_label(cat) }}</td>

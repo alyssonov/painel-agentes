@@ -3,6 +3,11 @@
 Fórmula (regra do projeto):
     lucro = preço dos itens − taxas do marketplace − frete pago pela loja
             − custo dos produtos − impostos − outros custos por venda
+            − publicidade (Mercado Ads) da venda
+
+As três primeiras partes juntas são o que a loja RECEBE do marketplace (quando o
+valor recebido já foi conferido na venda). A publicidade é dividida venda a venda por
+app/services/ads_allocation.py.
 
 "Outros custos por venda" (embalagem, etiqueta, fita…) é um valor médio fixo por
 pedido, configurado em Contas conectadas (chave "other_costs_cents").
@@ -25,6 +30,7 @@ class MarginResult:
     profit_cents: int
     margin_pct: float | None  # None quando não há receita
     other_cents: int = 0  # embalagem, etiqueta etc. (valor médio por venda)
+    ads_cents: int = 0  # parte da publicidade (Mercado Ads) que coube a esta venda
 
     @property
     def is_loss(self) -> bool:
@@ -39,10 +45,11 @@ def calculate_margin(
     cost_cents: int,
     tax_rate_pct: float,
     other_cents: int = 0,
+    ads_cents: int = 0,
 ) -> MarginResult:
     """Calcula lucro e margem de uma venda. Todos os valores em centavos."""
     tax_cents = round(revenue_cents * tax_rate_pct / 100)
-    profit = revenue_cents - fee_cents - shipping_cents - cost_cents - tax_cents - other_cents
+    profit = revenue_cents - fee_cents - shipping_cents - cost_cents - tax_cents - other_cents - ads_cents
     margin = (profit / revenue_cents * 100) if revenue_cents > 0 else None
     return MarginResult(
         revenue_cents=revenue_cents,
@@ -53,4 +60,5 @@ def calculate_margin(
         profit_cents=profit,
         margin_pct=margin,
         other_cents=other_cents,
+        ads_cents=ads_cents,
     )

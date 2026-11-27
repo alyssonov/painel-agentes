@@ -24,6 +24,7 @@ from app.integrations.errors import AuthExpired, IntegrationError
 from app.integrations.mercadolivre.client import MLClient
 from app.models import AdCampaign, AdDaily, AdGroup
 from app.models.enums import AlertSeverity
+from app.services.ads_allocation import allocate_ads
 from app.sync.common import get_cursor, set_cursor
 
 logger = logging.getLogger("sync.ml_ads")
@@ -32,6 +33,7 @@ ADS_EVERY = timedelta(hours=3)
 PERIOD_DAYS = 30
 FIRST_DAILY_DAYS = 90  # limite da API
 DAILY_DAYS = 7
+ALLOCATE_DAYS = 15  # dias refeitos na divisão da publicidade por venda
 ALERT_SOURCE = "publicidade"
 # Anúncio que gastou pelo menos isto em 30 dias sem nenhuma venda por publicidade vira alerta.
 NO_SALES_MIN_COST_CENTS = 3000
@@ -76,6 +78,7 @@ def sync_ads(db: Session, client: MLClient, account, seller_id: str, started) ->
     Mercado Livre (perguntas, vendas, reputação...).
     """
     if not ads_due(account, started):
+        _allocate_recent(db)  # vendas novas de hoje e ontem também levam a sua parte
         return 0
     try:
         return _sync_ads(db, client, account, started)
@@ -89,6 +92,17 @@ def sync_ads(db: Session, client: MLClient, account, seller_id: str, started) ->
         set_cursor(account, "cursor_ads", started)  # tenta de novo no próximo ciclo (3 h)
         db.commit()
         return 0
+
+
+def _allocate_recent(db: Session) -> None:
+    """Divide de novo a publicidade de hoje e de ontem (só o banco; sem chamada à API)."""
+    today = local_today()
+    try:
+        allocate_ads(db, today - timedelta(days=1), today)
+        db.commit()
+    except Exception:  # noqa: BLE001 - nunca derruba a atualização do Mercado Livre
+        logger.exception("Erro ao dividir a publicidade pelas vendas")
+        db.rollback()
 
 
 def _sync_ads(db: Session, client: MLClient, account, started) -> int:
@@ -160,6 +174,8 @@ def _sync_ads(db: Session, client: MLClient, account, started) -> int:
         apply_metrics(row, g.get("metrics"))
         db.add(row)
     db.flush()
+    # Publicidade dividida venda a venda (o número de um dia ainda muda por até 14 dias).
+    allocate_ads(db, today - timedelta(days=(FIRST_DAILY_DAYS if first else ALLOCATE_DAYS) - 1), today)
     _alerts(db)
     account.extra = {**(account.extra or {}), "ads_status": "ok", "ads_error": None,
                      "ads_advertiser": f"{site}:{adv}"}

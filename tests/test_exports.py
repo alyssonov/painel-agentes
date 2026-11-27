@@ -43,8 +43,8 @@ def test_vendas_produtos_e_resumo_diario(db):
     period = parse_period("personalizado", "2026-11-20", "2026-11-21")
     sales = build(db, "vendas", period, 10.0)
     # A1: 100 − 20 taxa − 50 custo − 10 imposto = 20 de lucro
-    assert sales.rows[0][2] == "A1" and sales.rows[0][11] == 2000 and round(sales.rows[0][12], 1) == 20.0
-    assert sales.totals[5] == 30000 and sales.totals[11] == 2000 + 4000  # A2: 200 − 40 − 100 − 20 = 40
+    assert sales.rows[0][2] == "A1" and sales.rows[0][12] == 2000 and round(sales.rows[0][13], 1) == 20.0
+    assert sales.totals[5] == 30000 and sales.totals[12] == 2000 + 4000  # A2: 200 − 40 − 100 − 20 = 40
     products = build(db, "produtos", period, 10.0)
     assert products.rows[0][:5] == ["PAST-01", "Pastilha CG 160", 3, 30000, 6000]
     daily = build(db, "diario", period, 10.0)
@@ -83,7 +83,7 @@ def test_outros_custos_por_venda_entram_no_lucro(db):
     db.commit()
     period = parse_period("personalizado", "2026-11-20", "2026-11-20")
     row = build(db, "vendas", period, 10.0).rows[0]
-    assert row[10] == 250 and row[11] == 2000 - 250  # coluna "Embalagem e outros" e lucro
+    assert row[10] == 250 and row[12] == 2000 - 250  # coluna "Embalagem e outros" e lucro
     assert build(db, "produtos", period, 10.0).rows[0][4] == 1750
     dre = month_dre(db, date(2026, 11, 1))
     assert dre.other >= 250 and dre.gross_profit == dre.net_revenue - dre.cost - dre.other

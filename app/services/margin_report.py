@@ -26,6 +26,7 @@ class Totals:
     cost: int = 0
     tax: int = 0
     other: int = 0  # embalagem, etiqueta etc.
+    ads: int = 0  # publicidade dividida nas vendas
     profit: int = 0
     orders: int = 0
 
@@ -89,6 +90,7 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
         totals.cost += m.cost_cents
         totals.tax += m.tax_cents
         totals.other += m.other_cents
+        totals.ads += m.ads_cents
         totals.profit += m.profit_cents
         totals.orders += 1
         if not money_confirmed(order):
@@ -103,7 +105,7 @@ def margin_report(db: Session, start: datetime, end: datetime, tax_rate_pct: flo
             item_rev = item.quantity * item.unit_price_cents
             share = item_rev / items_total
             cost = item.quantity * (item.product.cost_cents if item.product else 0)
-            profit = round(item_rev - (m.fee_cents + m.shipping_cents + m.other_cents) * share
+            profit = round(item_rev - (m.fee_cents + m.shipping_cents + m.other_cents + m.ads_cents) * share
                            - item_rev * tax_rate_pct / 100) - cost
             key = str(item.product_id or item.sku)
             entry = products.get(key)
