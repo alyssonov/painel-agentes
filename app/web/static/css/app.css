@@ -288,10 +288,11 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); width: 16
 .sev-atencao .sev-pill { background: var(--warn-soft); color: var(--warn); }
 
 /* --- Grades ---------------------------------------------------------------------- */
-.overview-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.overview-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
 .overview-grid-even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .integration-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+.agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; align-items: stretch;
+  grid-auto-rows: 1fr; /* todos os cartões do mesmo tamanho (o maior define) */ }
 .report-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; align-items: start; }
 .report-side { display: flex; flex-direction: column; gap: 16px; }
 .preview-frame { width: 100%; height: 900px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #EEF2F6; }
@@ -788,3 +789,13 @@ form > .card { margin-bottom: 16px; }
 .auto-general-form > .actions { flex-basis: 100%; }
 /* Automações → horário silencioso: "Não mandar avisos das [22h] às [07h]" numa linha só. */
 .auto-quiet .field-inline { flex-direction: row; align-items: center; gap: 6px; font-weight: 500; }
+
+/* Agentes: botões no pé do cartão, na mesma altura em todos (cartões do mesmo tamanho). */
+.agent-card > .actions { margin-top: auto; }
+/* Visão geral → "Por marketplace": mesma altura do gráfico ao lado, usando o espaço. */
+.mk-card { display: flex; flex-direction: column; }
+.mk-card .mk-list { flex: 1; justify-content: space-evenly; gap: 18px; }
+.mk-card .mk-value { font-size: 18px; font-weight: 700; }
+.mk-card .mk-row .abc-bar { height: 10px; }
+.mk-total { display: flex; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 12px;
+  font-size: 14px; }

@@ -156,3 +156,20 @@ document.addEventListener("click", function (event) {
 
   document.querySelectorAll("form[data-salvar]").forEach(setup);
 })();
+
+// Menu lateral: guarda até onde ele foi rolado e volta para o mesmo lugar ao abrir outra
+// tela (antes voltava para o topo a cada clique). Só muda se a pessoa rolar.
+(function () {
+  var menu = document.querySelector(".sidebar");
+  if (!menu) return;
+  var KEY = "menu-rolagem";
+  try {
+    var saved = sessionStorage.getItem(KEY);
+    if (saved !== null) menu.scrollTop = parseInt(saved, 10) || 0;
+  } catch (e) { /* navegação privada: segue sem lembrar */ }
+  function save() {
+    try { sessionStorage.setItem(KEY, String(menu.scrollTop)); } catch (e) { /* idem */ }
+  }
+  menu.addEventListener("scroll", save, { passive: true });
+  window.addEventListener("pagehide", save);
+})();

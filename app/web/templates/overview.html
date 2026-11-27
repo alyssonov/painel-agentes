@@ -109,7 +109,7 @@
     </div>
     {% with c = revenue_chart, aria = "Faturamento por dia nos últimos 30 dias" %}{% include "partials/bar_chart.html" %}{% endwith %}
   </section>
-  <section class="card" aria-labelledby="mk-title">
+  <section class="card mk-card" aria-labelledby="mk-title">
     <div class="card-head"><h2 id="mk-title" class="card-title">Por marketplace</h2><span class="muted small">este mês</span></div>
     {% if month.channels %}
     <ul class="mk-list">
@@ -122,6 +122,7 @@
       </li>
       {% endfor %}
     </ul>
+    <p class="mk-total"><span class="muted">Total do mês</span><strong>{{ month.channels|sum(attribute='totals.revenue')|brl }}</strong></p>
     {% else %}<p class="muted">Nenhuma venda neste mês ainda.</p>{% endif %}
   </section>
 </div>
