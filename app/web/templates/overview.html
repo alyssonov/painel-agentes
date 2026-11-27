@@ -1,7 +1,7 @@
 {% extends "app_layout.html" %}
 {% block title %}Visão geral{% endblock %}
 {% block page_title %}{% if user %}Olá, {{ user.name.split(' ')[0] }}{% else %}Visão geral{% endif %}{% endblock %}
-{% block page_subtitle %}<p class="muted">O gerente do ano está cuidando de tudo.</p>{% endblock %}
+{% block page_subtitle %}<p class="muted">Seu gerente está cuidando de tudo.</p>{% endblock %}
 {% block content %}
 
 {% macro delta_pill(value) %}
