@@ -166,7 +166,47 @@ def test_cartao_mostra_o_andamento_da_leitura(logged_client, db, onix_env):
     respx.get(URL).mock(side_effect=handler)
     run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
     assert [(c["feitos"], c["total"]) for c in seen] == [(0, 2), (1, 2)]
-    db.add(SyncRun(provider="onix", status=S.RUNNING, started_at=datetime(2026, 11, 26, 20, 0),
-                   counts={"feitos": 320, "total": 1480}))
+    from app.core.db import utcnow
+    db.add(SyncRun(provider="onix", status=S.RUNNING, started_at=utcnow(),
+                   counts={"feitos": 320, "total": 1480, "em": utcnow().isoformat()}))
     db.commit()
-    assert "320 de 1480 produtos" in logged_client.get("/integracoes").text
+    page = logged_client.get("/integracoes").text
+    assert "320 de 1480 produtos" in page and "interrompida" not in page
+
+
+@respx.mock
+def test_leitura_interrompida_continua_de_onde_parou(logged_client, db, onix_env):
+    """O painel religa (atualização automática) no meio: a próxima leitura não recomeça do zero."""
+    from app.models import SyncRun
+    from app.models.enums import SyncStatus as S
+    from app.services.store_settings import get_setting
+    from app.sync.onix_sync import RESUME_KEY
+    for i in range(4):
+        db.add(Product(sku=str(800 + i), name=f"P{i}", cost_cents=1))
+    db.commit()
+    asked = []
+
+    def handler(request):
+        asked.append(request.url.params["id"])
+        if len(asked) == 3:  # o painel "desliga" no 3º produto
+            raise KeyboardInterrupt
+        return httpx.Response(404)
+
+    respx.get(URL).mock(side_effect=handler)
+    with pytest.raises(KeyboardInterrupt):
+        run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
+    assert asked == ["800", "801", "802"]
+    stuck = db.scalars(select(SyncRun).where(SyncRun.provider == "onix")).one()
+    assert stuck.status == S.RUNNING
+    # o cartão percebe que parou (sem notícia há mais de 10 min)
+    stuck.counts = {**stuck.counts, "em": datetime(2026, 1, 1).isoformat()}
+    db.commit()
+    assert "interrompida" in logged_client.get("/integracoes").text
+    # próxima leitura: continua do 802 (o último que não terminou), não do 800
+    asked.clear()
+    respx.get(URL).mock(side_effect=lambda r: asked.append(r.url.params["id"]) or httpx.Response(404))
+    run = run_onix_sync(get_sessionmaker(), client=OnixClient(BASE, pause=0, retry_wait=0))
+    assert run.status == S.OK and asked == ["802", "803"]
+    db.expire_all()
+    assert db.get(SyncRun, stuck.id).status == S.ERROR  # a antiga ficou marcada como interrompida
+    assert get_setting(db, RESUME_KEY) is None  # terminou: a próxima começa do início

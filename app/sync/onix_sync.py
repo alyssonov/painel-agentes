@@ -13,7 +13,7 @@ continua usando o custo do Olist (o do Onix aparece ao lado, para comparar).
 
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
@@ -25,10 +25,15 @@ from app.integrations.onix.mapping import parse
 from app.models import Product, SyncRun
 from app.models.enums import SyncStatus
 from app.services.products import extra_for, set_cost, snapshot
+from app.services.store_settings import get_setting, set_setting
 
 logger = logging.getLogger("painel.onix")
 PROVIDER = "onix"
 MAX_CONSECUTIVE_FAILURES = 5  # Onix desligado: para logo, em vez de tentar produto por produto
+# Último produto lido numa leitura que não terminou (o painel foi desligado ou se
+# atualizou no meio): a próxima leitura CONTINUA dali, em vez de recomeçar do zero.
+RESUME_KEY = "onix_continuar_depois_do_produto"
+INTERRUPTED = "Interrompida no meio (o painel foi desligado ou atualizado); a próxima leitura continua de onde parou."
 
 
 def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient | None = None) -> SyncRun | None:
@@ -36,6 +41,9 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
     if not settings.onix_configured and client is None:
         return None
     with session_factory() as db:
+        # Leituras antigas que ficaram "em andamento" foram interrompidas.
+        db.execute(update(SyncRun).where(SyncRun.provider == PROVIDER, SyncRun.status == SyncStatus.RUNNING)
+                   .values(status=SyncStatus.ERROR, error=INTERRUPTED, finished_at=utcnow()))
         run = SyncRun(provider=PROVIDER, status=SyncStatus.RUNNING, started_at=utcnow(), counts={})
         db.add(run)
         db.commit()
@@ -44,15 +52,21 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
         client = client or OnixClient(settings.onix_api_url)
         failures = 0
         try:
-            products = list(db.scalars(select(Product).where(Product.is_active.is_(True), Product.is_demo.is_(False))))
+            everything = list(db.scalars(select(Product).where(Product.is_active.is_(True), Product.is_demo.is_(False))
+                                         .order_by(Product.id)))
+            resume_after = get_setting(db, RESUME_KEY) or 0
+            products = [p for p in everything if p.id > resume_after]
+            skipped = len(everything) - len(products)
             # O Onix leva ~2 s por produto: nunca deixar o banco preso esperando a rede.
             # Cada produto é gravado e liberado na hora (antes travava o painel inteiro
             # por minutos, e quem tentasse gravar — ex.: conectar o Olist — dava erro).
             db.commit()
-            total = len(products)
+            total = len(everything)
             for done, product in enumerate(products):
-                # Andamento para o cartão do Onix ("320 de 1.480 produtos").
-                run.counts = {**counts, "feitos": done, "total": total}
+                # Andamento para o cartão do Onix ("320 de 1.480 produtos") e ponto de retomada.
+                if done:
+                    set_setting(db, RESUME_KEY, products[done - 1].id)
+                run.counts = {**counts, "feitos": skipped + done, "total": total, "em": utcnow().isoformat()}
                 db.commit()
                 try:
                     data = client.get_product(product.sku)
@@ -87,6 +101,7 @@ def run_onix_sync(session_factory: sessionmaker[Session], *, client: OnixClient 
                     audit.record(db, actor="system", event="produto.cadastro_alterado", target_type="produto",
                                  target_id=product.id, details={**audit.changes(before, after), "origem": "Onix"})
                 db.commit()
+            set_setting(db, RESUME_KEY, None)  # terminou: a próxima começa do início
             run.status = SyncStatus.OK
         except IntegrationError as exc:
             run.status = SyncStatus.ERROR

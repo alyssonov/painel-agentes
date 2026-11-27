@@ -22,7 +22,7 @@ from app.integrations.shopee import auth as shopee_auth
 from app.integrations.olist.client import OlistClient
 from app.integrations.tokens import clear_tokens, store_tokens
 from app.models import IntegrationAccount, Product, SyncRun
-from app.models.enums import IntegrationStatus, Provider
+from app.models.enums import IntegrationStatus, Provider, SyncStatus
 from app.models.user import User
 from app.services.store_settings import get_setting, set_setting
 from app.sync.ml_sync import run_ml_sync
@@ -433,7 +433,18 @@ def _onix_context(db: Session) -> dict:
         "cost_field": settings.onix_cost_field, "hours": settings.onix_sync_hours,
         "last_run": last_run,
         "last_run_label": to_local(last_run.started_at).strftime("%d/%m às %H:%M") if last_run else None,
+        "stalled": _onix_stalled(last_run),
     }
+
+
+def _onix_stalled(run) -> bool:
+    """Leitura marcada como "em andamento", mas parada há mais de 10 min (o painel foi desligado no meio)."""
+    from datetime import datetime, timedelta
+    if run is None or run.status != SyncStatus.RUNNING:
+        return False
+    seen = (run.counts or {}).get("em")
+    last = datetime.fromisoformat(seen) if seen else run.started_at
+    return utcnow() - last > timedelta(minutes=10)
 
 
 def _onix_sync_in_background() -> None:

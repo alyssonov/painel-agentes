@@ -145,10 +145,12 @@
     </details>
   {% else %}
     <dl class="conn-facts">
-      <div><dt>Última leitura</dt><dd>{{ run_label(onix.last_run, onix.last_run_label) }}
+      <div><dt>Última leitura</dt><dd>{% if onix.stalled %}{{ onix.last_run_label }} · interrompida
+        <span class="conn-note">Parou no meio (o painel foi desligado ou atualizado). A próxima leitura continua de onde parou; para seguir agora, clique em “Atualizar custos”.</span>
+        {% else %}{{ run_label(onix.last_run, onix.last_run_label) }}{% endif %}
         {% if onix.last_run and onix.last_run.status == 'ok' %}<span class="conn-note">{{ onix.last_run.counts.get('consultados', 0) }} consultados, {{ onix.last_run.counts.get('atualizados', 0) }} atualizados, {{ onix.last_run.counts.get('nao_encontrados', 0) }} não achados</span>
         {% elif onix.last_run and onix.last_run.status == 'erro' %}<span class="conn-note">{{ onix.last_run.error }}</span>
-        {% elif onix.last_run and onix.last_run.status == 'rodando' and onix.last_run.counts.get('total') %}<span class="conn-note">{{ onix.last_run.counts.get('feitos', 0) }} de {{ onix.last_run.counts.get('total') }} produtos (cerca de 2 s cada)</span>{% endif %}<span class="conn-note">Atualiza a cada {{ onix.hours }} h</span></dd></div>
+        {% elif onix.last_run and onix.last_run.status == 'rodando' and not onix.stalled and onix.last_run.counts.get('total') %}<span class="conn-note">{{ onix.last_run.counts.get('feitos', 0) }} de {{ onix.last_run.counts.get('total') }} produtos (cerca de 2 s cada)</span>{% endif %}<span class="conn-note">Atualiza a cada {{ onix.hours }} h</span></dd></div>
     </dl>
     <div class="conn-actions">
       <form method="post" action="/integracoes/onix/sincronizar"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
