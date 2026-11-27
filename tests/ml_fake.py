@@ -158,6 +158,9 @@ def install(router: respx.Router) -> dict[str, respx.Route]:
             "access_token": "APP_USR-novo", "token_type": "Bearer", "expires_in": 21600,
             "scope": "offline_access read write", "user_id": 123456, "refresh_token": "TG-novo"})),
         "me": router.get(f"{BASE_URL}/users/me").mock(return_value=httpx.Response(200, json=ME)),
+        # Mercado Ads: por padrão a loja não tem Product Ads (404 "No permissions found").
+        "ads_advertisers": router.get(f"{BASE_URL}/advertising/advertisers").mock(
+            return_value=httpx.Response(404, json={"message": "No permissions found for user_id"})),
         "questions": router.get(f"{BASE_URL}/questions/search").mock(side_effect=_questions),
         "items": router.get(f"{BASE_URL}/items").mock(side_effect=_items),
         "my_items": router.get(url__regex=re.escape(BASE_URL) + r"/users/\d+/items/search").mock(

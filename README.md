@@ -143,6 +143,16 @@ ver e nunca altera nada — para agir, mostra a tela. Usa a Claude API
 (`ANTHROPIC_API_KEY` no `.env`) e conta no teto diário de IA. Cada pessoa vê só
 as próprias conversas.
 
+## Publicidade (Mercado Ads)
+
+Menu **Financeiro → Publicidade**: investimento em anúncios patrocinados do
+Mercado Livre, vendas geradas pelos anúncios, retorno (ROAS), peso no faturamento
+(TACOS), campanhas e os anúncios que mais gastaram — com o aviso "gastando sem
+vender". O investimento entra **sozinho no DRE** (não lance de novo como despesa).
+Só leitura: o painel não cria, pausa nem muda campanhas. Lido no máximo a cada 3
+horas (o Mercado Livre fecha os números do dia às 10h). Precisa da permissão
+**Publicidade** no aplicativo do DevCenter e do Product Ads ativo na conta.
+
 ## Automações (avisos por e-mail)
 
 Menu **Inteligência → Automações**: escolha quais avisos chegam por e-mail

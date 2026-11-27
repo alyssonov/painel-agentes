@@ -53,8 +53,12 @@ class ReadOnlyApiClient:
         if self._owns_http:
             self._http.close()
 
-    def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        """GET com renovação de token, limite por minuto e novas tentativas."""
+    def _get(self, path: str, params: dict[str, Any] | None = None, *,
+             headers: dict[str, str] | None = None) -> Any:
+        """GET com renovação de token, limite por minuto e novas tentativas.
+
+        `headers`: cabeçalhos extras exigidos por alguma API (ex.: "api-version" do Mercado Ads).
+        """
         clean = {k: v for k, v in (params or {}).items() if v is not None}
         retrying = Retrying(
             retry=retry_if_exception_type(TemporaryError),
@@ -65,7 +69,7 @@ class ReadOnlyApiClient:
         )
         for attempt in retrying:
             with attempt:
-                return self._get_once(path, clean)
+                return self._get_once(path, clean, headers) if headers else self._get_once(path, clean)
         raise IntegrationError(f"Falha inesperada ao ler do {self.label}.")  # pragma: no cover
 
     @staticmethod
@@ -76,15 +80,15 @@ class ReadOnlyApiClient:
             return exc.delay
         return wait_exponential(multiplier=2, min=2, max=60)(retry_state)
 
-    def _get_once(self, path: str, params: dict[str, Any]) -> Any:
+    def _get_once(self, path: str, params: dict[str, Any], extra_headers: dict[str, str] | None = None) -> Any:
         token = self._tokens.get_token()
         self._limiter.wait()
         try:
-            response = self._http.get(path, params=params, headers=_auth(token))
+            response = self._http.get(path, params=params, headers={**_auth(token), **(extra_headers or {})})
             if response.status_code == 401:
                 # Token recusado: renova uma vez e tenta de novo.
                 token = self._tokens.get_token(force_refresh=True)
-                response = self._http.get(path, params=params, headers=_auth(token))
+                response = self._http.get(path, params=params, headers={**_auth(token), **(extra_headers or {})})
         except httpx.HTTPError as exc:
             raise TemporaryError(f"Sem conexão com o {self.label} no momento.") from exc
         self._limiter.update(response.headers)

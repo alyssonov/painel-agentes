@@ -124,7 +124,8 @@ def _bar_path(x: float, w: float, y_value: float, baseline: float, radius: float
             f"H{x + w - r:.1f} Q{x + w:.1f},{bottom:.1f} {x + w:.1f},{bottom - r:.1f} V{baseline:.1f} Z")
 
 
-def bar_chart(points: list[DayPoint], metric: str, *, width: int = 760, height: int = 240) -> BarChart:
+def bar_chart(points: list[DayPoint], metric: str, *, width: int = 760, height: int = 240,
+              show_orders: bool = True) -> BarChart:
     values = [getattr(p, metric) for p in points]
     hi, lo = max(values + [0]), min(values + [0])
     step = nice_step(hi - lo or 100_00)
@@ -149,7 +150,7 @@ def bar_chart(points: list[DayPoint], metric: str, *, width: int = 760, height: 
         x = x0 + (band - bar_w) / 2
         label = f"{WEEKDAYS[point.day.weekday()]} {point.day:%d/%m}"
         tip = (f"{label} · {format_brl(value)}" + (" (prejuízo)" if value < 0 else "")
-               + f" · {point.orders} pedido(s)")
+               + (f" · {point.orders} pedido(s)" if show_orders else ""))
         chart.bars.append(Bar(_bar_path(x, bar_w, y_of(value), chart.baseline), x0, band, value < 0, tip))
         if (len(points) - 1 - i) % every == 0:
             chart.xlabels.append(XLabel(x0 + band / 2, f"{point.day:%d/%m}"))

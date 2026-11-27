@@ -24,6 +24,15 @@ Endpoints usados (todos GET):
     https://developers.mercadolivre.com.br/pt-br/gerenciamento-de-envios
     https://developers.mercadolivre.com.br/pt-br/mercado-envios-agora (consultado em 10/11/2026)
     https://developers.mercadolivre.com.br/itens-e-buscas
+
+Mercado Ads — "Product Ads para Catálogo e User Products" (texto copiado do navegador pelo
+usuário em 27/11/2026; página atualizada em 19/10/2026). Só os endpoints NOVOS (os antigos
+de /product_ads/items, /campaigns/{id}/metrics e /ads/search foram desligados em 27/05/2026):
+  /advertising/advertisers?product_id=PADS                     anunciante (Api-Version: 1; 404 = sem Product Ads)
+  /advertising/{site}/advertisers/{adv}/product_ads/campaigns/search   campanhas + métricas do período
+  /advertising/{site}/product_ads/campaigns/{id}?aggregation_type=DAILY métricas diárias de uma campanha
+  /advertising/{site}/advertisers/{adv}/product_ads/ad_groups/search   anúncios (Ad Groups) + métricas
+  Métricas: até 90 dias para trás; atualizadas às 10h (horário de Brasília). api-version: 2.
 """
 
 from collections.abc import Iterator
@@ -43,6 +52,14 @@ MAX_MESSAGES = 100  # conversas pós-venda são curtas; o agente só usa as últ
 CLAIMS_PAGE = 30
 MAX_CLAIMS_HISTORY = 3000
 REVIEWS_PAGE = 50
+ADS_PAGE = 50
+ADS_GROUPS_PAGE = 200
+ADS_MAX = 2000  # limit + offset não pode passar de 10.000; a loja tem bem menos
+# Métricas pedidas (só o necessário para investimento, receita, vendas e retorno).
+ADS_METRICS = "clicks,prints,cost,acos,roas,direct_amount,indirect_amount,total_amount,units_quantity," \
+              "advertising_items_quantity"
+ADS_GROUP_METRICS = "CLICKS,PRINTS,COST,DIRECT_AMOUNT,INDIRECT_AMOUNT,TOTAL_AMOUNT,UNITS_QUANTITY," \
+                    "ADVERTISING_ITEMS_QUANTITY,ACOS,ROAS"
 _UTC = ZoneInfo("UTC")
 
 
@@ -322,3 +339,46 @@ class MLClient(ReadOnlyApiClient):
                 return (match or data)[0]
             data = data[0]
         return data if isinstance(data, dict) else None
+
+    # --- Mercado Ads (Product Ads) -----------------------------------------------------
+
+    def get_ads_advertisers(self) -> list[dict]:
+        """Anunciantes de Product Ads da conta. Lista vazia = a loja não tem Product Ads habilitado."""
+        data = self._get("/advertising/advertisers", {"product_id": "PADS"}, headers={"Api-Version": "1"})
+        return list((data or {}).get("advertisers") or [])
+
+    def iter_ads_campaigns(self, site_id: str, advertiser_id: int | str, date_from: str, date_to: str) -> Iterator[dict]:
+        """Campanhas do anunciante com as métricas somadas no período (datas AAAA-MM-DD)."""
+        offset = 0
+        while offset < ADS_MAX:
+            data = self._get(f"/advertising/{site_id}/advertisers/{advertiser_id}/product_ads/campaigns/search",
+                             {"limit": ADS_PAGE, "offset": offset, "date_from": date_from, "date_to": date_to,
+                              "metrics": ADS_METRICS}, headers={"api-version": "2"}) or {}
+            results = data.get("results") or []
+            yield from results
+            offset += len(results)
+            if not results or offset >= int((data.get("paging") or {}).get("total") or 0):
+                break
+
+    def get_ads_campaign_daily(self, site_id: str, campaign_id: int | str, date_from: str, date_to: str) -> list[dict]:
+        """Métricas dia a dia de uma campanha."""
+        data = self._get(f"/advertising/{site_id}/product_ads/campaigns/{campaign_id}",
+                         {"date_from": date_from, "date_to": date_to, "metrics": ADS_METRICS,
+                          "aggregation_type": "DAILY"}, headers={"api-version": "2"})
+        if isinstance(data, dict):  # por garantia: algumas respostas vêm embrulhadas
+            data = data.get("results") or []
+        return [d for d in data or [] if isinstance(d, dict) and d.get("date")]
+
+    def iter_ads_groups(self, site_id: str, advertiser_id: int | str, date_from: str, date_to: str) -> Iterator[dict]:
+        """Anúncios patrocinados (Ad Groups) com métricas do período, os que mais gastaram primeiro."""
+        offset = 0
+        while offset < ADS_MAX:
+            data = self._get(f"/advertising/{site_id}/advertisers/{advertiser_id}/product_ads/ad_groups/search",
+                             {"limit": ADS_GROUPS_PAGE, "offset": offset, "date_from": date_from, "date_to": date_to,
+                              "sort": "desc", "sort_by": "cost", "metrics": ADS_GROUP_METRICS},
+                             headers={"api-version": "2"}) or {}
+            results = data.get("results") or []
+            yield from results
+            offset += len(results)
+            if not results or offset >= int((data.get("paging") or {}).get("total") or 0):
+                break

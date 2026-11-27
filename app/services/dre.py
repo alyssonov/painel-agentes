@@ -12,12 +12,12 @@ da loja. Depois entram as despesas fixas do mês. Só leitura de vendas.
     = receita líquida
     (−) custo dos produtos vendidos
     = lucro bruto (margem de contribuição)
-    (−) despesas (por categoria)
+    (−) despesas (por categoria) — inclui o Mercado Ads lido automaticamente
     = lucro líquido do mês
 """
 
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -26,6 +26,10 @@ from app.core.timeutil import local_day_bounds_utc, local_today
 from app.models.expense import CATEGORIES, Expense
 from app.services.dashboard import _orders_between, money_confirmed, order_margin
 from app.services.store_settings import get_setting
+
+# Linha automática do DRE: investimento no Mercado Ads (Product Ads), lido do Mercado Livre.
+ADS_CATEGORY = "mercado_ads"
+ADS_LABEL = "Publicidade no Mercado Livre (Mercado Ads, automático)"
 
 MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro",
           "novembro", "dezembro"]
@@ -122,6 +126,11 @@ def month_dre(db: Session, month: date) -> MonthDRE:
         result.missing_cost += any(not item.product or not item.product.cost_cents for item in order.items)
     for expense in expenses_for(db, month):
         result.expenses[expense.category] = result.expenses.get(expense.category, 0) + expense.amount_cents
+    # Mercado Ads lido automaticamente do Mercado Livre (até hoje, no mês atual).
+    from app.services.ads import ads_cost_between  # import local: evita ciclo
+    ads = ads_cost_between(db, month, min(add_months(month, 1) - timedelta(days=1), local_today()))
+    if ads:
+        result.expenses[ADS_CATEGORY] = ads
     return result
 
 
@@ -131,4 +140,6 @@ def dre_months(db: Session, last: date, count: int = 3) -> list[MonthDRE]:
 
 
 def category_label(key: str) -> str:
+    if key == ADS_CATEGORY:
+        return ADS_LABEL
     return CATEGORIES.get(key, key)

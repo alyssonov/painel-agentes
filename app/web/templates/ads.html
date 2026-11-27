@@ -1,0 +1,76 @@
+{% extends "app_layout.html" %}
+{% block title %}Publicidade{% endblock %}
+{% block page_title %}Publicidade (Mercado Ads){% endblock %}
+{% block page_subtitle %}<p class="muted">Quanto a loja investe em anúncios patrocinados no Mercado Livre e quanto volta. Só leitura: o painel não cria, pausa nem muda campanhas.{% if last_read %} Atualizado em {{ last_read }} (o Mercado Livre fecha os números do dia às 10h).{% endif %}</p>{% endblock %}
+{% block content %}
+
+{% if not ml_connected %}
+  <p class="notice">Conecte o Mercado Livre em <a class="link" href="/integracoes">Contas conectadas</a> para ver a publicidade.</p>
+{% elif s.message %}
+  <p class="notice">{{ s.message }}</p>
+{% elif not s.status %}
+  <p class="notice">A primeira leitura da publicidade ainda não aconteceu. Ela é feita junto com a atualização do Mercado Livre (no máximo a cada 3 horas).</p>
+{% endif %}
+
+<div class="toolbar">
+  <form method="get" action="/publicidade" class="inline-form">
+    <label class="field field-inline"><span>Período</span>
+      <select name="periodo">{% for k, label in periods.items() %}<option value="{{ k }}" {% if k == periodo %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <button class="btn btn-secondary btn-sm" type="submit">Ver</button>
+  </form>
+</div>
+
+<section class="stats" aria-label="Resumo da publicidade">
+  <article class="card stat"><p class="stat-label">Investimento</p>
+    <p class="stat-value">{{ s.cost|brl }}</p><p class="stat-foot">{{ s.clicks }} cliques nos anúncios</p></article>
+  <article class="card stat"><p class="stat-label">Vendas pelos anúncios</p>
+    <p class="stat-value">{{ s.revenue|brl }}</p><p class="stat-foot">{{ s.sales }} venda(s) depois de um clique</p></article>
+  <article class="card stat {{ 'tone-bad' if s.roas is not none and s.roas < 1 else '' }}"><p class="stat-label">Retorno (ROAS)</p>
+    <p class="stat-value">{% if s.roas is not none %}{{ '%.1f'|format(s.roas)|replace('.', ',') }}x{% else %}—{% endif %}</p>
+    <p class="stat-foot">{% if s.roas is not none %}cada R$ 1 investido voltou R$ {{ '%.2f'|format(s.roas)|replace('.', ',') }} em vendas{% else %}sem investimento no período{% endif %}</p></article>
+  <article class="card stat"><p class="stat-label">Peso no faturamento (TACOS)</p>
+    <p class="stat-value">{{ s.tacos|pct }}</p>
+    <p class="stat-foot">do faturamento total no Mercado Livre ({{ s.ml_revenue|brl }}) foi para anúncios · ACOS {{ s.acos|pct }}</p></article>
+</section>
+
+{% if chart %}
+<section class="card" aria-labelledby="ads-dia">
+  <h2 id="ads-dia" class="card-title">Investimento por dia</h2>
+  {% with c = chart, aria = "Investimento em anúncios por dia" %}{% include "partials/bar_chart.html" %}{% endwith %}
+</section>
+{% endif %}
+
+<section class="card" aria-labelledby="ads-camp">
+  <div class="card-head"><h2 id="ads-camp" class="card-title">Campanhas</h2><span class="muted small">números dos últimos 30 dias</span></div>
+  {% if s.campaigns %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Campanha</th><th>Situação</th><th>Estratégia</th><th class="num">Orçamento/dia</th><th class="num">Investimento</th><th class="num">Vendas pelos anúncios</th><th class="num">Retorno</th><th class="num">Vendas</th></tr></thead>
+    <tbody>{% for c in s.campaigns %}
+      <tr><td>{{ c.name }}</td>
+        <td>{% if c.status == 'active' %}<span class="badge badge-ok">Ativa</span>{% else %}<span class="badge badge-pausado">Pausada</span>{% endif %}</td>
+        <td class="small">{{ strategies.get(c.strategy, c.strategy or '—') }}{% if c.roas_target %}<br><span class="muted">objetivo {{ '%.1f'|format(c.roas_target)|replace('.', ',') }}x</span>{% endif %}</td>
+        <td class="num">{{ c.budget_cents|brl }}</td><td class="num">{{ c.cost_cents|brl }}</td><td class="num">{{ c.revenue_cents|brl }}</td>
+        <td class="num">{% if c.cost_cents %}{{ '%.1f'|format(c.revenue_cents / c.cost_cents)|replace('.', ',') }}x{% else %}—{% endif %}</td>
+        <td class="num">{{ c.sales }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">Nenhuma campanha encontrada.</p>{% endif %}
+</section>
+
+<section class="card" aria-labelledby="ads-grupos">
+  <div class="card-head"><h2 id="ads-grupos" class="card-title">Anúncios patrocinados</h2><span class="muted small">os que mais gastaram nos últimos 30 dias</span></div>
+  {% if s.wasting %}<p class="stat-foot warn">{{ s.wasting }} anúncio(s) gastaram {{ min_cost|brl }} ou mais sem nenhuma venda — vale revisar (preço, fotos, título) ou tirar da campanha no Mercado Livre.</p>{% endif %}
+  {% if s.groups %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Anúncio</th><th class="num">Cliques</th><th class="num">Investimento</th><th class="num">Vendas pelos anúncios</th><th class="num">Retorno</th><th class="num">Vendas</th></tr></thead>
+    <tbody>{% for g in s.groups %}{% set r = group_roas(g) %}
+      <tr><td>{{ g.title }}<br><span class="muted small">{{ g.external_id or '' }}</span>
+          {% if g.cost_cents >= min_cost and g.sales == 0 %}<br><span class="badge badge-atencao">Gastando sem vender</span>{% endif %}</td>
+        <td class="num">{{ g.clicks }}</td><td class="num">{{ g.cost_cents|brl }}</td><td class="num">{{ g.revenue_cents|brl }}</td>
+        <td class="num">{% if r is not none %}{{ '%.1f'|format(r)|replace('.', ',') }}x{% else %}—{% endif %}</td><td class="num">{{ g.sales }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted">Nenhum anúncio patrocinado encontrado.</p>{% endif %}
+  <p class="muted small">Vendas pelos anúncios: compras feitas até 14 dias depois de um clique (regra do Mercado Livre), diretas ou de outro produto da loja. O investimento entra sozinho no DRE do mês.</p>
+</section>
+{% endblock %}

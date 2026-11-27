@@ -1,6 +1,7 @@
 """Tabelas do banco. Importar este pacote registra todas no metadata (usado pelo Alembic)."""
 
 from app.models.action import Action
+from app.models.ads import AdCampaign, AdDaily, AdGroup
 from app.models.agent import Agent, AgentRun
 from app.models.ai import AiCache, AiUsage
 from app.models.assistant import AssistantConversation, AssistantMessage
@@ -31,6 +32,9 @@ from app.models.sync import SyncRun
 from app.models.user import User
 
 __all__ = [
+    "AdCampaign",
+    "AdDaily",
+    "AdGroup",
     "Automation",
     "AutomationDelivery",
     "Action",

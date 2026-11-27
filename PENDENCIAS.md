@@ -103,18 +103,15 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 - **Resolve:** contas que desconectam (o Olist cai depois de 1 dia com o
   computador desligado) e acesso pelo celular.
 
-### B5. Mercado Ads (publicidade) — ⚪ (próximas etapas)
-- No app de desenvolvedor do Mercado Livre, conferir se a permissão de
-  **Publicidade** está marcada e se a conta tem **Mercado Ads ativo**. Depois,
-  clicar em "Conectar de novo" no painel.
-- **Depende disso:** investimento, ROAS, ACOS, TACOS, campanhas.
-
-### Etapa 6 — o que conferir (27/11)
-- **Inteligência → Automações:** cadastre quem recebe, clique em **Mandar
-  e-mail de teste** e ligue as automações que quiser (ex.: "Algo urgente" e
-  "Envio atrasado"). Precisa do e-mail configurado (`SMTP_USER`/`SMTP_PASSWORD`).
-- **Inteligência → Relatórios:** baixe a planilha de "Vendas do período" e abra
-  no Excel; teste também "Ver para imprimir ou salvar em PDF".
+### B5. Mercado Ads (publicidade) — 🟡 (leitura pronta em 27/11)
+- **Pronto:** Financeiro → **Publicidade** (investimento, retorno, campanhas,
+  anúncios gastando sem vender) e investimento no **DRE**; automação "Anúncio
+  pago gastando sem vender".
+- **Falta (você):** no DevCenter, aplicativo → editar → marcar **Publicidade**
+  (leitura) e clicar em **Conectar de novo** no Mercado Livre. Se a tela disser
+  que a conta não tem Product Ads: Mercado Livre → Meu perfil → Publicidade.
+- Se já lança a publicidade do Mercado Livre como despesa, **tire esse
+  lançamento** (agora entra sozinho; senão conta duas vezes).
 
 ### B6. Despesas fixas da empresa — 🟡
 - **Pronto no painel (26/11):** Financeiro → **Despesas** (lançar) e **DRE do
