@@ -698,11 +698,13 @@ form > .card { margin-bottom: 16px; }
 .asst-convs .is-active a { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
 /* Bolinha do assistente: só o robô; ao passar o mouse, abre a palavra "Assistente". */
 .asst-fab { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: inline-flex; align-items: center; height: 56px;
-  min-width: 56px; padding: 0 16px; border-radius: 999px; border: 0; background: var(--accent); color: #fff; font: inherit;
+  min-width: 56px; padding: 0 4px; border-radius: 999px; border: 0; background: var(--accent); color: #fff; font: inherit;
   font-weight: 700; cursor: pointer; box-shadow: 0 6px 22px rgba(0, 0, 0, .35); transition: filter .15s, transform .2s; }
-.asst-fab .icon { width: 24px; height: 24px; flex-shrink: 0; }
+/* Robô na mesma proporção do logo (opção A): ocupa ~72% da largura da bolinha. */
+.asst-fab .icon { width: 48px; height: 48px; flex-shrink: 0; stroke-width: 1.35; }
 .asst-fab-label { max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0; transition: max-width .25s ease, opacity .2s, margin .25s; }
-.asst-fab:hover .asst-fab-label, .asst-fab:focus-visible .asst-fab-label { max-width: 120px; opacity: 1; margin-left: 8px; }
+.asst-fab:hover .asst-fab-label, .asst-fab:focus-visible .asst-fab-label { max-width: 120px; opacity: 1; margin-left: 4px; }
+.asst-fab:hover, .asst-fab:focus-visible { padding-right: 18px; }
 .asst-fab:hover { filter: brightness(1.08); }
 .asst-fab.is-hidden { transform: scale(0); pointer-events: none; }
 /* A bolinha "cresce" e vira o chat: o painel nasce do canto dela, redondo, e se abre. */
