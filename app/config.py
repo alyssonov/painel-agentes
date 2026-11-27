@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     olist_client_secret: str = Field(default="", repr=False)
     olist_redirect_uri: str = "http://localhost:8000/integracoes/olist/retorno"
     # De quantos em quantos minutos o painel busca novidades no Olist.
-    olist_sync_minutes: int = 10
+    olist_sync_minutes: int = 2
     # Na primeira conexão, quantos dias de pedidos e notas para trás importar.
     olist_initial_days: int = 15
     olist_history_days: int = 120
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     # O Mercado Livre exige HTTPS público: a página de repasse (GitHub Pages)
     # devolve o login para o painel local. Tem que ser IGUAL à cadastrada no app.
     ml_redirect_uri: str = "https://alyssonov.github.io/painel-retorno/mercadolivre/"
-    ml_sync_minutes: int = 5
+    ml_sync_minutes: int = 1
 
     # Shopee Open Platform (API v2 oficial). Chaves do app criado no Console
     # (open.shopee.com → App List). O endereço de retorno é a página de repasse
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     # true = ambiente de testes (Sandbox) da Shopee; false = loja de verdade.
     shopee_sandbox: bool = False
     # De quantos em quantos minutos o painel lê pedidos, prazos de envio e taxas da Shopee.
-    shopee_sync_minutes: int = 10
+    shopee_sync_minutes: int = 2
 
     # Onix (sistema da loja física, Foxconn): API de produtos fornecida pelo próprio
     # fornecedor do Onix (só leitura). Endereço base, ex.: http://servidor:8020 — fica só aqui.
@@ -80,7 +80,7 @@ class Settings(BaseSettings):
     # Cotação usada só para ESTIMAR o gasto em reais (a cobrança é em dólar).
     usd_brl_rate: float = 5.50
     # De quantos em quantos minutos o Respondedor de perguntas olha a fila.
-    agent_questions_minutes: int = 3
+    agent_questions_minutes: int = 1
 
     @field_validator("secret_key")
     @classmethod

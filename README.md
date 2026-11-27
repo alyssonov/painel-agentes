@@ -163,7 +163,7 @@ Menu **Inteligência → Automações**: escolha quais avisos chegam por e-mail
 (algo urgente, envio atrasado, estoque acabando, venda com prejuízo, pergunta
 esperando resposta, reclamações e reputação, conta com problema). Todas começam
 desligadas; ligada, avisa só o que acontecer **daqui para frente**, num e-mail só
-por rodada (a cada 5 minutos), sem repetir o mesmo aviso. Tem horário silencioso
+por rodada (a cada minuto), sem repetir o mesmo aviso. Tem horário silencioso
 (padrão 22h às 7h: o que acontecer nesse horário chega junto quando ele acabar) e
 um botão de e-mail de teste. Usa o mesmo e-mail do relatório diário (`SMTP_*`).
 São avisos para a loja: nada aqui responde cliente nem muda preço ou estoque.
@@ -262,7 +262,7 @@ que falta.
 3. Ligue o painel e clique em **Contas conectadas** (canto inferior esquerdo)
    → **Conectar o Olist**. Entre com o login do Olist e autorize.
 4. A importação começa sozinha (pedidos dos últimos 15 dias, produtos,
-   estoque e notas). Depois, o painel busca novidades a cada 10 minutos
+   estoque e notas). Depois, o painel busca novidades a cada 2 minutos
    enquanto estiver ligado.
 
 Bom saber:
@@ -286,7 +286,7 @@ Bom saber:
 2. No `.env`, preencha `ML_CLIENT_ID` e `ML_CLIENT_SECRET`.
 3. Em **Contas conectadas**, clique em **Conectar o Mercado Livre** e autorize.
 
-O painel passa a ler, a cada 5 minutos: perguntas, reputação e a taxa de cada
+O painel passa a ler, a cada minuto: perguntas, reputação e a taxa de cada
 venda (que entra na margem real). Nesta etapa **nada é respondido**.
 
 ## Conectar a Shopee

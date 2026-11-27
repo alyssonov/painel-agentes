@@ -28,7 +28,7 @@ from app.sync.common import get_cursor, set_cursor
 
 logger = logging.getLogger("sync.ml.posvenda")
 
-RECHECK_EVERY = timedelta(minutes=15)
+RECHECK_EVERY = timedelta(minutes=5)
 MAX_CONVERSATIONS_PER_RUN = 40
 MAX_RECHECK = 30
 WAITING = (ConversationStatus.NEW, ConversationStatus.PROPOSED, ConversationStatus.HUMAN)
@@ -165,7 +165,7 @@ def _seller_actions(claim: dict) -> list[dict]:
 
 
 def sync_claims(db: Session, client: MLClient, account, seller_id: str, started) -> int:
-    """Reclamações abertas contra a loja (a cada 15 minutos)."""
+    """Reclamações abertas contra a loja (a cada 5 minutos)."""
     if not _due(account, "cursor_reclamacoes", started):
         return 0
     now = utcnow()

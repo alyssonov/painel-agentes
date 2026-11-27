@@ -242,7 +242,7 @@ exibidas em `America/Sao_Paulo`; `channel` ∈ {`ml`, `shopee`}; toda tabela tem
 | 2 | Anúncios | products, listing_metrics, insights | `create_listing`, `update_listing` (nunca automático para publicar) | semanal |
 | 3 | Vigia de estoque | stock_snapshots, order_items, listings | só alertas | a cada 30 min |
 | 4 | Preços | competitor_prices, price_rules, margin | `update_price` (respeitando margem mínima) | 2× ao dia |
-| 5 | Pós-venda | messages, claims, invoices | `send_message` | a cada 10 min |
+| 5 | Pós-venda | messages, claims, invoices | `send_message` | a cada 1 min |
 | 6 | Avaliações e devoluções | reviews, returns | insights | semanal |
 | 7 | Margem real | orders, order_items, products | margin_entries + alertas de prejuízo | a cada hora |
 | 8 | Relatório diário | tudo | `send_report` | 19h diário; semanal/mensal |

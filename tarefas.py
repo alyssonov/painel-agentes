@@ -104,6 +104,29 @@ def _save_deps_hash() -> None:
     DEPS_HASH_FILE.write_text(_deps_hash())
 
 
+# Tempos de atualização que mudaram de padrão (27/11/2026: o mais rápido que as APIs
+# aguentam). Só troca no .env quem ainda está com o valor antigo; quem mudou à mão fica.
+ENV_UPGRADES = [("OLIST_SYNC_MINUTES", "10", "2"), ("ML_SYNC_MINUTES", "5", "1"),
+                ("SHOPEE_SYNC_MINUTES", "10", "2"), ("AGENT_QUESTIONS_MINUTES", "3", "1")]
+
+
+def _upgrade_env() -> None:
+    """Atualiza no .env só as linhas de configuração que ainda têm o padrão antigo."""
+    path = ROOT / ".env"
+    if not path.exists():
+        return
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    changed = False
+    for i, line in enumerate(lines):
+        for key, old, new in ENV_UPGRADES:
+            if line.strip() == f"{key}={old}":
+                lines[i] = line.replace(f"{key}={old}", f"{key}={new}")
+                changed = True
+    if changed:
+        path.write_text("".join(lines), encoding="utf-8")
+        print("Tempos de atualização do .env ajustados para os novos padrões.")
+
+
 def prepare() -> int:
     """Instala dependências que faltarem, cria o .env se não existir e atualiza o banco."""
     if not VENV_PY.exists():
@@ -118,6 +141,7 @@ def prepare() -> int:
     _save_deps_hash()
     if not (ROOT / ".env").exists():
         run(str(VENV_PY), "-m", "app.cli", "init-env")
+    _upgrade_env()
     run(str(VENV_PY), "-m", "app.cli", "backup-db")  # cópia do banco antes de mudar a estrutura
     print("Atualizando o banco de dados...")
     return run(str(VENV_PY), "-m", "alembic", "upgrade", "head")

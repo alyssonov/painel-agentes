@@ -111,7 +111,7 @@ def job_agent_postsale() -> None:
 
 
 def job_checks() -> None:
-    """Fase 4: Vigia de estoque e Conferência de NF-e (sem IA, só leitura e alertas)."""
+    """Fase 4: Vigia de estoque e Conferência de NF-e (sem IA, só leitura e alertas), a cada 5 min."""
     for name, runner in (("Vigia de estoque", run_stock_watch), ("Conferência de NF-e", run_nfe_check),
                          ("Alerta de despacho", run_dispatch_alerts)):
         run = runner(get_sessionmaker())
@@ -167,12 +167,12 @@ def main() -> None:
                           max_instances=1, coalesce=True, next_run_time=datetime.now(settings.tz))
     scheduler.add_job(job_agent_questions, "interval", minutes=settings.agent_questions_minutes,
                       id="agent_questions", max_instances=1, coalesce=True)
-    scheduler.add_job(job_agent_postsale, "interval", minutes=5, id="agent_postsale",
+    scheduler.add_job(job_agent_postsale, "interval", minutes=1, id="agent_postsale",
                       max_instances=1, coalesce=True)
-    scheduler.add_job(job_checks, "interval", minutes=15, id="checks", max_instances=1, coalesce=True)
+    scheduler.add_job(job_checks, "interval", minutes=5, id="checks", max_instances=1, coalesce=True)
     scheduler.add_job(job_margin, "interval", minutes=60, id="margin", max_instances=1, coalesce=True)
     scheduler.add_job(job_daily_report, "interval", minutes=10, id="daily_report", max_instances=1, coalesce=True)
-    scheduler.add_job(job_automations, "interval", minutes=5, id="automations", max_instances=1, coalesce=True)
+    scheduler.add_job(job_automations, "interval", minutes=1, id="automations", max_instances=1, coalesce=True)
     logger.info("Worker iniciado (DRY_RUN=%s). Ctrl+C para parar.", settings.dry_run)
     try:
         job_sync_olist()
