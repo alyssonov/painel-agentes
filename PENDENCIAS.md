@@ -20,6 +20,7 @@ Situações: 🔴 bloqueia algo · 🟡 em andamento · ⚪ ainda não necessár
 | A3 | **Estoque nos anúncios** — o painel pode propor (com aprovação) mudar o estoque de um anúncio no Mercado Livre (ex.: pausar quando zera no Onix/Olist)? Ou isso continua só pela integração Olist → Mercado Livre? | Hoje a regra é "o sistema nunca altera estoque". | ✅ 26/11: **não** — estoque continua com o Olist; o painel só avisa divergências |
 | A4 | **Estrutura multiempresa (SaaS) agora** — preparar o banco para várias empresas já na próxima etapa? | É bem mais barato fazer agora (31 tabelas) do que depois. | ✅ 26/11: **sim, agora** — feito na etapa 3 |
 | A5 | **Desligar o modo simulação** (`DRY_RUN=false`) | Só então respostas, mensagens, preços e anúncios aprovados saem de verdade. | ⚪ quando você se sentir seguro |
+| A6 | **Painel como ferramenta única (escrever nas plataformas)** — editar pelo painel, com aprovação: 1) custo/cadastro no Olist (ex.: os 98 com custo desatualizado → custo do Onix, via `POST /produtos/custos`); 2) ML/Shopee: respostas, mensagens, preço, título, descrição, pausar/reativar; 3) pedidos no Olist (situação, rastreio, expedição); 4) estoque (no Olist); 5) nota fiscal (emitir/cancelar no Olist). | Muda as regras fixas "Olist só leitura" e "nunca altera estoque/nota" (CLAUDE.md). As APIs oficiais permitem (swagger do Olist conferido em 27/11). | ⏸ 27/11: **sim, mas só depois que o painel estiver 100% pronto** — começar pela etapa 1 |
 
 ### Etapa 3 — o que conferir (26/11)
 - Ao ligar o painel, ele faz sozinho uma **cópia de segurança do banco** em
