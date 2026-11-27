@@ -70,9 +70,28 @@ def ads_due(account, started) -> bool:
 
 
 def sync_ads(db: Session, client: MLClient, account, seller_id: str, started) -> int:
-    """Lê campanhas, dia a dia e anúncios. Devolve quantas campanhas foram lidas."""
+    """Lê campanhas, dia a dia e anúncios. Devolve quantas campanhas foram lidas.
+
+    Um problema inesperado aqui fica só na publicidade: nunca derruba a atualização do
+    Mercado Livre (perguntas, vendas, reputação...).
+    """
     if not ads_due(account, started):
         return 0
+    try:
+        return _sync_ads(db, client, account, started)
+    except (AuthExpired, IntegrationError):
+        raise
+    except Exception as exc:  # noqa: BLE001 - erro só da publicidade: registra e segue
+        logger.exception("Erro inesperado ao ler a publicidade do Mercado Livre")
+        db.rollback()
+        account.extra = {**(account.extra or {}), "ads_status": "erro",
+                         "ads_error": f"{type(exc).__name__}: {str(exc)[:200]}"}
+        set_cursor(account, "cursor_ads", started)  # tenta de novo no próximo ciclo (3 h)
+        db.commit()
+        return 0
+
+
+def _sync_ads(db: Session, client: MLClient, account, started) -> int:
     try:
         advertisers = client.get_ads_advertisers()
     except AuthExpired:
@@ -129,7 +148,11 @@ def sync_ads(db: Session, client: MLClient, account, seller_id: str, started) ->
 
     # Anúncios (Ad Groups) dos últimos 30 dias: a lista é refeita do zero.
     db.execute(delete(AdGroup))
+    groups: dict[str, dict] = {}
     for g in client.iter_ads_groups(site, adv, period_from, to):
+        # A lista vem em páginas e pode repetir um anúncio (a ordem muda durante a leitura).
+        groups.setdefault(str(g.get("id")), g)
+    for g in groups.values():
         row = AdGroup(ad_group_id=str(g.get("id")), external_id=str(g.get("ad_group_external_id") or "") or None,
                       group_type=g.get("ad_group_type"), title=str(g.get("title") or "Anúncio")[:255],
                       campaign_id=str(g.get("campaign_id") or "") or None, status=str(g.get("status") or "")[:20],

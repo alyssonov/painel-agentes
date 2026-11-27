@@ -20,6 +20,8 @@ from app.sync.ml_ads import NO_SALES_MIN_COST_CENTS
 
 PERIODS = {"7": "Últimos 7 dias", "30": "Últimos 30 dias", "90": "Últimos 90 dias"}
 STATUS_TEXT = {
+    "erro": "A última leitura da publicidade deu um erro inesperado (o resto do Mercado Livre não foi afetado). "
+            "O painel tenta de novo sozinho em até 3 horas.",
     "sem_ads": "A conta do Mercado Livre não tem o Product Ads (anúncios patrocinados) ativo. "
                "Para ativar: Mercado Livre → Meu perfil → Publicidade.",
     "sem_permissao": "O aplicativo do painel não tem a permissão Publicidade. No DevCenter do Mercado Livre, "

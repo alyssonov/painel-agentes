@@ -4,7 +4,7 @@ from datetime import timedelta
 
 import httpx
 import respx
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core.timeutil import local_today
 from app.models import AdCampaign, AdDaily, AdGroup, Alert, IntegrationAccount
@@ -109,3 +109,32 @@ def test_quem_nao_ve_financeiro_nao_abre(client, db, user):
     _add(db, "at@loja.com", "atendimento")
     login(client, "at@loja.com")
     assert client.get("/publicidade", follow_redirects=False).status_code in (303, 403)
+
+
+@respx.mock
+def test_anuncio_repetido_na_lista_nao_derruba_a_leitura(db, ml_env):  # noqa: F811
+    """O Mercado Livre devolveu o mesmo Ad Group duas vezes (visto em 27/11/2026): grava uma vez só."""
+    ml_fake.install(respx)
+    _ads(respx, campaigns=[CAMPAIGN], daily=DAILY, groups=GROUPS + [GROUPS[0]])
+    connect_ml(db)
+    run = sync()
+    assert run.status == "ok", run.error
+    assert db.scalar(select(func.count()).select_from(AdGroup)) == 2
+
+
+@respx.mock
+def test_erro_inesperado_na_publicidade_nao_derruba_o_mercado_livre(db, ml_env, monkeypatch):  # noqa: F811
+    from app.sync import ml_ads
+    ml_fake.install(respx)
+    _ads(respx, campaigns=[CAMPAIGN], daily=DAILY, groups=GROUPS)
+    connect_ml(db)
+
+    def boom(*_a, **_k):
+        raise RuntimeError("falha inesperada")
+    monkeypatch.setattr(ml_ads, "_alerts", boom)
+    run = sync()
+    assert run.status == "ok" and run.counts["publicidade"] == 0  # perguntas, vendas etc. seguiram normais
+    db.expire_all()
+    account = db.scalar(select(IntegrationAccount).where(IntegrationAccount.provider == "ml",
+                                                         IntegrationAccount.is_demo.is_(False)))
+    assert account.extra["ads_status"] == "erro" and "RuntimeError" in account.extra["ads_error"]
